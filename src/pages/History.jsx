@@ -63,7 +63,7 @@ export default function History() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">💰</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">$</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 ${completedBookings.filter(b => b.status === "completed").length * 50}
@@ -158,7 +158,7 @@ export default function History() {
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Monthly Revenue Trend</h2>
         <div className="bg-gray-100 rounded-lg p-8 text-center">
-          <div className="text-4xl mb-4">📈</div>
+          <div className="text-4xl mb-4">↗</div>
           <p className="text-gray-600">Revenue chart would be displayed here</p>
           <p className="text-sm text-gray-500 mt-2">Integration with charting library needed</p>
         </div>

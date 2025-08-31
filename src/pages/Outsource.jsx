@@ -41,7 +41,7 @@ export default function Outsource() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">📊</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">□</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{outsourcedBookings.length}</p>
               <p className="text-sm text-gray-600">Outsourced Bookings</p>
