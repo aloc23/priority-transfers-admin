@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "../context/AppStore";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -58,24 +58,28 @@ export default function Schedule() {
     }
   };
 
-  // Filter bookings based on driver filter
-  const filteredBookings = filterDriver 
-    ? bookings.filter(booking => booking.driver === filterDriver)
-    : bookings;
+  // Memoize filtered bookings for performance
+  const filteredBookings = useMemo(() => {
+    return filterDriver 
+      ? bookings.filter(booking => booking.driver === filterDriver)
+      : bookings;
+  }, [bookings, filterDriver]);
 
-  // Convert bookings to calendar events
-  const calendarEvents = filteredBookings.map(booking => ({
-    id: booking.id,
-    title: `${booking.customer} - ${booking.pickup} → ${booking.destination}`,
-    start: moment(`${booking.date} ${booking.time}`).toDate(),
-    end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
-    resource: booking,
-    style: {
-      backgroundColor: booking.type === 'priority' ? '#3b82f6' : '#f59e0b',
-      borderColor: booking.type === 'priority' ? '#1d4ed8' : '#d97706',
-      color: 'white'
-    }
-  }));
+  // Memoize calendar events for performance
+  const calendarEvents = useMemo(() => {
+    return filteredBookings.map(booking => ({
+      id: booking.id,
+      title: `${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+      start: moment(`${booking.date} ${booking.time}`).toDate(),
+      end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
+      resource: booking,
+      style: {
+        backgroundColor: booking.type === 'priority' ? '#3b82f6' : '#f59e0b',
+        borderColor: booking.type === 'priority' ? '#1d4ed8' : '#d97706',
+        color: 'white'
+      }
+    }));
+  }, [filteredBookings]);
 
   const handleSelectEvent = (event) => {
     handleEdit(event.resource);

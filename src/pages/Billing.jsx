@@ -1,17 +1,18 @@
 import { useAppStore } from "../context/AppStore";
+import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 
 export default function Billing() {
   const { bookings } = useAppStore();
 
   const completedBookings = bookings.filter(booking => booking.status === "completed");
-  const totalRevenue = completedBookings.length * 45; // Mock pricing in EUR
-  const pendingPayments = bookings.filter(booking => booking.status === "confirmed").length * 45;
+  const totalRevenue = calculateRevenue(bookings, "completed");
+  const pendingPayments = calculateRevenue(bookings, "confirmed");
 
   const invoices = completedBookings.map((booking, index) => ({
     id: `INV-${1000 + index}`,
     customer: booking.customer,
     date: booking.date,
-    amount: 45,
+    amount: EURO_PRICE_PER_BOOKING,
     status: Math.random() > 0.3 ? "paid" : "pending"
   }));
 
@@ -25,7 +26,7 @@ export default function Billing() {
           <div className="flex items-center">
             <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">€</div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">€{totalRevenue}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
               <p className="text-sm text-gray-600">Total Revenue</p>
             </div>
           </div>
@@ -35,7 +36,7 @@ export default function Billing() {
           <div className="flex items-center">
             <div className="bg-yellow-500 rounded-lg p-3 text-white text-2xl mr-4">⏳</div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">€{pendingPayments}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(pendingPayments)}</p>
               <p className="text-sm text-gray-600">Pending Payments</p>
             </div>
           </div>
@@ -77,7 +78,7 @@ export default function Billing() {
                   <td className="font-mono">{invoice.id}</td>
                   <td className="font-medium">{invoice.customer}</td>
                   <td>{invoice.date}</td>
-                  <td className="font-bold">€{invoice.amount}</td>
+                  <td className="font-bold">{formatCurrency(invoice.amount)}</td>
                   <td>
                     <span className={`badge ${
                       invoice.status === 'paid' ? 'badge-green' : 'badge-yellow'

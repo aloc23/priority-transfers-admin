@@ -192,24 +192,42 @@ export function AppStoreProvider({ children }) {
   };
 
   const addBooking = (booking) => {
-    const newBooking = { ...booking, id: Date.now(), type: booking.type || "priority" };
-    const updatedBookings = [...bookings, newBooking];
-    setBookings(updatedBookings);
-    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    try {
+      const newBooking = { ...booking, id: Date.now(), type: booking.type || "priority" };
+      const updatedBookings = [...bookings, newBooking];
+      setBookings(updatedBookings);
+      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      return { success: true, booking: newBooking };
+    } catch (error) {
+      console.error('Failed to add booking:', error);
+      return { success: false, error: 'Failed to save booking' };
+    }
   };
 
   const updateBooking = (id, updates) => {
-    const updatedBookings = bookings.map(booking => 
-      booking.id === id ? { ...booking, ...updates } : booking
-    );
-    setBookings(updatedBookings);
-    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    try {
+      const updatedBookings = bookings.map(booking => 
+        booking.id === id ? { ...booking, ...updates } : booking
+      );
+      setBookings(updatedBookings);
+      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update booking:', error);
+      return { success: false, error: 'Failed to update booking' };
+    }
   };
 
   const deleteBooking = (id) => {
-    const updatedBookings = bookings.filter(booking => booking.id !== id);
-    setBookings(updatedBookings);
-    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    try {
+      const updatedBookings = bookings.filter(booking => booking.id !== id);
+      setBookings(updatedBookings);
+      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete booking:', error);
+      return { success: false, error: 'Failed to delete booking' };
+    }
   };
 
   const addCustomer = (customer) => {
