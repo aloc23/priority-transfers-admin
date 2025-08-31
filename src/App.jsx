@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
 import { useState } from "react";
+import logoSvg from "./assets/logo.svg";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Customers from "./pages/Customers";
@@ -22,7 +23,7 @@ function Shell() {
       <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg transition-all p-4`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <img src="/src/assets/logo.svg" alt="logo" className="w-8 h-8 rounded" />
+            <img src={logoSvg} alt="logo" className="w-8 h-8 rounded" />
             {sidebarOpen && <span className="font-bold text-lg">Priority</span>}
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn btn-outline px-2 py-1">≡</button>
