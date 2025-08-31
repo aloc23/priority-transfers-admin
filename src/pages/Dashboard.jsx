@@ -7,25 +7,25 @@ export default function Dashboard() {
     {
       name: "Total Bookings",
       value: bookings.length,
-      icon: "📅",
+      icon: "📋",
       color: "bg-blue-500"
     },
     {
       name: "Active Customers",
       value: customers.length,
-      icon: "👥",
+      icon: "◯",
       color: "bg-green-500"
     },
     {
       name: "Available Drivers", 
       value: drivers.filter(d => d.status === "available").length,
-      icon: "🚗",
+      icon: "◉",
       color: "bg-yellow-500"
     },
     {
       name: "Active Vehicles",
       value: vehicles.filter(v => v.status === "active").length,
-      icon: "🚙",
+      icon: "▣",
       color: "bg-purple-500"
     }
   ];
@@ -118,7 +118,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card text-center">
-          <div className="text-4xl mb-4">📱</div>
+          <div className="text-4xl mb-4">+</div>
           <h3 className="text-lg font-semibold mb-2">New Booking</h3>
           <p className="text-gray-600 mb-4">Create a new transfer booking</p>
           <a href="/schedule" className="btn btn-primary">
@@ -127,7 +127,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card text-center">
-          <div className="text-4xl mb-4">👤</div>
+          <div className="text-4xl mb-4">⊕</div>
           <h3 className="text-lg font-semibold mb-2">Add Customer</h3>
           <p className="text-gray-600 mb-4">Register a new customer</p>
           <a href="/customers" className="btn btn-primary">
@@ -136,7 +136,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card text-center">
-          <div className="text-4xl mb-4">🚗</div>
+          <div className="text-4xl mb-4">⚙</div>
           <h3 className="text-lg font-semibold mb-2">Manage Fleet</h3>
           <p className="text-gray-600 mb-4">View and manage vehicles</p>
           <a href="/fleet" className="btn btn-primary">

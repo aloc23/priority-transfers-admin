@@ -31,12 +31,12 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: "profile", label: "Company Profile", icon: "🏢" },
-    { id: "notifications", label: "Notifications", icon: "🔔" },
-    { id: "booking", label: "Booking Settings", icon: "📅" },
-    { id: "billing", label: "Billing & Payment", icon: "💰" },
-    { id: "users", label: "User Management", icon: "👥" },
-    { id: "integrations", label: "Integrations", icon: "🔌" }
+    { id: "profile", label: "Company Profile", icon: "◪" },
+    { id: "notifications", label: "Notifications", icon: "◉" },
+    { id: "booking", label: "Booking Settings", icon: "□" },
+    { id: "billing", label: "Billing & Payment", icon: "$" },
+    { id: "users", label: "User Management", icon: "◎" },
+    { id: "integrations", label: "Integrations", icon: "⚙" }
   ];
 
   return (

@@ -23,7 +23,7 @@ export default function Billing() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">💰</div>
+            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">$</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">${totalRevenue}</p>
               <p className="text-sm text-gray-600">Total Revenue</p>
@@ -43,7 +43,7 @@ export default function Billing() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-blue-500 rounded-lg p-3 text-white text-2xl mr-4">📊</div>
+            <div className="bg-blue-500 rounded-lg p-3 text-white text-2xl mr-4">□</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
               <p className="text-sm text-gray-600">Total Invoices</p>

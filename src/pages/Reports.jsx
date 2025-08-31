@@ -45,7 +45,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">📊</div>
+            <div className="text-4xl mb-4">$</div>
             <h3 className="text-lg font-semibold mb-2">Revenue Report</h3>
             <p className="text-gray-600 mb-4">Monthly revenue and financial analytics</p>
             <button 
@@ -59,7 +59,7 @@ export default function Reports() {
 
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">🚗</div>
+            <div className="text-4xl mb-4">★</div>
             <h3 className="text-lg font-semibold mb-2">Driver Performance</h3>
             <p className="text-gray-600 mb-4">Driver ratings and trip statistics</p>
             <button 
@@ -73,7 +73,7 @@ export default function Reports() {
 
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">👥</div>
+            <div className="text-4xl mb-4">◉</div>
             <h3 className="text-lg font-semibold mb-2">Customer Analytics</h3>
             <p className="text-gray-600 mb-4">Customer behavior and preferences</p>
             <button 
@@ -87,7 +87,7 @@ export default function Reports() {
 
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">📅</div>
+            <div className="text-4xl mb-4">□</div>
             <h3 className="text-lg font-semibold mb-2">Booking Trends</h3>
             <p className="text-gray-600 mb-4">Daily and weekly booking patterns</p>
             <button 
@@ -101,7 +101,7 @@ export default function Reports() {
 
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">🚙</div>
+            <div className="text-4xl mb-4">▣</div>
             <h3 className="text-lg font-semibold mb-2">Fleet Utilization</h3>
             <p className="text-gray-600 mb-4">Vehicle usage and maintenance</p>
             <button 
@@ -115,7 +115,7 @@ export default function Reports() {
 
         <div className="card">
           <div className="text-center">
-            <div className="text-4xl mb-4">📈</div>
+            <div className="text-4xl mb-4">↗</div>
             <h3 className="text-lg font-semibold mb-2">Business Growth</h3>
             <p className="text-gray-600 mb-4">Growth metrics and forecasts</p>
             <button 
