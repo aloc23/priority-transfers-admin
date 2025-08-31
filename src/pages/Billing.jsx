@@ -4,14 +4,14 @@ export default function Billing() {
   const { bookings } = useAppStore();
 
   const completedBookings = bookings.filter(booking => booking.status === "completed");
-  const totalRevenue = completedBookings.length * 50; // Mock pricing
-  const pendingPayments = bookings.filter(booking => booking.status === "confirmed").length * 50;
+  const totalRevenue = completedBookings.length * 45; // Mock pricing in EUR
+  const pendingPayments = bookings.filter(booking => booking.status === "confirmed").length * 45;
 
   const invoices = completedBookings.map((booking, index) => ({
     id: `INV-${1000 + index}`,
     customer: booking.customer,
     date: booking.date,
-    amount: 50,
+    amount: 45,
     status: Math.random() > 0.3 ? "paid" : "pending"
   }));
 
@@ -23,9 +23,9 @@ export default function Billing() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">$</div>
+            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">€</div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">${totalRevenue}</p>
+              <p className="text-2xl font-bold text-gray-900">€{totalRevenue}</p>
               <p className="text-sm text-gray-600">Total Revenue</p>
             </div>
           </div>
@@ -35,7 +35,7 @@ export default function Billing() {
           <div className="flex items-center">
             <div className="bg-yellow-500 rounded-lg p-3 text-white text-2xl mr-4">⏳</div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">${pendingPayments}</p>
+              <p className="text-2xl font-bold text-gray-900">€{pendingPayments}</p>
               <p className="text-sm text-gray-600">Pending Payments</p>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function Billing() {
                   <td className="font-mono">{invoice.id}</td>
                   <td className="font-medium">{invoice.customer}</td>
                   <td>{invoice.date}</td>
-                  <td className="font-bold">${invoice.amount}</td>
+                  <td className="font-bold">€{invoice.amount}</td>
                   <td>
                     <span className={`badge ${
                       invoice.status === 'paid' ? 'badge-green' : 'badge-yellow'

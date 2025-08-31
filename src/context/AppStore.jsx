@@ -18,101 +18,184 @@ export function AppStoreProvider({ children }) {
   const [vehicles, setVehicles] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
+  // Safe localStorage utility functions
+  const safeLocalStorage = {
+    getItem: (key) => {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.warn('localStorage access failed, using sessionStorage fallback:', error);
+        try {
+          return sessionStorage.getItem(key);
+        } catch (sessionError) {
+          console.warn('sessionStorage access also failed:', sessionError);
+          return null;
+        }
+      }
+    },
+    setItem: (key, value) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        console.warn('localStorage write failed, using sessionStorage fallback:', error);
+        try {
+          sessionStorage.setItem(key, value);
+        } catch (sessionError) {
+          console.warn('sessionStorage write also failed:', sessionError);
+        }
+      }
+    },
+    removeItem: (key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn('localStorage remove failed, using sessionStorage fallback:', error);
+        try {
+          sessionStorage.removeItem(key);
+        } catch (sessionError) {
+          console.warn('sessionStorage remove also failed:', sessionError);
+        }
+      }
+    }
+  };
+
   // Load data from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
+    const storedUser = safeLocalStorage.getItem("currentUser");
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.warn('Failed to parse stored user data:', error);
+        safeLocalStorage.removeItem("currentUser");
+      }
     }
 
-    const storedBookings = localStorage.getItem("bookings");
+    const storedBookings = safeLocalStorage.getItem("bookings");
     if (storedBookings) {
-      setBookings(JSON.parse(storedBookings));
+      try {
+        setBookings(JSON.parse(storedBookings));
+      } catch (error) {
+        console.warn('Failed to parse stored bookings data:', error);
+        initializeBookings();
+      }
     } else {
-      // Initialize with sample data
-      const sampleBookings = [
-        {
-          id: 1,
-          customer: "John Doe",
-          pickup: "123 Main St",
-          destination: "456 Oak Ave",
-          date: "2024-01-15",
-          time: "09:00",
-          status: "confirmed",
-          driver: "Mike Johnson",
-          vehicle: "Toyota Camry"
-        },
-        {
-          id: 2,
-          customer: "Jane Smith",
-          pickup: "789 Pine St",
-          destination: "321 Elm St",
-          date: "2024-01-16",
-          time: "14:30",
-          status: "pending",
-          driver: "Sarah Wilson",
-          vehicle: "Honda Accord"
-        }
-      ];
-      setBookings(sampleBookings);
-      localStorage.setItem("bookings", JSON.stringify(sampleBookings));
+      initializeBookings();
     }
 
-    const storedCustomers = localStorage.getItem("customers");
+    const storedCustomers = safeLocalStorage.getItem("customers");
     if (storedCustomers) {
-      setCustomers(JSON.parse(storedCustomers));
+      try {
+        setCustomers(JSON.parse(storedCustomers));
+      } catch (error) {
+        console.warn('Failed to parse stored customers data:', error);
+        initializeCustomers();
+      }
     } else {
-      const sampleCustomers = [
-        { id: 1, name: "John Doe", email: "john@example.com", phone: "555-0101", totalBookings: 15 },
-        { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "555-0102", totalBookings: 8 },
-        { id: 3, name: "Bob Johnson", email: "bob@example.com", phone: "555-0103", totalBookings: 22 }
-      ];
-      setCustomers(sampleCustomers);
-      localStorage.setItem("customers", JSON.stringify(sampleCustomers));
+      initializeCustomers();
     }
 
-    const storedDrivers = localStorage.getItem("drivers");
+    const storedDrivers = safeLocalStorage.getItem("drivers");
     if (storedDrivers) {
-      setDrivers(JSON.parse(storedDrivers));
+      try {
+        setDrivers(JSON.parse(storedDrivers));
+      } catch (error) {
+        console.warn('Failed to parse stored drivers data:', error);
+        initializeDrivers();
+      }
     } else {
-      const sampleDrivers = [
-        { id: 1, name: "Mike Johnson", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
-        { id: 2, name: "Sarah Wilson", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
-        { id: 3, name: "Tom Brown", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
-      ];
-      setDrivers(sampleDrivers);
-      localStorage.setItem("drivers", JSON.stringify(sampleDrivers));
+      initializeDrivers();
     }
 
-    const storedVehicles = localStorage.getItem("vehicles");
+    const storedVehicles = safeLocalStorage.getItem("vehicles");
     if (storedVehicles) {
-      setVehicles(JSON.parse(storedVehicles));
+      try {
+        setVehicles(JSON.parse(storedVehicles));
+      } catch (error) {
+        console.warn('Failed to parse stored vehicles data:', error);
+        initializeVehicles();
+      }
     } else {
-      const sampleVehicles = [
-        { id: 1, make: "Toyota", model: "Camry", year: 2022, license: "ABC123", status: "active", driver: "Mike Johnson" },
-        { id: 2, make: "Honda", model: "Accord", year: 2021, license: "XYZ789", status: "active", driver: "Sarah Wilson" },
-        { id: 3, make: "Ford", model: "Fusion", year: 2020, license: "DEF456", status: "maintenance", driver: "Tom Brown" }
-      ];
-      setVehicles(sampleVehicles);
-      localStorage.setItem("vehicles", JSON.stringify(sampleVehicles));
+      initializeVehicles();
     }
   }, []);
 
+  const initializeBookings = () => {
+    const sampleBookings = [
+      {
+        id: 1,
+        customer: "John Doe",
+        pickup: "123 Main St",
+        destination: "456 Oak Ave",
+        date: "2024-01-15",
+        time: "09:00",
+        status: "confirmed",
+        driver: "Mike Johnson",
+        vehicle: "Toyota Camry",
+        type: "priority"
+      },
+      {
+        id: 2,
+        customer: "Jane Smith",
+        pickup: "789 Pine St",
+        destination: "321 Elm St",
+        date: "2024-01-16",
+        time: "14:30",
+        status: "pending",
+        driver: "Sarah Wilson",
+        vehicle: "Honda Accord",
+        type: "outsourced"
+      }
+    ];
+    setBookings(sampleBookings);
+    safeLocalStorage.setItem("bookings", JSON.stringify(sampleBookings));
+  };
+
+  const initializeCustomers = () => {
+    const sampleCustomers = [
+      { id: 1, name: "John Doe", email: "john@example.com", phone: "555-0101", totalBookings: 15 },
+      { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "555-0102", totalBookings: 8 },
+      { id: 3, name: "Bob Johnson", email: "bob@example.com", phone: "555-0103", totalBookings: 22 }
+    ];
+    setCustomers(sampleCustomers);
+    safeLocalStorage.setItem("customers", JSON.stringify(sampleCustomers));
+  };
+
+  const initializeDrivers = () => {
+    const sampleDrivers = [
+      { id: 1, name: "Mike Johnson", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
+      { id: 2, name: "Sarah Wilson", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
+      { id: 3, name: "Tom Brown", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
+    ];
+    setDrivers(sampleDrivers);
+    safeLocalStorage.setItem("drivers", JSON.stringify(sampleDrivers));
+  };
+
+  const initializeVehicles = () => {
+    const sampleVehicles = [
+      { id: 1, make: "Toyota", model: "Camry", year: 2022, license: "ABC123", status: "active", driver: "Mike Johnson" },
+      { id: 2, make: "Honda", model: "Accord", year: 2021, license: "XYZ789", status: "active", driver: "Sarah Wilson" },
+      { id: 3, make: "Ford", model: "Fusion", year: 2020, license: "DEF456", status: "maintenance", driver: "Tom Brown" }
+    ];
+    setVehicles(sampleVehicles);
+    safeLocalStorage.setItem("vehicles", JSON.stringify(sampleVehicles));
+  };
+
   const login = (user) => {
     setCurrentUser(user);
-    localStorage.setItem("currentUser", JSON.stringify(user));
+    safeLocalStorage.setItem("currentUser", JSON.stringify(user));
   };
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem("currentUser");
+    safeLocalStorage.removeItem("currentUser");
   };
 
   const addBooking = (booking) => {
-    const newBooking = { ...booking, id: Date.now() };
+    const newBooking = { ...booking, id: Date.now(), type: booking.type || "priority" };
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
   };
 
   const updateBooking = (id, updates) => {
@@ -120,20 +203,20 @@ export function AppStoreProvider({ children }) {
       booking.id === id ? { ...booking, ...updates } : booking
     );
     setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
   };
 
   const deleteBooking = (id) => {
     const updatedBookings = bookings.filter(booking => booking.id !== id);
     setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
   };
 
   const addCustomer = (customer) => {
     const newCustomer = { ...customer, id: Date.now(), totalBookings: 0 };
     const updatedCustomers = [...customers, newCustomer];
     setCustomers(updatedCustomers);
-    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
+    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
   };
 
   const updateCustomer = (id, updates) => {
@@ -141,20 +224,20 @@ export function AppStoreProvider({ children }) {
       customer.id === id ? { ...customer, ...updates } : customer
     );
     setCustomers(updatedCustomers);
-    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
+    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
   };
 
   const deleteCustomer = (id) => {
     const updatedCustomers = customers.filter(customer => customer.id !== id);
     setCustomers(updatedCustomers);
-    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
+    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
   };
 
   const addDriver = (driver) => {
     const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
     const updatedDrivers = [...drivers, newDriver];
     setDrivers(updatedDrivers);
-    localStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const updateDriver = (id, updates) => {
@@ -162,20 +245,20 @@ export function AppStoreProvider({ children }) {
       driver.id === id ? { ...driver, ...updates } : driver
     );
     setDrivers(updatedDrivers);
-    localStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const deleteDriver = (id) => {
     const updatedDrivers = drivers.filter(driver => driver.id !== id);
     setDrivers(updatedDrivers);
-    localStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const addVehicle = (vehicle) => {
     const newVehicle = { ...vehicle, id: Date.now(), status: "active" };
     const updatedVehicles = [...vehicles, newVehicle];
     setVehicles(updatedVehicles);
-    localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
   };
 
   const updateVehicle = (id, updates) => {
@@ -183,13 +266,13 @@ export function AppStoreProvider({ children }) {
       vehicle.id === id ? { ...vehicle, ...updates } : vehicle
     );
     setVehicles(updatedVehicles);
-    localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
   };
 
   const deleteVehicle = (id) => {
     const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== id);
     setVehicles(updatedVehicles);
-    localStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
   };
 
   const addNotification = (notification) => {
@@ -201,7 +284,7 @@ export function AppStoreProvider({ children }) {
     };
     const updatedNotifications = [newNotification, ...notifications];
     setNotifications(updatedNotifications);
-    localStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
   };
 
   const markNotificationRead = (id) => {
@@ -209,7 +292,7 @@ export function AppStoreProvider({ children }) {
       notification.id === id ? { ...notification, read: true } : notification
     );
     setNotifications(updatedNotifications);
-    localStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
   };
 
   const value = {

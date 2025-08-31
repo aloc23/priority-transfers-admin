@@ -63,10 +63,10 @@ export default function History() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">$</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">€</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                ${completedBookings.filter(b => b.status === "completed").length * 50}
+                €{completedBookings.filter(b => b.status === "completed").length * 45}
               </p>
               <p className="text-sm text-gray-600">Total Revenue</p>
             </div>
@@ -134,7 +134,7 @@ export default function History() {
                       </span>
                     </td>
                     <td className="font-bold">
-                      {booking.status === 'completed' ? '$50' : '-'}
+                      {booking.status === 'completed' ? '€45' : '-'}
                     </td>
                     <td>
                       <div className="flex gap-2">

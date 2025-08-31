@@ -20,7 +20,7 @@ export default function Settings() {
       allowOnlineBooking: true
     },
     billing: {
-      currency: "USD",
+      currency: "EUR",
       taxRate: "8.5",
       paymentTerms: "30"
     }
@@ -34,7 +34,7 @@ export default function Settings() {
     { id: "profile", label: "Company Profile", icon: "◪" },
     { id: "notifications", label: "Notifications", icon: "◉" },
     { id: "booking", label: "Booking Settings", icon: "□" },
-    { id: "billing", label: "Billing & Payment", icon: "$" },
+    { id: "billing", label: "Billing & Payment", icon: "€" },
     { id: "users", label: "User Management", icon: "◎" },
     { id: "integrations", label: "Integrations", icon: "⚙" }
   ];
