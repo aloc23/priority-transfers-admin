@@ -35,30 +35,30 @@ npm run build
 
 ### GitHub Pages
 
-This app is configured for GitHub Pages deployment with hash-based routing. To deploy:
+This application is configured for GitHub Pages deployment using the `/docs` folder approach with hash-based routing for compatibility. To deploy:
 
 1. **Build the project**:
    ```bash
    npm run build
    ```
 
-2. **Deploy to GitHub Pages**:
+2. **Configure GitHub Pages**:
    - Push your changes to the main branch
-   - Go to your repository settings on GitHub
-   - Navigate to "Pages" in the left sidebar
+   - Navigate to your repository settings on GitHub
+   - Select "Pages" from the left sidebar
    - Under "Source", select "Deploy from a branch"
-   - Choose "main" branch and "/ (root)" folder
+   - Choose "main" branch and "/docs" folder
    - Click "Save"
 
-3. **Access your app**:
-   - Your app will be available at: `https://[username].github.io/[repository-name]/`
+3. **Access your application**:
+   - Your application will be available at: `https://[username].github.io/[repository-name]/`
    - Example: `https://aloc23.github.io/priority-transfers-admin/`
 
-**Note**: This app uses HashRouter for GitHub Pages compatibility, so URLs will include a `#` symbol (e.g., `/#/dashboard`).
+**Note**: This application uses HashRouter for GitHub Pages compatibility. URLs will include a hash symbol (e.g., `/#/dashboard`).
 
 ### Other Platforms
 
-You can also host on [Vercel](https://vercel.com/) or [Netlify](https://netlify.com/) for better routing support without hash symbols.
+You can also deploy on [Vercel](https://vercel.com/) or [Netlify](https://netlify.com/) for enhanced routing support without hash symbols.
 
 ## License
 

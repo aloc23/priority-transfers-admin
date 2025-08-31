@@ -25,7 +25,7 @@ function Shell() {
             <img src="/src/assets/logo.svg" alt="logo" className="w-8 h-8 rounded" />
             {sidebarOpen && <span className="font-bold text-lg">Priority</span>}
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn btn-outline px-2 py-1">☰</button>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn btn-outline px-2 py-1">≡</button>
         </div>
         <nav>
           <ul className="space-y-1">
