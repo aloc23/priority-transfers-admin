@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
 import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
