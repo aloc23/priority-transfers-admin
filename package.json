@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "date-fns": "^3.0.0",
+    "moment": "^2.30.1",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.0",
     "react-big-calendar": "^1.5.0",

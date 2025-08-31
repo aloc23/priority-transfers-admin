@@ -21,3 +21,36 @@ input, select { @apply border rounded px-3 py-2 w-full; }
 label { @apply text-sm font-semibold; }
 .modal-backdrop { @apply fixed inset-0 bg-black/40 flex items-center justify-center; }
 .modal { @apply bg-white rounded-xl shadow-xl w-full max-w-2xl p-4; }
+
+/* Calendar styling */
+.rbc-calendar {
+  @apply bg-white rounded-lg;
+}
+
+.rbc-header {
+  @apply bg-gray-50 font-semibold text-gray-700 border-b;
+}
+
+.rbc-event {
+  @apply rounded text-white font-medium;
+}
+
+.rbc-selected {
+  @apply bg-indigo-600 border-indigo-700;
+}
+
+.rbc-today {
+  @apply bg-blue-50;
+}
+
+.rbc-toolbar {
+  @apply mb-4 flex justify-between items-center;
+}
+
+.rbc-toolbar button {
+  @apply px-3 py-1 border rounded hover:bg-gray-50 text-sm;
+}
+
+.rbc-toolbar .rbc-active {
+  @apply bg-indigo-600 text-white border-indigo-600;
+}
