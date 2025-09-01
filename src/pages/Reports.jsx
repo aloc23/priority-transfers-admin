@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { exportReportData, exportToCSV, exportToPDF } from "../utils/export";
 import { 
   RevenueIcon, 
   StarIcon, 
@@ -19,13 +20,96 @@ export default function Reports() {
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
 
-  const generateReport = (type) => {
-    alert(`Generating ${type} report...`);
+  const generateReport = (type, format = 'csv') => {
+    let reportData = [];
+    
+    switch (type) {
+      case 'revenue':
+        reportData = bookings.map(booking => ({
+          date: booking.date,
+          customer: booking.customer,
+          amount: EURO_PRICE_PER_BOOKING,
+          type: booking.type || 'priority',
+          status: booking.status
+        }));
+        break;
+        
+      case 'driver':
+        reportData = drivers.map(driver => {
+          const driverBookings = bookings.filter(b => b.driver === driver.name);
+          return {
+            driver: driver.name,
+            totalBookings: driverBookings.length,
+            completed: driverBookings.filter(b => b.status === 'completed').length,
+            rating: driver.rating || 4.5,
+            revenue: driverBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING
+          };
+        });
+        break;
+        
+      case 'customer':
+        reportData = customers.map(customer => {
+          const customerBookings = bookings.filter(b => b.customer === customer.name);
+          const lastBooking = customerBookings.length > 0 
+            ? customerBookings[customerBookings.length - 1].date 
+            : 'Never';
+          return {
+            customer: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            totalBookings: customerBookings.length,
+            lastBooking,
+            totalSpent: customerBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING,
+            status: customer.status || 'active'
+          };
+        });
+        break;
+        
+      case 'booking':
+        reportData = filteredBookings.map(booking => ({
+          date: booking.date,
+          time: booking.time,
+          customer: booking.customer,
+          pickup: booking.pickup,
+          destination: booking.destination,
+          driver: booking.driver,
+          vehicle: booking.vehicle,
+          status: booking.status,
+          type: booking.type || 'priority',
+          amount: EURO_PRICE_PER_BOOKING
+        }));
+        break;
+        
+      case 'fleet':
+        reportData = vehicles.map(vehicle => {
+          const vehicleBookings = bookings.filter(b => b.vehicle === `${vehicle.make} ${vehicle.model}`);
+          return {
+            vehicle: `${vehicle.make} ${vehicle.model}`,
+            year: vehicle.year,
+            license: vehicle.license,
+            driver: vehicle.driver || 'Unassigned',
+            status: vehicle.status,
+            totalBookings: vehicleBookings.length,
+            utilization: vehicleBookings.length > 0 ? `${vehicleBookings.length * 10}%` : '0%'
+          };
+        });
+        break;
+        
+      default:
+        reportData = filteredBookings;
+    }
+    
+    if (format === 'pdf') {
+      exportToPDF(reportData, `${type}-report`, `${type.charAt(0).toUpperCase() + type.slice(1)} Report`);
+    } else {
+      exportReportData(type, reportData);
+    }
   };
 
   const viewReport = (type) => {
     setSelectedReport(type);
-    alert(`Viewing ${type} report...`);
+    // Instead of alert, we could show a modal with report preview
+    alert(`Viewing ${type} report... (Report preview could be implemented here)`);
   };
 
   // Filter bookings based on selected types
@@ -197,19 +281,28 @@ export default function Reports() {
                 <p className="text-gray-600 mb-4">{report.description}</p>
                 <div className="space-y-2">
                   <button 
-                    onClick={() => viewReport(report.title)}
+                    onClick={() => viewReport(report.id)}
                     className="btn btn-outline w-full hover:shadow-sm transition-shadow"
                   >
                     <ViewIcon className="w-4 h-4 mr-2" />
                     View Report
                   </button>
-                  <button 
-                    onClick={() => generateReport(report.title)}
-                    className="btn btn-primary w-full hover:shadow-sm transition-shadow"
-                  >
-                    <DownloadIcon className="w-4 h-4 mr-2" />
-                    Generate Report
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => generateReport(report.id, 'csv')}
+                      className="btn btn-primary flex-1 hover:shadow-sm transition-shadow"
+                    >
+                      <DownloadIcon className="w-4 h-4 mr-2" />
+                      CSV
+                    </button>
+                    <button 
+                      onClick={() => generateReport(report.id, 'pdf')}
+                      className="btn bg-red-600 text-white hover:bg-red-700 flex-1 hover:shadow-sm transition-shadow"
+                    >
+                      <DownloadIcon className="w-4 h-4 mr-2" />
+                      PDF
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
