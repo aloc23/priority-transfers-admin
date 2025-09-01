@@ -17,6 +17,8 @@ export function AppStoreProvider({ children }) {
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [activityHistory, setActivityHistory] = useState([]);
 
   // Safe localStorage utility functions
   const safeLocalStorage = {
@@ -118,6 +120,28 @@ export function AppStoreProvider({ children }) {
     } else {
       initializeVehicles();
     }
+
+    const storedInvoices = safeLocalStorage.getItem("invoices");
+    if (storedInvoices) {
+      try {
+        setInvoices(JSON.parse(storedInvoices));
+      } catch (error) {
+        console.warn('Failed to parse stored invoices data:', error);
+        initializeInvoices();
+      }
+    } else {
+      initializeInvoices();
+    }
+
+    const storedActivityHistory = safeLocalStorage.getItem("activityHistory");
+    if (storedActivityHistory) {
+      try {
+        setActivityHistory(JSON.parse(storedActivityHistory));
+      } catch (error) {
+        console.warn('Failed to parse stored activity history:', error);
+        setActivityHistory([]);
+      }
+    }
   }, []);
 
   const initializeBookings = () => {
@@ -181,6 +205,61 @@ export function AppStoreProvider({ children }) {
     safeLocalStorage.setItem("vehicles", JSON.stringify(sampleVehicles));
   };
 
+  const initializeInvoices = () => {
+    // Initialize with some sample invoices based on completed bookings
+    const sampleInvoices = [];
+    setInvoices(sampleInvoices);
+    safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
+  };
+
+  const addActivityLog = (activity) => {
+    const newActivity = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      ...activity
+    };
+    const updatedHistory = [newActivity, ...activityHistory].slice(0, 100); // Keep last 100 activities
+    setActivityHistory(updatedHistory);
+    safeLocalStorage.setItem("activityHistory", JSON.stringify(updatedHistory));
+  };
+
+  const generateInvoiceFromBooking = (booking) => {
+    const invoice = {
+      id: `INV-${Date.now()}`,
+      bookingId: booking.id,
+      customer: booking.customer,
+      customerEmail: customers.find(c => c.name === booking.customer)?.email || '',
+      date: new Date().toISOString().split('T')[0],
+      serviceDate: booking.date,
+      pickup: booking.pickup,
+      destination: booking.destination,
+      amount: 45, // Using EURO_PRICE_PER_BOOKING from currency utils
+      status: 'pending',
+      type: booking.type || 'priority',
+      editable: true,
+      items: [
+        {
+          description: `Transfer service from ${booking.pickup} to ${booking.destination}`,
+          quantity: 1,
+          rate: 45,
+          amount: 45
+        }
+      ]
+    };
+    
+    const updatedInvoices = [...invoices, invoice];
+    setInvoices(updatedInvoices);
+    safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+    
+    addActivityLog({
+      type: 'invoice_generated',
+      description: `Invoice ${invoice.id} generated for ${booking.customer}`,
+      relatedId: invoice.id
+    });
+    
+    return invoice;
+  };
+
   const login = (user) => {
     setCurrentUser(user);
     safeLocalStorage.setItem("currentUser", JSON.stringify(user));
@@ -206,11 +285,28 @@ export function AppStoreProvider({ children }) {
 
   const updateBooking = (id, updates) => {
     try {
+      const oldBooking = bookings.find(booking => booking.id === id);
+      const updatedBooking = { ...oldBooking, ...updates };
       const updatedBookings = bookings.map(booking => 
-        booking.id === id ? { ...booking, ...updates } : booking
+        booking.id === id ? updatedBooking : booking
       );
       setBookings(updatedBookings);
       safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      
+      addActivityLog({
+        type: 'booking_updated',
+        description: `Booking updated for ${updatedBooking.customer}`,
+        relatedId: id
+      });
+      
+      // Auto-generate invoice if booking status changed to completed and no invoice exists
+      if (updates.status === 'completed' && oldBooking.status !== 'completed') {
+        const existingInvoice = invoices.find(inv => inv.bookingId === id);
+        if (!existingInvoice) {
+          generateInvoiceFromBooking(updatedBooking);
+        }
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to update booking:', error);
@@ -313,6 +409,82 @@ export function AppStoreProvider({ children }) {
     safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
   };
 
+  const updateInvoice = (id, updates) => {
+    try {
+      const updatedInvoices = invoices.map(invoice => 
+        invoice.id === id ? { ...invoice, ...updates } : invoice
+      );
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'invoice_updated',
+        description: `Invoice ${id} updated`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update invoice:', error);
+      return { success: false, error: 'Failed to update invoice' };
+    }
+  };
+
+  const cancelInvoice = (id) => {
+    try {
+      const updatedInvoices = invoices.map(invoice => 
+        invoice.id === id ? { ...invoice, status: 'cancelled', editable: false } : invoice
+      );
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'invoice_cancelled',
+        description: `Invoice ${id} cancelled`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to cancel invoice:', error);
+      return { success: false, error: 'Failed to cancel invoice' };
+    }
+  };
+
+  const sendInvoice = (id, recipientEmail) => {
+    try {
+      const updatedInvoices = invoices.map(invoice => 
+        invoice.id === id ? { 
+          ...invoice, 
+          status: 'sent', 
+          sentDate: new Date().toISOString(),
+          sentTo: recipientEmail 
+        } : invoice
+      );
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'invoice_sent',
+        description: `Invoice ${id} sent to ${recipientEmail}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to send invoice:', error);
+      return { success: false, error: 'Failed to send invoice' };
+    }
+  };
+
+  const resendInvoice = (id) => {
+    const invoice = invoices.find(inv => inv.id === id);
+    if (invoice) {
+      return sendInvoice(id, invoice.customerEmail);
+    }
+    return { success: false, error: 'Invoice not found' };
+  };
+
   const value = {
     currentUser,
     bookings,
@@ -320,6 +492,8 @@ export function AppStoreProvider({ children }) {
     drivers,
     vehicles,
     notifications,
+    invoices,
+    activityHistory,
     login,
     logout,
     addBooking,
@@ -335,7 +509,13 @@ export function AppStoreProvider({ children }) {
     updateVehicle,
     deleteVehicle,
     addNotification,
-    markNotificationRead
+    markNotificationRead,
+    generateInvoiceFromBooking,
+    updateInvoice,
+    cancelInvoice,
+    sendInvoice,
+    resendInvoice,
+    addActivityLog
   };
 
   return (

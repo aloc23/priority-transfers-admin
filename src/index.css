@@ -5,8 +5,8 @@
 html, body, #root { height: 100%; }
 body { @apply bg-gray-100 text-gray-900; }
 
-.card { @apply bg-white rounded-2xl shadow p-4 transition-transform hover:-translate-y-1; }
-.btn { @apply inline-flex items-center justify-center rounded-lg px-3 py-2 transition-colors transition-transform hover:-translate-y-0.5; }
+.card { @apply bg-white rounded-2xl shadow p-4 transition-all duration-200 hover:shadow-lg; }
+.btn { @apply inline-flex items-center justify-center rounded-lg px-3 py-2 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5; }
 .btn-primary { @apply bg-indigo-600 text-white hover:bg-indigo-700; }
 .btn-outline { @apply border border-gray-300 hover:bg-gray-50; }
 .badge { @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium; }
@@ -17,7 +17,8 @@ body { @apply bg-gray-100 text-gray-900; }
 .table { @apply w-full border-collapse; }
 .table th { @apply text-left p-2 bg-gray-100; }
 .table td { @apply p-2 border-b; }
-input, select { @apply border rounded px-3 py-2 w-full; }
+.table tbody tr:hover { @apply bg-gray-50; }
+input, select { @apply border rounded px-3 py-2 w-full transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500; }
 label { @apply text-sm font-semibold; }
 .modal-backdrop { @apply fixed inset-0 bg-black/40 flex items-center justify-center; }
 .modal { @apply bg-white rounded-xl shadow-xl w-full max-w-2xl p-4; }
