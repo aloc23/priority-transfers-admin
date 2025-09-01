@@ -10,8 +10,10 @@ import {
 } from "../components/Icons";
 
 export default function Settings() {
-  const { currentUser } = useAppStore();
+  const { currentUser, clearDemoData, loadRealData, resetToDemo } = useAppStore();
   const [activeTab, setActiveTab] = useState("profile");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const [settings, setSettings] = useState({
     companyName: "Priority Transfers",
     email: currentUser?.email || "",
@@ -38,11 +40,32 @@ export default function Settings() {
     alert(`${section} settings saved successfully!`);
   };
 
+  const handleDataOperation = async (operation, operationName) => {
+    setIsLoading(true);
+    setMessage("");
+    
+    try {
+      const result = await operation();
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message });
+      } else {
+        setMessage({ type: 'error', text: result.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: `Failed to ${operationName}` });
+    } finally {
+      setIsLoading(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
   const tabs = [
     { id: "profile", label: "Profile & Notifications", icon: CustomerIcon },
     { id: "booking", label: "Booking Settings", icon: SettingsListIcon },
     { id: "billing", label: "Billing & Payment", icon: RevenueIcon },
     { id: "users", label: "User Management", icon: BookingIcon },
+    { id: "data", label: "Data Management", icon: SettingsIcon },
     { id: "integrations", label: "Integrations", icon: SettingsIcon }
   ];
 
@@ -350,6 +373,102 @@ export default function Settings() {
                       <p className="text-sm text-gray-600">SMS notifications</p>
                     </div>
                     <button className="btn btn-outline">Configure</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "data" && (
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4">Data Management</h2>
+              
+              {message && (
+                <div className={`mb-4 p-4 rounded-lg ${
+                  message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 
+                  'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <div className="border rounded-lg p-6 bg-gradient-to-br from-slate-50 to-granite-50">
+                  <h3 className="font-semibold text-lg mb-2 text-slate-800">Demo Data Management</h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Manage your application data for testing and production use. Always maintain demo login for testing purposes.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4 bg-white">
+                      <h4 className="font-medium text-slate-800 mb-2">Clear Demo Data</h4>
+                      <p className="text-sm text-slate-600 mb-3">Remove all demo data from the system</p>
+                      <button 
+                        onClick={() => handleDataOperation(clearDemoData, 'clear demo data')}
+                        disabled={isLoading}
+                        className="btn btn-outline w-full text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        {isLoading ? 'Clearing...' : 'Clear Demo Data'}
+                      </button>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 bg-white">
+                      <h4 className="font-medium text-slate-800 mb-2">Load Real Data</h4>
+                      <p className="text-sm text-slate-600 mb-3">Load production-ready data sample</p>
+                      <button 
+                        onClick={() => handleDataOperation(loadRealData, 'load real data')}
+                        disabled={isLoading}
+                        className="btn btn-primary w-full"
+                      >
+                        {isLoading ? 'Loading...' : 'Load Real Data'}
+                      </button>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 bg-white">
+                      <h4 className="font-medium text-slate-800 mb-2">Reset to Demo</h4>
+                      <p className="text-sm text-slate-600 mb-3">Restore original demo data</p>
+                      <button 
+                        onClick={() => handleDataOperation(resetToDemo, 'reset to demo')}
+                        disabled={isLoading}
+                        className="btn btn-outline w-full text-amber-600 border-amber-300 hover:bg-amber-50"
+                      >
+                        {isLoading ? 'Resetting...' : 'Reset to Demo'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-6">
+                  <h3 className="font-semibold text-lg mb-4 text-slate-800">Data Export & Backup</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button className="btn btn-outline">
+                      Export All Data (CSV)
+                    </button>
+                    <button className="btn btn-outline">
+                      Create Data Backup
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-6">
+                  <h3 className="font-semibold text-lg mb-4 text-slate-800">System Information</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-slate-600">Data Storage:</span>
+                      <span className="ml-2 text-slate-800">Local Storage</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-600">Environment:</span>
+                      <span className="ml-2 text-slate-800">Development</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-600">Version:</span>
+                      <span className="ml-2 text-slate-800">1.0.0</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-600">Last Updated:</span>
+                      <span className="ml-2 text-slate-800">{new Date().toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
