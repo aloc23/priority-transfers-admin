@@ -20,7 +20,8 @@ export default function Billing() {
     updateInvoice, 
     cancelInvoice, 
     sendInvoice, 
-    generateInvoiceFromBooking 
+    generateInvoiceFromBooking,
+    addInvoice
   } = useAppStore();
   
   const [showModal, setShowModal] = useState(false);
@@ -59,13 +60,31 @@ export default function Billing() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const totalAmount = formData.items.reduce((sum, item) => sum + item.amount, 0);
+    
     if (editingInvoice) {
-      const totalAmount = formData.items.reduce((sum, item) => sum + item.amount, 0);
+      // Update existing invoice
       updateInvoice(editingInvoice.id, {
         ...formData,
         amount: totalAmount
       });
+    } else {
+      // Create new independent invoice
+      const result = addInvoice({
+        customer: formData.customer,
+        customerEmail: formData.customerEmail,
+        amount: totalAmount,
+        items: formData.items,
+        description: formData.items[0]?.description || 'Service provided',
+        type: 'priority' // Default to priority
+      });
+      
+      if (!result.success) {
+        alert('Failed to create invoice: ' + result.error);
+        return;
+      }
     }
+    
     setShowModal(false);
     setEditingInvoice(null);
     resetForm();
@@ -113,13 +132,25 @@ export default function Billing() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Billing & Invoices</h1>
-        <button 
-          onClick={handleGenerateInvoice}
-          className="btn btn-primary hover:shadow-md transition-shadow"
-        >
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Generate Invoice
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleGenerateInvoice}
+            className="btn btn-outline hover:shadow-md transition-shadow"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Generate from Booking
+          </button>
+          <button 
+            onClick={() => {
+              setEditingInvoice(null);
+              setShowModal(true);
+            }}
+            className="btn btn-primary hover:shadow-md transition-shadow"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            New Invoice
+          </button>
+        </div>
       </div>
 
       {/* Revenue Stats */}
@@ -312,7 +343,9 @@ export default function Billing() {
         <div className="modal-backdrop">
           <div className="modal max-w-4xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Edit Invoice - {editingInvoice?.id}</h2>
+              <h2 className="text-xl font-bold">
+                {editingInvoice ? `Edit Invoice - ${editingInvoice.id}` : 'Create New Invoice'}
+              </h2>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -404,7 +437,7 @@ export default function Billing() {
 
               <div className="flex gap-2 pt-4">
                 <button type="submit" className="btn btn-primary">
-                  Update Invoice
+                  {editingInvoice ? 'Update Invoice' : 'Create Invoice'}
                 </button>
                 <button
                   type="button"
