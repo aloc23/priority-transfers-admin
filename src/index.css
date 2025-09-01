@@ -50,6 +50,142 @@ label { @apply text-sm font-semibold text-gray-700; }
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
 }
 
+/* Mobile FAB Styles */
+.fab-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.fab-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+}
+
+.fab-main {
+  @apply w-14 h-14 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full shadow-lg hover:shadow-xl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.fab-main:hover {
+  transform: scale(1.1);
+  @apply from-indigo-700 to-blue-700;
+}
+
+.fab-main.fab-open {
+  transform: rotate(45deg) scale(1.1);
+}
+
+.fab-actions {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.fab-action {
+  @apply w-12 h-12 text-white rounded-full shadow-lg flex items-center justify-center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0) translateY(0);
+  animation: fabActionIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  position: relative;
+  overflow: visible;
+}
+
+.fab-action:hover {
+  transform: scale(1.1) translateY(var(--translate-y, 0));
+}
+
+.fab-action-label {
+  position: absolute;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.fab-action:hover .fab-action-label {
+  opacity: 1;
+}
+
+@keyframes fabActionIn {
+  from {
+    transform: scale(0) translateY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(var(--translate-y, 0));
+    opacity: 1;
+  }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+  
+  .sidebar-mobile-hidden {
+    transform: translateX(-100%);
+  }
+  
+  .modal {
+    @apply w-full mx-4 max-w-none;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .btn {
+    @apply px-3 py-2 text-sm;
+  }
+  
+  .card {
+    @apply p-4;
+  }
+}
+
+/* Enhanced mobile navigation */
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+}
+}
+
 .rbc-event.outsourced {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
 }
