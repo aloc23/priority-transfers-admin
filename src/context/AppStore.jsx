@@ -260,6 +260,48 @@ export function AppStoreProvider({ children }) {
     return invoice;
   };
 
+  const addInvoice = (invoiceData) => {
+    try {
+      const invoice = {
+        id: `INV-${Date.now()}`,
+        bookingId: null, // Independent invoice not linked to a booking
+        customer: invoiceData.customer,
+        customerEmail: invoiceData.customerEmail,
+        date: new Date().toISOString().split('T')[0],
+        serviceDate: invoiceData.serviceDate || new Date().toISOString().split('T')[0],
+        pickup: invoiceData.pickup || '',
+        destination: invoiceData.destination || '',
+        amount: invoiceData.amount,
+        status: 'pending',
+        type: invoiceData.type || 'priority',
+        editable: true,
+        items: invoiceData.items || [
+          {
+            description: invoiceData.description || 'Service provided',
+            quantity: 1,
+            rate: invoiceData.amount,
+            amount: invoiceData.amount
+          }
+        ]
+      };
+      
+      const updatedInvoices = [...invoices, invoice];
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'invoice_created',
+        description: `Independent invoice ${invoice.id} created for ${invoiceData.customer}`,
+        relatedId: invoice.id
+      });
+      
+      return { success: true, invoice };
+    } catch (error) {
+      console.error('Failed to create invoice:', error);
+      return { success: false, error: 'Failed to create invoice' };
+    }
+  };
+
   const login = (user) => {
     setCurrentUser(user);
     safeLocalStorage.setItem("currentUser", JSON.stringify(user));
@@ -276,6 +318,24 @@ export function AppStoreProvider({ children }) {
       const updatedBookings = [...bookings, newBooking];
       setBookings(updatedBookings);
       safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      
+      // Update customer totalBookings count
+      const customerName = newBooking.customer;
+      const customer = customers.find(c => c.name === customerName);
+      if (customer) {
+        const updatedCustomers = customers.map(c => 
+          c.name === customerName ? { ...c, totalBookings: c.totalBookings + 1 } : c
+        );
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      }
+      
+      addActivityLog({
+        type: 'booking_created',
+        description: `New booking created for ${newBooking.customer}`,
+        relatedId: newBooking.id
+      });
+      
       return { success: true, booking: newBooking };
     } catch (error) {
       console.error('Failed to add booking:', error);
@@ -511,6 +571,7 @@ export function AppStoreProvider({ children }) {
     addNotification,
     markNotificationRead,
     generateInvoiceFromBooking,
+    addInvoice,
     updateInvoice,
     cancelInvoice,
     sendInvoice,

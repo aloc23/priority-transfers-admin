@@ -3,6 +3,16 @@ import { useAppStore } from "../context/AppStore";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { CalendarIcon, PlusIcon } from "../components/Icons";
+
+// Add TableIcon here since it's not in Icons.jsx yet  
+const TableIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3 3h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+    <line x1="3" y1="9" x2="21" y2="9"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+  </svg>
+);
 
 const localizer = momentLocalizer(moment);
 
@@ -103,14 +113,25 @@ export default function Schedule() {
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
-            className="btn btn-outline"
+            className="btn btn-outline flex items-center gap-2"
           >
-            {viewMode === 'table' ? '📅 Calendar View' : '📋 Table View'}
+            {viewMode === 'table' ? (
+              <>
+                <CalendarIcon className="w-4 h-4" />
+                Calendar View
+              </>
+            ) : (
+              <>
+                <TableIcon className="w-4 h-4" />
+                Table View
+              </>
+            )}
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="btn btn-primary"
+            className="btn btn-primary flex items-center gap-2"
           >
+            <PlusIcon className="w-4 h-4" />
             New Booking
           </button>
         </div>

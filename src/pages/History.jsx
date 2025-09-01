@@ -1,5 +1,6 @@
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { HistoryIcon, CheckIcon } from "../components/Icons";
 
 export default function History() {
   const { bookings } = useAppStore();
@@ -30,7 +31,9 @@ export default function History() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-blue-500 rounded-lg p-3 text-white text-2xl mr-4">📋</div>
+            <div className="bg-blue-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <HistoryIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{completedBookings.length}</p>
               <p className="text-sm text-gray-600">Total Historical</p>
@@ -40,7 +43,9 @@ export default function History() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">✅</div>
+            <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <CheckIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {completedBookings.filter(b => b.status === "completed").length}
@@ -96,7 +101,9 @@ export default function History() {
 
         {completedBookings.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
+            <div className="flex justify-center mb-4">
+              <HistoryIcon className="w-16 h-16 text-gray-400" />
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Historical Data</h3>
             <p className="text-gray-600">Completed and cancelled bookings will appear here.</p>
           </div>
