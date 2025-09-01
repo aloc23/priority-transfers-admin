@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import ManagementNav from "./components/ManagementNav";
 import MobileFAB from "./components/MobileFAB";
+import StatusNotification from "./components/StatusNotification";
 
 function AuthenticatedShell() {
   const { currentUser, logout } = useAppStore();
@@ -166,6 +167,9 @@ function AuthenticatedShell() {
       
       {/* Mobile FAB */}
       <MobileFAB />
+      
+      {/* Global Status Notifications */}
+      <StatusNotification />
     </div>
   );
 }

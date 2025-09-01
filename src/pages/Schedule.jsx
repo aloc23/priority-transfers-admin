@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
+import { useAutoSave } from "../utils/operationStatus";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -17,7 +18,7 @@ const TableIcon = ({ className = "w-4 h-4", ...props }) => (
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, showOperationStatus } = useAppStore();
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
@@ -34,26 +35,77 @@ export default function Schedule() {
     type: "priority" // New field for Priority vs Outsourced
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingBooking) {
-      updateBooking(editingBooking.id, formData);
-    } else {
-      addBooking(formData);
+  // Auto-save functionality for forms in progress
+  const autoSave = useAutoSave(async (data) => {
+    // Save draft to localStorage
+    const draftKey = editingBooking ? `booking-draft-${editingBooking.id}` : 'booking-draft-new';
+    localStorage.setItem(draftKey, JSON.stringify(data));
+    return { success: true };
+  });
+
+  // Load draft on component mount
+  useEffect(() => {
+    const draftKey = editingBooking ? `booking-draft-${editingBooking.id}` : 'booking-draft-new';
+    const draft = localStorage.getItem(draftKey);
+    if (draft && !editingBooking) {
+      try {
+        const draftData = JSON.parse(draft);
+        if (Object.values(draftData).some(v => v && v.trim !== '' && v.trim !== null)) {
+          if (confirm('You have an unsaved booking draft. Would you like to restore it?')) {
+            setFormData(draftData);
+            showOperationStatus('Draft restored successfully', 'success');
+          } else {
+            localStorage.removeItem(draftKey);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load draft:', error);
+      }
     }
-    setShowModal(false);
-    setEditingBooking(null);
-    setFormData({
-      customer: "",
-      pickup: "",
-      destination: "",
-      date: "",
-      time: "",
-      driver: "",
-      vehicle: "",
-      status: "pending",
-      type: "priority"
-    });
+  }, [editingBooking, showOperationStatus]);
+
+  // Auto-save when form data changes
+  useEffect(() => {
+    if (Object.values(formData).some(v => v && v.trim && v.trim() !== '')) {
+      autoSave.save(formData);
+    }
+  }, [formData, autoSave]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      let result;
+      if (editingBooking) {
+        result = await updateBooking(editingBooking.id, formData);
+      } else {
+        result = await addBooking(formData);
+      }
+      
+      if (result && result.success) {
+        // Clear draft on successful save
+        const draftKey = editingBooking ? `booking-draft-${editingBooking.id}` : 'booking-draft-new';
+        localStorage.removeItem(draftKey);
+        
+        setShowModal(false);
+        setEditingBooking(null);
+        setFormData({
+          customer: "",
+          pickup: "",
+          destination: "",
+          date: "",
+          time: "",
+          driver: "",
+          vehicle: "",
+          status: "pending",
+          type: "priority"
+        });
+      } else {
+        showOperationStatus(result?.error || 'Failed to save booking', 'error');
+      }
+    } catch (error) {
+      showOperationStatus('An error occurred while saving', 'error');
+    }
   };
 
   const handleEdit = (booking) => {
@@ -257,9 +309,32 @@ export default function Schedule() {
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal">
-            <h2 className="text-xl font-bold mb-4">
-              {editingBooking ? "Edit Booking" : "New Booking"}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">
+                {editingBooking ? "Edit Booking" : "New Booking"}
+              </h2>
+              {/* Save Status Indicator */}
+              <div className="text-sm">
+                {autoSave.isSaving ? (
+                  <span className="text-blue-600 flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving draft...
+                  </span>
+                ) : autoSave.lastSaved ? (
+                  <span className="text-green-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Draft saved {autoSave.lastSaved.toLocaleTimeString()}
+                  </span>
+                ) : (
+                  <span className="text-gray-500">Draft auto-save enabled</span>
+                )}
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>

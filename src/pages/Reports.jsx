@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { exportReportData, exportToCSV, exportToPDF } from "../utils/export";
+import { useOperationStatus } from "../utils/operationStatus";
+import ProgressNotification from "../components/ProgressNotification";
 import { 
   RevenueIcon, 
   StarIcon, 
@@ -19,90 +21,109 @@ export default function Reports() {
   const [showOutsourced, setShowOutsourced] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
+  
+  // Progress tracking for exports
+  const exportStatus = useOperationStatus(60000); // 60 second timeout for exports
 
-  const generateReport = (type, format = 'csv') => {
-    let reportData = [];
-    
-    switch (type) {
-      case 'revenue':
-        reportData = bookings.map(booking => ({
-          date: booking.date,
-          customer: booking.customer,
-          amount: EURO_PRICE_PER_BOOKING,
-          type: booking.type || 'priority',
-          status: booking.status
-        }));
-        break;
-        
-      case 'driver':
-        reportData = drivers.map(driver => {
-          const driverBookings = bookings.filter(b => b.driver === driver.name);
-          return {
-            driver: driver.name,
-            totalBookings: driverBookings.length,
-            completed: driverBookings.filter(b => b.status === 'completed').length,
-            rating: driver.rating || 4.5,
-            revenue: driverBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING
-          };
-        });
-        break;
-        
-      case 'customer':
-        reportData = customers.map(customer => {
-          const customerBookings = bookings.filter(b => b.customer === customer.name);
-          const lastBooking = customerBookings.length > 0 
-            ? customerBookings[customerBookings.length - 1].date 
-            : 'Never';
-          return {
-            customer: customer.name,
-            email: customer.email,
-            phone: customer.phone,
-            totalBookings: customerBookings.length,
-            lastBooking,
-            totalSpent: customerBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING,
-            status: customer.status || 'active'
-          };
-        });
-        break;
-        
-      case 'booking':
-        reportData = filteredBookings.map(booking => ({
-          date: booking.date,
-          time: booking.time,
-          customer: booking.customer,
-          pickup: booking.pickup,
-          destination: booking.destination,
-          driver: booking.driver,
-          vehicle: booking.vehicle,
-          status: booking.status,
-          type: booking.type || 'priority',
-          amount: EURO_PRICE_PER_BOOKING
-        }));
-        break;
-        
-      case 'fleet':
-        reportData = vehicles.map(vehicle => {
-          const vehicleBookings = bookings.filter(b => b.vehicle === `${vehicle.make} ${vehicle.model}`);
-          return {
-            vehicle: `${vehicle.make} ${vehicle.model}`,
-            year: vehicle.year,
-            license: vehicle.license,
-            driver: vehicle.driver || 'Unassigned',
-            status: vehicle.status,
-            totalBookings: vehicleBookings.length,
-            utilization: vehicleBookings.length > 0 ? `${vehicleBookings.length * 10}%` : '0%'
-          };
-        });
-        break;
-        
-      default:
-        reportData = filteredBookings;
-    }
-    
-    if (format === 'pdf') {
-      exportToPDF(reportData, `${type}-report`, `${type.charAt(0).toUpperCase() + type.slice(1)} Report`);
-    } else {
-      exportReportData(type, reportData);
+  const generateReport = async (type, format = 'csv') => {
+    try {
+      exportStatus.startOperation(`Preparing ${type} report for ${format.toUpperCase()} export...`);
+      
+      let reportData = [];
+      
+      switch (type) {
+        case 'revenue':
+          reportData = bookings.map(booking => ({
+            date: booking.date,
+            customer: booking.customer,
+            amount: EURO_PRICE_PER_BOOKING,
+            type: booking.type || 'priority',
+            status: booking.status
+          }));
+          break;
+          
+        case 'driver':
+          reportData = drivers.map(driver => {
+            const driverBookings = bookings.filter(b => b.driver === driver.name);
+            return {
+              driver: driver.name,
+              totalBookings: driverBookings.length,
+              completed: driverBookings.filter(b => b.status === 'completed').length,
+              rating: driver.rating || 4.5,
+              revenue: driverBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING
+            };
+          });
+          break;
+          
+        case 'customer':
+          reportData = customers.map(customer => {
+            const customerBookings = bookings.filter(b => b.customer === customer.name);
+            const lastBooking = customerBookings.length > 0 
+              ? customerBookings[customerBookings.length - 1].date 
+              : 'Never';
+            return {
+              customer: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+              totalBookings: customerBookings.length,
+              lastBooking,
+              totalSpent: customerBookings.filter(b => b.status === 'completed').length * EURO_PRICE_PER_BOOKING,
+              status: customer.status || 'active'
+            };
+          });
+          break;
+          
+        case 'booking':
+          reportData = filteredBookings.map(booking => ({
+            date: booking.date,
+            time: booking.time,
+            customer: booking.customer,
+            pickup: booking.pickup,
+            destination: booking.destination,
+            driver: booking.driver,
+            vehicle: booking.vehicle,
+            status: booking.status,
+            type: booking.type || 'priority',
+            amount: EURO_PRICE_PER_BOOKING
+          }));
+          break;
+          
+        case 'fleet':
+          reportData = vehicles.map(vehicle => {
+            const vehicleBookings = bookings.filter(b => b.vehicle === `${vehicle.make} ${vehicle.model}`);
+            return {
+              vehicle: `${vehicle.make} ${vehicle.model}`,
+              year: vehicle.year,
+              license: vehicle.license,
+              driver: vehicle.driver || 'Unassigned',
+              status: vehicle.status,
+              totalBookings: vehicleBookings.length,
+              utilization: vehicleBookings.length > 0 ? `${vehicleBookings.length * 10}%` : '0%'
+            };
+          });
+          break;
+          
+        default:
+          reportData = filteredBookings;
+      }
+      
+      let result;
+      if (format === 'pdf') {
+        const title = `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
+        result = await exportToPDF(reportData, `${type}-report`, title, exportStatus.updateProgress);
+      } else {
+        result = await exportReportData(type, reportData, exportStatus.updateProgress);
+      }
+      
+      if (result && result.success) {
+        exportStatus.completeOperation(result, `${format.toUpperCase()} export completed! ${result.rowCount} records exported.`);
+      } else {
+        exportStatus.failOperation(result?.error || 'Export failed');
+      }
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      exportStatus.failOperation(`Export failed: ${error.message}`);
     }
   };
 
@@ -182,6 +203,17 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
+      {/* Progress Notification */}
+      <ProgressNotification
+        isVisible={exportStatus.isOperating || exportStatus.error || exportStatus.result}
+        progress={exportStatus.progress}
+        message={exportStatus.message}
+        title={exportStatus.error ? "Export Failed" : exportStatus.result ? "Export Complete" : "Exporting Report"}
+        onClose={exportStatus.resetOperation}
+        canCancel={exportStatus.isOperating && exportStatus.progress < 100}
+        onCancel={exportStatus.cancelOperation}
+      />
+
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
         <div className="flex items-center gap-4">
