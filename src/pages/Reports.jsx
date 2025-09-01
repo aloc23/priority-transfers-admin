@@ -1,67 +1,182 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { formatCurrency } from "../utils/currency";
 import { exportToCSV } from "../utils/export";
+import {
+  BookingIcon,
+  DownloadIcon,
+} from "../components/Icons";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function Reports() {
-  const { bookings, drivers, activityHistory } = useAppStore();
-  const [filter, setFilter] = useState("all");
+  const { bookings } = useAppStore();
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredBookings =
-    filter === "all"
-      ? bookings
-      : bookings.filter((b) => b.status === filter);
+  // Revenue + costs
+  const totalRevenue = bookings.reduce((s, b) => s + (b.revenue || 0), 0);
+  const outsourcedCost = bookings
+    .filter((b) => b.type === "outsourced")
+    .reduce((s, b) => s + (b.outsourceCost || 0), 0);
+  const netProfit = totalRevenue - outsourcedCost;
+
+  // Apply filters
+  let filtered = [...bookings];
+  if (typeFilter !== "all") filtered = filtered.filter((b) => b.type === typeFilter);
+  if (statusFilter !== "all") filtered = filtered.filter((b) => b.status === statusFilter);
+
+  // Chart data
+  const revenueSplit = [
+    {
+      name: "In-house",
+      value: bookings
+        .filter((b) => b.type === "priority transfers")
+        .reduce((s, b) => s + (b.revenue || 0), 0),
+    },
+    {
+      name: "Outsourced",
+      value: bookings
+        .filter((b) => b.type === "outsourced")
+        .reduce((s, b) => s + (b.revenue || 0), 0),
+    },
+  ];
+  const statusSplit = ["completed", "pending", "cancelled"].map((s) => ({
+    name: s,
+    value: bookings.filter((b) => b.status === s).length,
+  }));
+  const trendData = Object.values(
+    bookings.reduce((acc, b) => {
+      const d = new Date(b.date).toLocaleDateString();
+      if (!acc[d]) acc[d] = { date: d, revenue: 0 };
+      acc[d].revenue += b.revenue || 0;
+      return acc;
+    }, {})
+  );
+  const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#f59e0b"];
 
   const exportData = () => {
-    const rows = filteredBookings.map((b) => ({
+    const rows = filtered.map((b) => ({
       Date: new Date(b.date).toLocaleString(),
-      Customer: b.customerId,
-      Driver: b.driverId,
+      Type: b.type,
       Status: b.status,
+      Revenue: b.revenue || 0,
+      OutsourceCost: b.outsourceCost || 0,
     }));
     exportToCSV(rows, "Bookings_Report");
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Reports</h1>
+    <div className="p-4 space-y-6">
+      <h1 className="text-xl font-bold flex items-center gap-2">
+        <BookingIcon className="w-6 h-6" /> Reports
+      </h1>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-lg bg-white shadow-sm">
+          <h2 className="text-sm text-gray-600">Total Revenue</h2>
+          <p className="text-2xl font-bold text-blue-600">
+            {formatCurrency(totalRevenue)}
+          </p>
+        </div>
+        <div className="p-4 border rounded-lg bg-white shadow-sm">
+          <h2 className="text-sm text-gray-600">Outsourced Cost</h2>
+          <p className="text-2xl font-bold text-red-600">
+            {formatCurrency(outsourcedCost)}
+          </p>
+        </div>
+        <div className="p-4 border rounded-lg bg-white shadow-sm">
+          <h2 className="text-sm text-gray-600">Net Profit</h2>
+          <p className="text-2xl font-bold text-green-600">
+            {formatCurrency(netProfit)}
+          </p>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="h-64 border rounded-lg bg-white p-2 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Revenue Split</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={revenueSplit} dataKey="value" nameKey="name" outerRadius={80} label>
+                {revenueSplit.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="h-64 border rounded-lg bg-white p-2 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Booking Status</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={statusSplit}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#2563eb" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="h-64 border rounded-lg bg-white p-2 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Revenue Trend</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {["all", "completed", "pending", "cancelled"].map((f) => (
+      <div className="flex gap-2 flex-wrap">
+        {["all", "priority transfers", "outsourced"].map((t) => (
           <button
-            key={f}
+            key={t}
             className={`px-3 py-1 rounded-lg border ${
-              filter === f
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700"
+              typeFilter === t ? "bg-blue-600 text-white" : "bg-white text-gray-700"
             }`}
-            onClick={() => setFilter(f)}
+            onClick={() => setTypeFilter(t)}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {t}
+          </button>
+        ))}
+        {["all", "completed", "pending", "cancelled"].map((s) => (
+          <button
+            key={s}
+            className={`px-3 py-1 rounded-lg border ${
+              statusFilter === s ? "bg-green-600 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => setStatusFilter(s)}
+          >
+            {s}
           </button>
         ))}
         <button
-          className="ml-auto bg-green-600 text-white px-4 py-1 rounded-lg"
+          className="ml-auto bg-indigo-600 text-white px-4 py-1 rounded-lg"
           onClick={exportData}
         >
-          Export CSV
+          <DownloadIcon className="w-4 h-4 inline mr-1" /> Export CSV
         </button>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 border rounded-lg shadow-sm bg-white">
-          <h2 className="text-sm text-gray-600">Total Bookings</h2>
-          <p className="text-2xl font-bold">{bookings.length}</p>
-        </div>
-        <div className="p-4 border rounded-lg shadow-sm bg-white">
-          <h2 className="text-sm text-gray-600">Drivers</h2>
-          <p className="text-2xl font-bold">{drivers.length}</p>
-        </div>
-        <div className="p-4 border rounded-lg shadow-sm bg-white">
-          <h2 className="text-sm text-gray-600">Activity Logs</h2>
-          <p className="text-2xl font-bold">{activityHistory.length}</p>
-        </div>
       </div>
 
       {/* Table */}
@@ -70,25 +185,25 @@ export default function Reports() {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 text-left border">Date</th>
-              <th className="p-2 text-left border">Customer</th>
-              <th className="p-2 text-left border">Driver</th>
+              <th className="p-2 text-left border">Type</th>
               <th className="p-2 text-left border">Status</th>
+              <th className="p-2 text-left border">Revenue</th>
+              <th className="p-2 text-left border">Outsource Cost</th>
             </tr>
           </thead>
           <tbody>
-            {filteredBookings.map((b) => (
+            {filtered.map((b) => (
               <tr key={b.id} className="hover:bg-gray-50">
-                <td className="p-2 border">
-                  {new Date(b.date).toLocaleString()}
-                </td>
-                <td className="p-2 border">{b.customerId}</td>
-                <td className="p-2 border">{b.driverId}</td>
+                <td className="p-2 border">{new Date(b.date).toLocaleString()}</td>
+                <td className="p-2 border capitalize">{b.type}</td>
                 <td className="p-2 border capitalize">{b.status}</td>
+                <td className="p-2 border">{formatCurrency(b.revenue || 0)}</td>
+                <td className="p-2 border">{formatCurrency(b.outsourceCost || 0)}</td>
               </tr>
             ))}
-            {filteredBookings.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-gray-500">
+                <td colSpan={5} className="p-4 text-center text-gray-500 italic">
                   No records found.
                 </td>
               </tr>
