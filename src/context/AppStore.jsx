@@ -212,33 +212,6 @@ export function AppStoreProvider({ children }) {
     safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
   };
 
-  // Operation status notifications
-  const [operationStatus, setOperationStatus] = useState(null);
-
-  const showOperationStatus = (message, type = 'info', duration = 3000) => {
-    const status = {
-      id: Date.now(),
-      message,
-      type, // 'info', 'success', 'error', 'warning'
-      timestamp: new Date()
-    };
-    
-    setOperationStatus(status);
-    
-    // Auto-clear after duration
-    if (duration > 0) {
-      setTimeout(() => {
-        setOperationStatus(null);
-      }, duration);
-    }
-    
-    return status;
-  };
-
-  const clearOperationStatus = () => {
-    setOperationStatus(null);
-  };
-
   const addActivityLog = (activity) => {
     const newActivity = {
       id: Date.now(),
@@ -341,8 +314,6 @@ export function AppStoreProvider({ children }) {
 
   const addBooking = (booking) => {
     try {
-      showOperationStatus('Saving booking...', 'info', 0);
-      
       const newBooking = { ...booking, id: Date.now(), type: booking.type || "priority" };
       const updatedBookings = [...bookings, newBooking];
       setBookings(updatedBookings);
@@ -365,11 +336,9 @@ export function AppStoreProvider({ children }) {
         relatedId: newBooking.id
       });
       
-      showOperationStatus('Booking saved successfully!', 'success');
       return { success: true, booking: newBooking };
     } catch (error) {
       console.error('Failed to add booking:', error);
-      showOperationStatus('Failed to save booking. Please try again.', 'error');
       return { success: false, error: 'Failed to save booking' };
     }
   };
@@ -607,10 +576,7 @@ export function AppStoreProvider({ children }) {
     cancelInvoice,
     sendInvoice,
     resendInvoice,
-    addActivityLog,
-    operationStatus,
-    showOperationStatus,
-    clearOperationStatus
+    addActivityLog
   };
 
   return (

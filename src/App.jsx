@@ -1,5 +1,5 @@
 import { HashRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Customers from "./pages/Customers";
@@ -13,133 +13,40 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
-import ManagementNav from "./components/ManagementNav";
-import MobileFAB from "./components/MobileFAB";
-import StatusNotification from "./components/StatusNotification";
 
 function AuthenticatedShell() {
   const { currentUser, logout } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Check if device is mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Auto-hide sidebar on mobile when navigating
-  const handleNavClick = () => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-  };
   
   return (
     <div className="flex h-screen">
-      {/* Mobile overlay */}
-      {isMobile && sidebarOpen && (
-        <div 
-          className="sidebar-overlay" 
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      
-      <aside className={`${
-        isMobile 
-          ? `fixed top-0 left-0 h-full z-50 transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64`
-          : sidebarOpen ? "w-64" : "w-16"
-      } bg-white shadow-lg transition-all p-4`}>
+      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg transition-all p-4`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <img src="./logo.svg" alt="logo" className="w-8 h-8 rounded" />
-            {(sidebarOpen || !isMobile) && <span className="font-bold text-lg">Priority</span>}
+            {sidebarOpen && <span className="font-bold text-lg">Priority</span>}
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn btn-outline px-2 py-1">≡</button>
         </div>
         <nav>
           <ul className="space-y-1">
-            <li>
-              <NavLink 
-                to="/" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Dashboard
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/schedule" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Schedule
-              </NavLink>
-            </li>
-            
-            {/* Consolidated Management Section */}
-            <ManagementNav currentUser={currentUser} sidebarOpen={sidebarOpen || !isMobile} />
-            
-            <li>
-              <NavLink 
-                to="/billing" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Billing
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/reports" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Reports
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/outsource" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Outsource
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/history" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                History
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/notifications" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Notifications
-              </NavLink>
-            </li>
-            <li>
-              <NavLink 
-                to="/settings" 
-                onClick={handleNavClick}
-                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
-              >
-                Settings
-              </NavLink>
-            </li>
+            {[
+              ["Dashboard", "/"],
+              ["Schedule", "/schedule"],
+              ["Customers", "/customers"],
+              ["Drivers", "/drivers"],
+              ["Fleet", "/fleet"],
+              ["Billing", "/billing"],
+              ["Reports", "/reports"],
+              ["Outsource", "/outsource"],
+              ["History", "/history"],
+              ["Notifications", "/notifications"],
+              ["Settings", "/settings"],
+            ].map(([label, path]) => (
+              <li key={path}>
+                <NavLink to={path} className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>{label}</NavLink>
+              </li>
+            ))}
           </ul>
         </nav>
         <div className="mt-6 text-xs text-gray-500">
@@ -147,8 +54,7 @@ function AuthenticatedShell() {
           <button onClick={logout} className="block mt-2 text-indigo-600 hover:underline">Logout</button>
         </div>
       </aside>
-      
-      <main className={`flex-1 overflow-y-auto p-6 bg-gray-50 ${isMobile ? 'main-content' : ''}`}>
+      <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/schedule" element={<RequireAuth><Schedule /></RequireAuth>} />
@@ -164,12 +70,6 @@ function AuthenticatedShell() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
-      
-      {/* Mobile FAB */}
-      <MobileFAB />
-      
-      {/* Global Status Notifications */}
-      <StatusNotification />
     </div>
   );
 }
