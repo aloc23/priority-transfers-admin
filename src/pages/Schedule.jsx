@@ -17,7 +17,7 @@ const TableIcon = ({ className = "w-4 h-4", ...props }) => (
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, sendBookingReminder } = useAppStore();
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
@@ -210,16 +210,32 @@ export default function Schedule() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <button
                           onClick={() => handleEdit(booking)}
                           className="btn btn-outline px-2 py-1 text-xs"
+                          title="Edit Booking"
                         >
                           Edit
                         </button>
                         <button
+                          onClick={() => sendBookingReminder(booking.id, 'booking_reminder')}
+                          className="btn bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-xs"
+                          title="Send Reminder"
+                        >
+                          📧
+                        </button>
+                        <button
+                          onClick={() => sendBookingReminder(booking.id, 'booking_confirmation')}
+                          className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs"
+                          title="Send Confirmation"
+                        >
+                          ✅
+                        </button>
+                        <button
                           onClick={() => handleDelete(booking.id)}
                           className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs"
+                          title="Delete Booking"
                         >
                           Delete
                         </button>

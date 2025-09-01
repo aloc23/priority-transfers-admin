@@ -367,6 +367,9 @@ export function AppStoreProvider({ children }) {
         }
       }
       
+      // Sync related data
+      syncBookingData(id);
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to update booking:', error);
@@ -530,10 +533,126 @@ export function AppStoreProvider({ children }) {
         relatedId: id
       });
       
+      // Add notification
+      addNotification({
+        title: 'Invoice Sent',
+        message: `Invoice ${id} has been sent to ${recipientEmail}`,
+        type: 'success'
+      });
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to send invoice:', error);
       return { success: false, error: 'Failed to send invoice' };
+    }
+  };
+
+  const markInvoiceAsPaid = (id, paymentDate = new Date().toISOString()) => {
+    try {
+      const updatedInvoices = invoices.map(invoice => 
+        invoice.id === id ? { 
+          ...invoice, 
+          status: 'paid',
+          paidDate: paymentDate
+        } : invoice
+      );
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'payment_received',
+        description: `Payment received for invoice ${id}`,
+        relatedId: id
+      });
+      
+      addNotification({
+        title: 'Payment Received',
+        message: `Payment for invoice ${id} has been recorded`,
+        type: 'success'
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to mark invoice as paid:', error);
+      return { success: false, error: 'Failed to mark invoice as paid' };
+    }
+  };
+
+  const sendBookingReminder = (bookingId, reminderType = 'booking_reminder') => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) {
+        return { success: false, error: 'Booking not found' };
+      }
+
+      addActivityLog({
+        type: reminderType,
+        description: `${reminderType === 'booking_reminder' ? 'Booking reminder' : 'Confirmation'} sent to ${booking.customer}`,
+        relatedId: bookingId
+      });
+      
+      addNotification({
+        title: 'Reminder Sent',
+        message: `${reminderType === 'booking_reminder' ? 'Booking reminder' : 'Confirmation'} sent to ${booking.customer}`,
+        type: 'info'
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to send reminder:', error);
+      return { success: false, error: 'Failed to send reminder' };
+    }
+  };
+
+  // Enhanced sync function to update related data when bookings change
+  const syncBookingData = (bookingId) => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return;
+
+      // Update customer's total bookings count
+      const customerName = booking.customer;
+      const customer = customers.find(c => c.name === customerName);
+      if (customer) {
+        const customerBookings = bookings.filter(b => b.customer === customerName);
+        const updatedCustomers = customers.map(c => 
+          c.name === customerName ? { 
+            ...c, 
+            totalBookings: customerBookings.length,
+            lastBooking: booking.date,
+            totalSpent: customerBookings
+              .filter(b => b.status === 'completed')
+              .reduce((sum, b) => sum + (b.amount || EURO_PRICE_PER_BOOKING), 0)
+          } : c
+        );
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      }
+
+      // Update driver status if booking is assigned
+      if (booking.driver) {
+        const driver = drivers.find(d => d.name === booking.driver);
+        if (driver) {
+          const driverBookings = bookings.filter(b => b.driver === booking.driver);
+          const activeBookings = driverBookings.filter(b => ['confirmed', 'in-progress'].includes(b.status));
+          
+          const updatedDrivers = drivers.map(d => 
+            d.name === booking.driver ? { 
+              ...d, 
+              status: activeBookings.length > 0 ? 'busy' : 'available',
+              totalBookings: driverBookings.length,
+              completedBookings: driverBookings.filter(b => b.status === 'completed').length
+            } : d
+          );
+          setDrivers(updatedDrivers);
+          safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to sync booking data:', error);
+      return { success: false, error: 'Failed to sync booking data' };
     }
   };
 
@@ -756,7 +875,10 @@ export function AppStoreProvider({ children }) {
     addActivityLog,
     clearDemoData,
     loadRealData,
-    resetToDemo
+    resetToDemo,
+    markInvoiceAsPaid,
+    sendBookingReminder,
+    syncBookingData
   };
 
   return (
