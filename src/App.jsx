@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, NavLink, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
@@ -13,243 +13,25 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
-import ManagementNav from "./components/ManagementNav";
+import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
-import { 
-  DashboardIcon, 
-  CalendarIcon, 
-  RevenueIcon, 
-  ReportsIcon, 
-  OutsourceIcon, 
-  HistoryIcon, 
-  NotificationIcon, 
-  SettingsIcon 
-} from "./components/Icons";
+import { useResponsive } from "./hooks/useResponsive";
 
 function AuthenticatedShell() {
-  const { currentUser, logout } = useAppStore();
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const { currentUser } = useAppStore();
+  const { isMobile, isDesktop } = useResponsive();
+  const [sidebarOpen, setSidebarOpen] = useState(isDesktop);
   
-  // Handle window resize for responsive behavior
+  // Handle responsive behavior for sidebar
   useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      if (!mobile && !sidebarOpen) {
-        setSidebarOpen(true);
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
-  
-  // Close sidebar on mobile when route changes  
-  const closeSidebarOnMobile = () => {
-    if (isMobile) {
-      setSidebarOpen(false);
+    if (isDesktop && !sidebarOpen) {
+      setSidebarOpen(true);
     }
-  };
+  }, [isDesktop, sidebarOpen]);
   
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Mobile backdrop */}
-      {sidebarOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      
-      <aside className={`
-        ${sidebarOpen ? "w-64" : "w-16"} 
-        ${isMobile && !sidebarOpen ? 'hidden' : ''}
-        ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'}
-        bg-white transition-all duration-300 ease-in-out
-        ${isMobile ? '' : 'shadow-lg'}
-        border-r border-slate-200
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <img src="./logo.svg" alt="logo" className="w-8 h-8 rounded" />
-              {sidebarOpen && <span className="font-bold text-lg text-slate-800">Priority</span>}
-            </div>
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)} 
-              className="btn btn-outline px-2 py-1 text-slate-600 hover:text-slate-800"
-            >
-              ≡
-            </button>
-          </div>
-          
-          {/* Navigation */}
-          <nav className="flex-1 p-4">
-            <ul className="space-y-1">
-              <li>
-                <NavLink 
-                  to="/" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><DashboardIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Dashboard"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/schedule" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><CalendarIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Schedule"}
-                </NavLink>
-              </li>
-              
-              {/* Management Section - Grouped Navigation */}
-              <ManagementNav currentUser={currentUser} sidebarOpen={sidebarOpen} onMobileClick={closeSidebarOnMobile} />
-              
-              <li>
-                <NavLink 
-                  to="/billing" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><RevenueIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Billing"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/reports" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><ReportsIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Reports"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/outsource" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><OutsourceIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Outsource"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/history" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><HistoryIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "History"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/notifications" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><NotificationIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Notifications"}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink 
-                  to="/settings" 
-                  className={({isActive}) => `
-                    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
-                    ${isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }
-                  `}
-                  onClick={closeSidebarOnMobile}
-                >
-                  {!sidebarOpen && <div className="flex justify-center"><SettingsIcon className="w-5 h-5" /></div>}
-                  {sidebarOpen && "Settings"}
-                </NavLink>
-              </li>
-            </ul>
-          </nav>
-          
-          {/* User info */}
-          <div className={`p-4 border-t border-slate-200 bg-slate-50 ${sidebarOpen ? '' : 'text-center'}`}>
-            {sidebarOpen ? (
-              <>
-                <div className="text-xs text-slate-600 mb-1">
-                  Logged in as <span className="font-semibold text-slate-800">{currentUser?.name}</span>
-                </div>
-                <div className="text-xs text-slate-500 mb-2">({currentUser?.role})</div>
-                <button 
-                  onClick={logout} 
-                  className="text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <button 
-                onClick={logout} 
-                className="text-lg hover:text-purple-600 transition-colors" 
-                title="Logout"
-              >
-                🚪
-              </button>
-            )}
-          </div>
-        </div>
-      </aside>
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
         <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
