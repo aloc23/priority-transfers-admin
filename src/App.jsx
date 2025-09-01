@@ -14,9 +14,10 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 
-function Shell() {
+function AuthenticatedShell() {
   const { currentUser, logout } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
   return (
     <div className="flex h-screen">
       <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg transition-all p-4`}>
@@ -66,12 +67,28 @@ function Shell() {
           <Route path="/history" element={<RequireRole roles={["Admin"]}><History /></RequireRole>} />
           <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />
-          <Route path="/login" element={<Login />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
     </div>
   );
+}
+
+function AppShell() {
+  const { currentUser } = useAppStore();
+  
+  // If not authenticated, show only login page
+  if (!currentUser) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+  
+  // If authenticated, show the full admin interface
+  return <AuthenticatedShell />;
 }
 
 function RequireAuth({children}){
@@ -90,7 +107,7 @@ export default function App(){
   return (
     <AppStoreProvider>
       <Router>
-        <Shell />
+        <AppShell />
       </Router>
     </AppStoreProvider>
   );

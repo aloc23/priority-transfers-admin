@@ -1,5 +1,17 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { 
+  NotificationIcon, 
+  SuccessIcon, 
+  WarningIcon, 
+  ErrorIcon, 
+  InfoIcon, 
+  InboxIcon, 
+  EmptyInboxIcon, 
+  ReadIcon, 
+  UnreadIcon,
+  SendIcon 
+} from "../components/Icons";
 
 export default function Notifications() {
   const { notifications, markNotificationRead, addNotification } = useAppStore();
@@ -25,11 +37,11 @@ export default function Notifications() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'success': return '✅';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
+      case 'success': return <SuccessIcon className="w-5 h-5" />;
+      case 'warning': return <WarningIcon className="w-5 h-5" />;
+      case 'error': return <ErrorIcon className="w-5 h-5" />;
       case 'info':
-      default: return 'ℹ️';
+      default: return <InfoIcon className="w-5 h-5" />;
     }
   };
 
@@ -56,8 +68,9 @@ export default function Notifications() {
         </div>
         <button
           onClick={() => setShowSendModal(true)}
-          className="btn btn-primary"
+          className="btn btn-primary flex items-center gap-2"
         >
+          <SendIcon className="w-4 h-4" />
           Send Notification
         </button>
       </div>
@@ -66,7 +79,9 @@ export default function Notifications() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-blue-500 rounded-lg p-3 text-white text-2xl mr-4">📬</div>
+            <div className="bg-blue-500 rounded-lg p-3 text-white mr-4">
+              <InboxIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
               <p className="text-sm text-gray-600">Total Notifications</p>
@@ -76,7 +91,9 @@ export default function Notifications() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-red-500 rounded-lg p-3 text-white text-2xl mr-4">🔴</div>
+            <div className="bg-red-500 rounded-lg p-3 text-white mr-4">
+              <UnreadIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{unreadCount}</p>
               <p className="text-sm text-gray-600">Unread</p>
@@ -86,7 +103,9 @@ export default function Notifications() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">✅</div>
+            <div className="bg-green-500 rounded-lg p-3 text-white mr-4">
+              <ReadIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {notifications.filter(n => n.read).length}
@@ -98,7 +117,9 @@ export default function Notifications() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">□</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white mr-4">
+              <SuccessIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {notifications.filter(n => n.type === 'success').length}
@@ -115,7 +136,9 @@ export default function Notifications() {
         
         {notifications.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📭</div>
+            <div className="flex justify-center mb-4">
+              <EmptyInboxIcon className="w-16 h-16 text-gray-400" />
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Notifications</h3>
             <p className="text-gray-600">System notifications will appear here.</p>
           </div>
@@ -135,7 +158,7 @@ export default function Notifications() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">
-                    <div className="text-2xl">
+                    <div className="text-gray-600">
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1">

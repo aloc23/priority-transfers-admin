@@ -166,3 +166,81 @@ export const XIcon = ({ className = "w-4 h-4", ...props }) => (
     <line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 );
+
+// Additional professional icons to replace emojis
+export const NotificationIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+);
+
+export const SuccessIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+  </svg>
+);
+
+export const WarningIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+  </svg>
+);
+
+export const ErrorIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+  </svg>
+);
+
+export const InfoIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+  </svg>
+);
+
+export const InboxIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+  </svg>
+);
+
+export const EmptyInboxIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+  </svg>
+);
+
+export const OutsourceIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+  </svg>
+);
+
+export const ReadIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+export const UnreadIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="8" y1="12" x2="16" y2="12"/>
+  </svg>
+);
+
+export const SettingsListIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <line x1="8" y1="6" x2="21" y2="6"/>
+    <line x1="8" y1="12" x2="21" y2="12"/>
+    <line x1="8" y1="18" x2="21" y2="18"/>
+    <line x1="3" y1="6" x2="3.01" y2="6"/>
+    <line x1="3" y1="12" x2="3.01" y2="12"/>
+    <line x1="3" y1="18" x2="3.01" y2="18"/>
+  </svg>
+);

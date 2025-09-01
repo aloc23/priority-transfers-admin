@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { 
+  CustomerIcon, 
+  NotificationIcon, 
+  SettingsListIcon, 
+  RevenueIcon, 
+  BookingIcon,
+  SettingsIcon 
+} from "../components/Icons";
 
 export default function Settings() {
   const { currentUser } = useAppStore();
@@ -31,12 +39,12 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: "profile", label: "Company Profile", icon: "◪" },
-    { id: "notifications", label: "Notifications", icon: "◉" },
-    { id: "booking", label: "Booking Settings", icon: "□" },
-    { id: "billing", label: "Billing & Payment", icon: "€" },
-    { id: "users", label: "User Management", icon: "◎" },
-    { id: "integrations", label: "Integrations", icon: "⚙" }
+    { id: "profile", label: "Company Profile", icon: CustomerIcon },
+    { id: "notifications", label: "Notifications", icon: NotificationIcon },
+    { id: "booking", label: "Booking Settings", icon: SettingsListIcon },
+    { id: "billing", label: "Billing & Payment", icon: RevenueIcon },
+    { id: "users", label: "User Management", icon: BookingIcon },
+    { id: "integrations", label: "Integrations", icon: SettingsIcon }
   ];
 
   return (
@@ -51,19 +59,22 @@ export default function Settings() {
               <h2 className="font-semibold text-gray-900">Settings</h2>
             </div>
             <ul className="p-2">
-              {tabs.map((tab) => (
-                <li key={tab.id}>
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded hover:bg-gray-100 ${
-                      activeTab === tab.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
-                    }`}
-                  >
-                    <span className="text-lg">{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                </li>
-              ))}
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <li key={tab.id}>
+                    <button
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded hover:bg-gray-100 ${
+                        activeTab === tab.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      <IconComponent className="w-5 h-5" />
+                      {tab.label}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </div>

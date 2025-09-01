@@ -1,3 +1,5 @@
+import { OutsourceIcon, SuccessIcon, BookingIcon } from "../components/Icons";
+
 export default function Outsource() {
   const partners = [
     { id: 1, name: "City Cab Co.", contact: "John Smith", phone: "555-0401", status: "active", rating: 4.5 },
@@ -19,7 +21,9 @@ export default function Outsource() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-blue-500 rounded-lg p-3 text-white text-2xl mr-4">🤝</div>
+            <div className="bg-blue-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <OutsourceIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{partners.length}</p>
               <p className="text-sm text-gray-600">Total Partners</p>
@@ -29,7 +33,9 @@ export default function Outsource() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white text-2xl mr-4">✅</div>
+            <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <SuccessIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {partners.filter(p => p.status === "active").length}
@@ -41,7 +47,9 @@ export default function Outsource() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">□</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <BookingIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{outsourcedBookings.length}</p>
               <p className="text-sm text-gray-600">Outsourced Bookings</p>
