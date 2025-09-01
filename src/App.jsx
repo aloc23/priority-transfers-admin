@@ -13,14 +13,33 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
+import ManagementNav from "./components/ManagementNav";
+import MobileFAB from "./components/MobileFAB";
 
 function AuthenticatedShell() {
   const { currentUser, logout } = useAppStore();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  
+  // Close sidebar on mobile when route changes  
+  const closeSidebarOnMobile = () => {
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
+  };
   
   return (
     <div className="flex h-screen">
-      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg transition-all p-4`}>
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg transition-all p-4 relative z-30 ${
+        window.innerWidth <= 768 && !sidebarOpen ? 'hidden' : ''
+      }`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <img src="./logo.svg" alt="logo" className="w-8 h-8 rounded" />
@@ -30,23 +49,58 @@ function AuthenticatedShell() {
         </div>
         <nav>
           <ul className="space-y-1">
-            {[
-              ["Dashboard", "/"],
-              ["Schedule", "/schedule"],
-              ["Customers", "/customers"],
-              ["Drivers", "/drivers"],
-              ["Fleet", "/fleet"],
-              ["Billing", "/billing"],
-              ["Reports", "/reports"],
-              ["Outsource", "/outsource"],
-              ["History", "/history"],
-              ["Notifications", "/notifications"],
-              ["Settings", "/settings"],
-            ].map(([label, path]) => (
-              <li key={path}>
-                <NavLink to={path} className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>{label}</NavLink>
-              </li>
-            ))}
+            <li>
+              <NavLink 
+                to="/" 
+                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
+                onClick={closeSidebarOnMobile}
+              >
+                Dashboard
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/schedule" 
+                className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}
+                onClick={closeSidebarOnMobile}
+              >
+                Schedule
+              </NavLink>
+            </li>
+            
+            {/* Management Section - Grouped Navigation */}
+            <ManagementNav currentUser={currentUser} sidebarOpen={sidebarOpen} onMobileClick={closeSidebarOnMobile} />
+            
+            <li>
+              <NavLink to="/billing" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                Billing
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/reports" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                Reports
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/outsource" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                Outsource
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/history" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                History
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/notifications" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                Notifications
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/settings" className={({isActive}) => `block px-3 py-2 rounded hover:bg-gray-100 ${isActive?"bg-gray-200 font-semibold":""}`}>
+                Settings
+              </NavLink>
+            </li>
           </ul>
         </nav>
         <div className="mt-6 text-xs text-gray-500">
@@ -70,6 +124,9 @@ function AuthenticatedShell() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+      
+      {/* Mobile FAB for quick actions */}
+      <MobileFAB />
     </div>
   );
 }
