@@ -1,6 +1,8 @@
 // Management Navigation Component for consolidated tabs
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { CustomerIcon } from './Icons';
+import { useResponsive } from '../hooks/useResponsive';
 
 const managementRoutes = [
   { path: '/customers', label: 'Customers', roles: ['Admin', 'Dispatcher'] },
@@ -11,6 +13,7 @@ const managementRoutes = [
 export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const location = useLocation();
+  const { isMobile } = useResponsive();
 
   // Check if we're on any management route
   const isManagementActive = managementRoutes.some(route => 
@@ -38,15 +41,23 @@ export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick 
         {/* Main Management toggle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100 text-left ${
-            isManagementActive ? 'bg-gray-200 font-semibold' : ''
-          }`}
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-100 text-left transition-all duration-200 text-sm font-medium ${
+            isManagementActive ? 'bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm' : 'text-slate-700 hover:text-slate-900'
+          } ${isMobile ? 'min-h-[44px]' : ''}`}
+          aria-expanded={isExpanded}
+          aria-label={sidebarOpen ? "Management menu" : "Management"}
         >
           <span className="flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88M13 7C13 9.20914 11.2091 11 9 11C6.79086 11 5 9.20914 5 7C5 4.79086 6.79086 3 9 3C11.2091 3 13 4.79086 13 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            {sidebarOpen && <span>Management</span>}
+            {!sidebarOpen ? (
+              <div className="flex justify-center w-full">
+                <CustomerIcon className="w-5 h-5" />
+              </div>
+            ) : (
+              <>
+                <CustomerIcon className="w-5 h-5 flex-shrink-0" />
+                <span>Management</span>
+              </>
+            )}
           </span>
           {sidebarOpen && (
             <svg 
@@ -63,15 +74,15 @@ export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick 
 
         {/* Sub-navigation */}
         {sidebarOpen && (isExpanded || isManagementActive) && (
-          <ul className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3">
+          <ul className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
             {allowedRoutes.map(route => (
               <li key={route.path}>
                 <NavLink
                   to={route.path}
                   className={({ isActive }) =>
-                    `block px-3 py-1.5 text-sm rounded hover:bg-gray-100 ${
-                      isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-600'
-                    }`
+                    `block px-3 py-2 text-sm rounded-lg hover:bg-slate-100 transition-all duration-200 ${
+                      isActive ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 font-medium' : 'text-slate-600 hover:text-slate-900'
+                    } ${isMobile ? 'min-h-[44px] flex items-center' : ''}`
                   }
                   onClick={handleLinkClick}
                 >

@@ -1,6 +1,7 @@
 // Mobile Floating Action Button Component
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../context/AppStore';
+import { useResponsive } from '../hooks/useResponsive';
 
 const FABIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -30,11 +31,17 @@ const InvoiceIcon = () => (
 export default function MobileFAB() {
   const [isOpen, setIsOpen] = useState(false);
   const { currentUser } = useAppStore();
+  const { isMobile, isSmallMobile } = useResponsive();
+
+  // Auto-close FAB when switching to desktop
+  useEffect(() => {
+    if (!isMobile && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isMobile, isOpen]);
 
   // Only show FAB on mobile screens
-  const isMobile = () => window.innerWidth <= 768;
-
-  if (!isMobile() || !currentUser) {
+  if (!isMobile || !currentUser) {
     return null;
   }
 
@@ -70,7 +77,7 @@ export default function MobileFAB() {
   };
 
   return (
-    <div className="fab-container">
+    <div className={`fab-container ${isSmallMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'}`}>
       {/* Backdrop */}
       {isOpen && (
         <div 
@@ -86,12 +93,13 @@ export default function MobileFAB() {
             <button
               key={action.label}
               onClick={() => handleActionClick(action.href)}
-              className={`fab-action ${action.color}`}
+              className={`fab-action ${action.color} ${isSmallMobile ? 'w-10 h-10' : 'w-12 h-12'}`}
               style={{
-                transform: `translateY(${-(60 * (index + 1))}px)`,
+                transform: `translateY(${-(isSmallMobile ? 50 : 60) * (index + 1)}px)`,
                 transitionDelay: `${index * 50}ms`
               }}
               title={action.label}
+              aria-label={action.label}
             >
               <action.icon />
               <span className="fab-action-label">{action.label}</span>
@@ -103,8 +111,10 @@ export default function MobileFAB() {
       {/* Main FAB button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fab-main ${isOpen ? 'fab-open' : ''}`}
+        className={`fab-main ${isOpen ? 'fab-open' : ''} ${isSmallMobile ? 'w-12 h-12' : 'w-14 h-14'}`}
         title="Quick Actions"
+        aria-label="Quick Actions"
+        aria-expanded={isOpen}
       >
         <FABIcon />
       </button>
