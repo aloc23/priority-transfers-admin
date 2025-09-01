@@ -184,7 +184,6 @@ label { @apply text-sm font-semibold text-gray-700; }
     z-index: 40;
   }
 }
-}
 
 .rbc-event.outsourced {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
