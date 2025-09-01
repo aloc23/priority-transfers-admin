@@ -15,6 +15,16 @@ import Login from "./pages/Login";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import ManagementNav from "./components/ManagementNav";
 import MobileFAB from "./components/MobileFAB";
+import { 
+  DashboardIcon, 
+  CalendarIcon, 
+  RevenueIcon, 
+  ReportsIcon, 
+  OutsourceIcon, 
+  HistoryIcon, 
+  NotificationIcon, 
+  SettingsIcon 
+} from "./components/Icons";
 
 function AuthenticatedShell() {
   const { currentUser, logout } = useAppStore();
@@ -90,8 +100,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Dashboard</span>
-                  {!sidebarOpen && <span className="text-center w-full block">📊</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><DashboardIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Dashboard"}
                 </NavLink>
               </li>
@@ -107,8 +116,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Schedule</span>
-                  {!sidebarOpen && <span className="text-center w-full block">📅</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><CalendarIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Schedule"}
                 </NavLink>
               </li>
@@ -128,8 +136,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Billing</span>
-                  {!sidebarOpen && <span className="text-center w-full block">💰</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><RevenueIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Billing"}
                 </NavLink>
               </li>
@@ -145,8 +152,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Reports</span>
-                  {!sidebarOpen && <span className="text-center w-full block">📈</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><ReportsIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Reports"}
                 </NavLink>
               </li>
@@ -162,8 +168,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Outsource</span>
-                  {!sidebarOpen && <span className="text-center w-full block">🤝</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><OutsourceIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Outsource"}
                 </NavLink>
               </li>
@@ -179,8 +184,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>History</span>
-                  {!sidebarOpen && <span className="text-center w-full block">📜</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><HistoryIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "History"}
                 </NavLink>
               </li>
@@ -196,8 +200,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Notifications</span>
-                  {!sidebarOpen && <span className="text-center w-full block">🔔</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><NotificationIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Notifications"}
                 </NavLink>
               </li>
@@ -213,8 +216,7 @@ function AuthenticatedShell() {
                   `}
                   onClick={closeSidebarOnMobile}
                 >
-                  <span className={sidebarOpen ? "" : "sr-only"}>Settings</span>
-                  {!sidebarOpen && <span className="text-center w-full block">⚙️</span>}
+                  {!sidebarOpen && <div className="flex justify-center"><SettingsIcon className="w-5 h-5" /></div>}
                   {sidebarOpen && "Settings"}
                 </NavLink>
               </li>
