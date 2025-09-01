@@ -1,6 +1,6 @@
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
-import { HistoryIcon, CheckIcon } from "../components/Icons";
+import { HistoryIcon, CheckIcon, ErrorIcon, RevenueIcon } from "../components/Icons";
 
 export default function History() {
   const { bookings } = useAppStore();
@@ -57,7 +57,9 @@ export default function History() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-red-500 rounded-lg p-3 text-white text-2xl mr-4">❌</div>
+            <div className="bg-red-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <ErrorIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {completedBookings.filter(b => b.status === "cancelled").length}
@@ -69,7 +71,9 @@ export default function History() {
 
         <div className="card">
           <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white text-2xl mr-4">€</div>
+            <div className="bg-purple-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+              <RevenueIcon className="w-6 h-6" />
+            </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(calculateRevenue(completedBookings, "completed"))}
