@@ -367,6 +367,9 @@ export function AppStoreProvider({ children }) {
         }
       }
       
+      // Sync related data
+      syncBookingData(id);
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to update booking:', error);
@@ -530,10 +533,303 @@ export function AppStoreProvider({ children }) {
         relatedId: id
       });
       
+      // Add notification
+      addNotification({
+        title: 'Invoice Sent',
+        message: `Invoice ${id} has been sent to ${recipientEmail}`,
+        type: 'success'
+      });
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to send invoice:', error);
       return { success: false, error: 'Failed to send invoice' };
+    }
+  };
+
+  const markInvoiceAsPaid = (id, paymentDate = new Date().toISOString()) => {
+    try {
+      const updatedInvoices = invoices.map(invoice => 
+        invoice.id === id ? { 
+          ...invoice, 
+          status: 'paid',
+          paidDate: paymentDate
+        } : invoice
+      );
+      setInvoices(updatedInvoices);
+      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
+      addActivityLog({
+        type: 'payment_received',
+        description: `Payment received for invoice ${id}`,
+        relatedId: id
+      });
+      
+      addNotification({
+        title: 'Payment Received',
+        message: `Payment for invoice ${id} has been recorded`,
+        type: 'success'
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to mark invoice as paid:', error);
+      return { success: false, error: 'Failed to mark invoice as paid' };
+    }
+  };
+
+  const sendBookingReminder = (bookingId, reminderType = 'booking_reminder') => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) {
+        return { success: false, error: 'Booking not found' };
+      }
+
+      addActivityLog({
+        type: reminderType,
+        description: `${reminderType === 'booking_reminder' ? 'Booking reminder' : 'Confirmation'} sent to ${booking.customer}`,
+        relatedId: bookingId
+      });
+      
+      addNotification({
+        title: 'Reminder Sent',
+        message: `${reminderType === 'booking_reminder' ? 'Booking reminder' : 'Confirmation'} sent to ${booking.customer}`,
+        type: 'info'
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to send reminder:', error);
+      return { success: false, error: 'Failed to send reminder' };
+    }
+  };
+
+  // Enhanced sync function to update related data when bookings change
+  const syncBookingData = (bookingId) => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return;
+
+      // Update customer's total bookings count
+      const customerName = booking.customer;
+      const customer = customers.find(c => c.name === customerName);
+      if (customer) {
+        const customerBookings = bookings.filter(b => b.customer === customerName);
+        const updatedCustomers = customers.map(c => 
+          c.name === customerName ? { 
+            ...c, 
+            totalBookings: customerBookings.length,
+            lastBooking: booking.date,
+            totalSpent: customerBookings
+              .filter(b => b.status === 'completed')
+              .reduce((sum, b) => sum + (b.amount || EURO_PRICE_PER_BOOKING), 0)
+          } : c
+        );
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      }
+
+      // Update driver status if booking is assigned
+      if (booking.driver) {
+        const driver = drivers.find(d => d.name === booking.driver);
+        if (driver) {
+          const driverBookings = bookings.filter(b => b.driver === booking.driver);
+          const activeBookings = driverBookings.filter(b => ['confirmed', 'in-progress'].includes(b.status));
+          
+          const updatedDrivers = drivers.map(d => 
+            d.name === booking.driver ? { 
+              ...d, 
+              status: activeBookings.length > 0 ? 'busy' : 'available',
+              totalBookings: driverBookings.length,
+              completedBookings: driverBookings.filter(b => b.status === 'completed').length
+            } : d
+          );
+          setDrivers(updatedDrivers);
+          safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to sync booking data:', error);
+      return { success: false, error: 'Failed to sync booking data' };
+    }
+  };
+
+  const clearDemoData = () => {
+    try {
+      // Clear all data arrays
+      setBookings([]);
+      setCustomers([]);
+      setDrivers([]);
+      setVehicles([]);
+      setInvoices([]);
+      setActivityHistory([]);
+      setNotifications([]);
+      
+      // Clear localStorage
+      safeLocalStorage.removeItem("bookings");
+      safeLocalStorage.removeItem("customers");
+      safeLocalStorage.removeItem("drivers");
+      safeLocalStorage.removeItem("vehicles");
+      safeLocalStorage.removeItem("invoices");
+      safeLocalStorage.removeItem("activityHistory");
+      safeLocalStorage.removeItem("notifications");
+      
+      addActivityLog({
+        type: 'data_cleared',
+        description: 'Demo data cleared successfully',
+        relatedId: null
+      });
+      
+      return { success: true, message: 'Demo data cleared successfully' };
+    } catch (error) {
+      console.error('Failed to clear demo data:', error);
+      return { success: false, error: 'Failed to clear demo data' };
+    }
+  };
+
+  const loadRealData = async () => {
+    try {
+      // In a real app, this would fetch from an API
+      // For now, we'll create a more realistic dataset
+      const realBookings = [
+        {
+          id: 1001,
+          customer: "Executive Transport Ltd",
+          pickup: "Downtown Hotel",
+          destination: "Airport Terminal 1",
+          date: "2024-01-20",
+          time: "06:00",
+          status: "confirmed",
+          driver: "Professional Driver A",
+          vehicle: "Mercedes S-Class",
+          type: "priority",
+          amount: 85
+        },
+        {
+          id: 1002,
+          customer: "Corporate Events Inc",
+          pickup: "Convention Center",
+          destination: "Business District",
+          date: "2024-01-21",
+          time: "09:30",
+          status: "completed",
+          driver: "Professional Driver B",
+          vehicle: "BMW 7 Series",
+          type: "priority",
+          amount: 65
+        }
+      ];
+      
+      const realCustomers = [
+        {
+          id: 1001,
+          name: "Executive Transport Ltd",
+          email: "booking@executivetrans.com",
+          phone: "+1-555-0001",
+          totalBookings: 45,
+          status: "premium"
+        },
+        {
+          id: 1002,
+          name: "Corporate Events Inc",
+          email: "events@corporate.com",
+          phone: "+1-555-0002",
+          totalBookings: 23,
+          status: "active"
+        }
+      ];
+      
+      const realDrivers = [
+        {
+          id: 1001,
+          name: "Professional Driver A",
+          license: "CDL-001234",
+          phone: "+1-555-1001",
+          status: "available",
+          rating: 4.9,
+          experience: "5+ years"
+        },
+        {
+          id: 1002,
+          name: "Professional Driver B",
+          license: "CDL-005678",
+          phone: "+1-555-1002",
+          status: "busy",
+          rating: 4.8,
+          experience: "3+ years"
+        }
+      ];
+      
+      const realVehicles = [
+        {
+          id: 1001,
+          make: "Mercedes",
+          model: "S-Class",
+          year: 2023,
+          license: "LUX-001",
+          status: "available",
+          driver: "Professional Driver A"
+        },
+        {
+          id: 1002,
+          make: "BMW",
+          model: "7 Series",
+          year: 2022,
+          license: "LUX-002",
+          status: "in-use",
+          driver: "Professional Driver B"
+        }
+      ];
+      
+      // Set the real data
+      setBookings(realBookings);
+      setCustomers(realCustomers);
+      setDrivers(realDrivers);
+      setVehicles(realVehicles);
+      
+      // Save to localStorage
+      safeLocalStorage.setItem("bookings", JSON.stringify(realBookings));
+      safeLocalStorage.setItem("customers", JSON.stringify(realCustomers));
+      safeLocalStorage.setItem("drivers", JSON.stringify(realDrivers));
+      safeLocalStorage.setItem("vehicles", JSON.stringify(realVehicles));
+      
+      addActivityLog({
+        type: 'data_loaded',
+        description: 'Real data loaded successfully',
+        relatedId: null
+      });
+      
+      return { success: true, message: 'Real data loaded successfully' };
+    } catch (error) {
+      console.error('Failed to load real data:', error);
+      return { success: false, error: 'Failed to load real data' };
+    }
+  };
+
+  const resetToDemo = () => {
+    try {
+      // Clear current data first
+      clearDemoData();
+      
+      // Reinitialize with demo data
+      initializeBookings();
+      initializeCustomers();
+      initializeDrivers();
+      initializeVehicles();
+      initializeInvoices();
+      
+      addActivityLog({
+        type: 'demo_reset',
+        description: 'Reset to demo data',
+        relatedId: null
+      });
+      
+      return { success: true, message: 'Reset to demo data successfully' };
+    } catch (error) {
+      console.error('Failed to reset to demo:', error);
+      return { success: false, error: 'Failed to reset to demo data' };
     }
   };
 
@@ -576,7 +872,13 @@ export function AppStoreProvider({ children }) {
     cancelInvoice,
     sendInvoice,
     resendInvoice,
-    addActivityLog
+    addActivityLog,
+    clearDemoData,
+    loadRealData,
+    resetToDemo,
+    markInvoiceAsPaid,
+    sendBookingReminder,
+    syncBookingData
   };
 
   return (

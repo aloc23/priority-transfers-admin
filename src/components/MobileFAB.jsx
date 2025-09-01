@@ -43,21 +43,21 @@ export default function MobileFAB() {
       label: 'New Booking',
       icon: BookingIcon,
       href: '#/schedule',
-      color: 'bg-blue-600 hover:bg-blue-700',
+      color: 'bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600',
       permission: true // Available to all authenticated users
     },
     {
       label: 'Add Customer',
       icon: CustomerIcon,
       href: '#/customers',
-      color: 'bg-green-600 hover:bg-green-700',
+      color: 'bg-gradient-to-r from-emerald-600 to-cyan-500 hover:from-emerald-700 hover:to-cyan-600',
       permission: ['Admin', 'Dispatcher'].includes(currentUser?.role)
     },
     {
       label: 'Add Invoice',
       icon: InvoiceIcon,
       href: '#/billing',
-      color: 'bg-purple-600 hover:bg-purple-700',
+      color: 'bg-gradient-to-r from-orange-600 to-pink-500 hover:from-orange-700 hover:to-pink-600',
       permission: ['Admin'].includes(currentUser?.role)
     }
   ];

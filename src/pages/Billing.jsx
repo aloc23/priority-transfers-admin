@@ -21,7 +21,8 @@ export default function Billing() {
     cancelInvoice, 
     sendInvoice, 
     generateInvoiceFromBooking,
-    addInvoice
+    addInvoice,
+    markInvoiceAsPaid
   } = useAppStore();
   
   const [showModal, setShowModal] = useState(false);
@@ -306,6 +307,15 @@ export default function Billing() {
                           title="Send Invoice"
                         >
                           <SendIcon className="w-3 h-3" />
+                        </button>
+                      )}
+                      {(invoice.status === 'sent' || invoice.status === 'pending') && (
+                        <button 
+                          onClick={() => markInvoiceAsPaid(invoice.id)}
+                          className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs hover:shadow-sm transition-shadow"
+                          title="Mark as Paid"
+                        >
+                          €
                         </button>
                       )}
                       <button 
