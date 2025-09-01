@@ -1,4 +1,5 @@
 import { useAppStore } from "../context/AppStore";
+import { Link } from "react-router-dom";
 import { 
   BookingIcon, 
   CustomerIcon, 
@@ -79,9 +80,9 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Recent Bookings</h2>
-          <a href="/schedule" className="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+          <Link to="/schedule" className="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
             View all →
-          </a>
+          </Link>
         </div>
         
         {recentBookings.length === 0 ? (
@@ -135,9 +136,9 @@ export default function Dashboard() {
           </div>
           <h3 className="text-lg font-semibold mb-2">New Booking</h3>
           <p className="text-gray-600 mb-4">Create a new transfer booking</p>
-          <a href="/schedule" className="btn btn-primary hover:shadow-md transition-shadow">
+          <Link to="/schedule" className="btn btn-primary hover:shadow-md transition-shadow">
             Book Now
-          </a>
+          </Link>
         </div>
 
         <div className="card text-center hover:shadow-lg transition-shadow">
@@ -146,9 +147,9 @@ export default function Dashboard() {
           </div>
           <h3 className="text-lg font-semibold mb-2">Add Customer</h3>
           <p className="text-gray-600 mb-4">Register a new customer</p>
-          <a href="/customers" className="btn btn-primary hover:shadow-md transition-shadow">
+          <Link to="/customers" className="btn btn-primary hover:shadow-md transition-shadow">
             Add Customer
-          </a>
+          </Link>
         </div>
 
         <div className="card text-center hover:shadow-lg transition-shadow">
@@ -157,9 +158,9 @@ export default function Dashboard() {
           </div>
           <h3 className="text-lg font-semibold mb-2">Manage Fleet</h3>
           <p className="text-gray-600 mb-4">View and manage vehicles</p>
-          <a href="/fleet" className="btn btn-primary hover:shadow-md transition-shadow">
+          <Link to="/fleet" className="btn btn-primary hover:shadow-md transition-shadow">
             View Fleet
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -168,9 +169,9 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
-            <a href="/history" className="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+            <Link to="/history" className="text-indigo-600 hover:text-indigo-500 text-sm font-medium">
               View all →
-            </a>
+            </Link>
           </div>
           <div className="space-y-3">
             {recentActivity.map((activity) => (
