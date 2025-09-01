@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { 
@@ -17,6 +17,8 @@ import {
   TrendDownIcon
 } from "../components/Icons";
 import ReportDetailsModal from "../components/ReportDetailsModal";
+import AdvancedFilters from "../components/AdvancedFilters";
+import { exportToCSV, exportReportData } from "../utils/export";
 
 export default function Reports() {
   const { bookings, customers, drivers, vehicles, invoices } = useAppStore();
@@ -26,10 +28,34 @@ export default function Reports() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [outsourcingExpanded, setOutsourcingExpanded] = useState(false);
+  const [savedViews, setSavedViews] = useState([]);
+  const [filters, setFilters] = useState({
+    dateRange: { start: '', end: '' },
+    status: 'all',
+    type: 'all',
+    customer: '',
+    driver: '',
+    minAmount: '',
+    maxAmount: '',
+    sortBy: 'date',
+    sortOrder: 'desc'
+  });
 
   const generateReport = (type) => {
     alert(`Generating ${type} report...`);
   };
+
+  // Load saved views on component mount
+  useEffect(() => {
+    const savedViewsData = localStorage.getItem('reportViews');
+    if (savedViewsData) {
+      try {
+        setSavedViews(JSON.parse(savedViewsData));
+      } catch (error) {
+        console.error('Failed to load saved views:', error);
+      }
+    }
+  }, []);
 
   const viewReport = (reportType) => {
     const report = reportTypes.find(r => r.title === reportType);
@@ -42,12 +68,91 @@ export default function Reports() {
     setSelectedReport(null);
   };
 
-  // Filter bookings based on selected types
+  // Filter bookings based on advanced filters
   const filteredBookings = bookings.filter(booking => {
+    // Basic type filters
     if (!showPriority && booking.type === 'priority') return false;
     if (!showOutsourced && booking.type === 'outsourced') return false;
+    
+    // Advanced filters
+    if (filters.status !== 'all' && booking.status !== filters.status) return false;
+    if (filters.type !== 'all' && booking.type !== filters.type) return false;
+    
+    // Date range filter
+    if (filters.dateRange?.start && booking.date < filters.dateRange.start) return false;
+    if (filters.dateRange?.end && booking.date > filters.dateRange.end) return false;
+    
+    // Customer filter
+    if (filters.customer && !booking.customer.toLowerCase().includes(filters.customer.toLowerCase())) return false;
+    
+    // Driver filter
+    if (filters.driver && !booking.driver.toLowerCase().includes(filters.driver.toLowerCase())) return false;
+    
+    // Amount filters
+    const amount = booking.amount || EURO_PRICE_PER_BOOKING;
+    if (filters.minAmount && amount < parseFloat(filters.minAmount)) return false;
+    if (filters.maxAmount && amount > parseFloat(filters.maxAmount)) return false;
+    
     return true;
+  }).sort((a, b) => {
+    // Apply sorting
+    let aVal = a[filters.sortBy];
+    let bVal = b[filters.sortBy];
+    
+    if (filters.sortBy === 'amount') {
+      aVal = a.amount || EURO_PRICE_PER_BOOKING;
+      bVal = b.amount || EURO_PRICE_PER_BOOKING;
+    }
+    
+    if (typeof aVal === 'string') {
+      aVal = aVal.toLowerCase();
+      bVal = bVal.toLowerCase();
+    }
+    
+    if (filters.sortOrder === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    } else {
+      return aVal < bVal ? 1 : -1;
+    }
   });
+
+  const handleExport = async (format) => {
+    try {
+      let exportData = filteredBookings.map(booking => ({
+        Date: booking.date,
+        Customer: booking.customer,
+        Pickup: booking.pickup,
+        Destination: booking.destination,
+        Driver: booking.driver,
+        Vehicle: booking.vehicle,
+        Status: booking.status,
+        Type: booking.type,
+        Amount: formatCurrency(booking.amount || EURO_PRICE_PER_BOOKING)
+      }));
+
+      if (format === 'CSV') {
+        await exportToCSV(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`);
+      } else if (format === 'PDF' || format === 'Excel') {
+        await exportReportData('booking', exportData);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  };
+
+  const handleSaveView = (view) => {
+    const updatedViews = [...savedViews, view];
+    setSavedViews(updatedViews);
+    localStorage.setItem('reportViews', JSON.stringify(updatedViews));
+  };
+
+  const handleLoadView = (viewName) => {
+    const view = savedViews.find(v => v.name === viewName);
+    if (view) {
+      setFilters(view.filters);
+    }
+  };
 
   const monthlyStats = {
     totalBookings: filteredBookings.length,
@@ -317,10 +422,23 @@ export default function Reports() {
 
       {activeTab === "history" && (
         <div className="space-y-6">
+          {/* Advanced Filters */}
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onExport={handleExport}
+            onSaveView={handleSaveView}
+            onLoadView={handleLoadView}
+            savedViews={savedViews}
+            exportFormats={['CSV', 'PDF', 'Excel']}
+          />
+
           <div className="card">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">Booking History & Analytics</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">
+              Booking History & Analytics ({filteredBookings.length} results)
+            </h2>
             
-            {/* Filters */}
+            {/* Quick Filters */}
             <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-slate-50 rounded-lg">
               <div className="flex items-center gap-2">
                 <label className="flex items-center">
@@ -342,14 +460,6 @@ export default function Reports() {
                   <span className="text-sm font-medium text-slate-700">Outsourced</span>
                 </label>
               </div>
-              <button className="btn btn-outline text-sm">
-                <FilterIcon className="w-4 h-4 mr-2" />
-                More Filters
-              </button>
-              <button className="btn btn-outline text-sm">
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                Export
-              </button>
             </div>
 
             {/* History Table */}
@@ -363,6 +473,7 @@ export default function Reports() {
                     <th>Type</th>
                     <th>Status</th>
                     <th>Revenue</th>
+                    <th>Driver</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -384,16 +495,24 @@ export default function Reports() {
                         <span className={`badge ${
                           booking.status === 'completed' ? 'badge-green' :
                           booking.status === 'confirmed' ? 'badge-blue' :
+                          booking.status === 'in-progress' ? 'badge-cyan' :
                           'badge-yellow'
                         }`}>
                           {booking.status}
                         </span>
                       </td>
                       <td className="font-bold">{formatCurrency(booking.amount || EURO_PRICE_PER_BOOKING)}</td>
+                      <td className="text-sm text-slate-600">{booking.driver}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              
+              {filteredBookings.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  No bookings found matching the current filters.
+                </div>
+              )}
             </div>
           </div>
         </div>
