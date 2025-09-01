@@ -12,7 +12,7 @@ export default function Schedule() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [view, setView] = useState("month");
 
-  // Transform bookings into calendar events
+  // Convert bookings into calendar events
   const events = useMemo(() => {
     return bookings.map((b) => {
       const customer =
@@ -23,9 +23,8 @@ export default function Schedule() {
         id: b.id,
         title: `${customer} → ${driver}`,
         start: new Date(b.date),
-        end: new Date(new Date(b.date).getTime() + 60 * 60 * 1000), // +1h
+        end: new Date(new Date(b.date).getTime() + 60 * 60 * 1000),
         resource: b,
-        allDay: false,
       };
     });
   }, [bookings, customers, drivers]);
@@ -36,7 +35,7 @@ export default function Schedule() {
         <CalendarIcon className="w-6 h-6" /> Schedule
       </h1>
 
-      {/* Calendar (desktop) */}
+      {/* Desktop calendar */}
       <div className="hidden md:block h-[70vh] mb-4">
         <Calendar
           localizer={localizer}
@@ -46,14 +45,13 @@ export default function Schedule() {
           defaultView="month"
           view={view}
           onView={(v) => setView(v)}
-          selectable
-          resizable
           popup
+          selectable
           onSelectEvent={(e) => setSelectedBooking(e.resource)}
         />
       </div>
 
-      {/* Mobile agenda list */}
+      {/* Mobile agenda */}
       <div className="md:hidden space-y-3">
         {events
           .sort((a, b) => a.start - b.start)
