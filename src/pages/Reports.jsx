@@ -12,20 +12,28 @@ import {
   FilterIcon, 
   DownloadIcon 
 } from "../components/Icons";
+import ReportDetailsModal from "../components/ReportDetailsModal";
 
 export default function Reports() {
   const { bookings, customers, drivers, vehicles, invoices } = useAppStore();
   const [showOutsourced, setShowOutsourced] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const generateReport = (type) => {
     alert(`Generating ${type} report...`);
   };
 
-  const viewReport = (type) => {
-    setSelectedReport(type);
-    alert(`Viewing ${type} report...`);
+  const viewReport = (reportType) => {
+    const report = reportTypes.find(r => r.title === reportType);
+    setSelectedReport(report);
+    setShowReportModal(true);
+  };
+
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setSelectedReport(null);
   };
 
   // Filter bookings based on selected types
@@ -241,6 +249,14 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      {/* Report Details Modal */}
+      <ReportDetailsModal
+        report={selectedReport}
+        isOpen={showReportModal}
+        onClose={closeReportModal}
+        data={{ monthlyStats, invoiceStats, customers, drivers, vehicles }}
+      />
     </div>
   );
 }

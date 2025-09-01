@@ -39,8 +39,7 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: "profile", label: "Company Profile", icon: CustomerIcon },
-    { id: "notifications", label: "Notifications", icon: NotificationIcon },
+    { id: "profile", label: "Profile & Notifications", icon: CustomerIcon },
     { id: "booking", label: "Booking Settings", icon: SettingsListIcon },
     { id: "billing", label: "Billing & Payment", icon: RevenueIcon },
     { id: "users", label: "User Management", icon: BookingIcon },
@@ -82,108 +81,110 @@ export default function Settings() {
         {/* Content */}
         <div className="flex-1">
           {activeTab === "profile" && (
-            <div className="card">
-              <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block mb-1">Company Name</label>
-                  <input
-                    type="text"
-                    value={settings.companyName}
-                    onChange={(e) => setSettings({...settings, companyName: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* Company Profile Section */}
+              <div className="card">
+                <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
+                <div className="space-y-4">
                   <div>
-                    <label className="block mb-1">Email</label>
+                    <label className="block mb-1">Company Name</label>
                     <input
-                      type="email"
-                      value={settings.email}
-                      onChange={(e) => setSettings({...settings, email: e.target.value})}
+                      type="text"
+                      value={settings.companyName}
+                      onChange={(e) => setSettings({...settings, companyName: e.target.value})}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={settings.email}
+                        onChange={(e) => setSettings({...settings, email: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        value={settings.phone}
+                        onChange={(e) => setSettings({...settings, phone: e.target.value})}
+                      />
+                    </div>
+                  </div>
                   <div>
-                    <label className="block mb-1">Phone</label>
-                    <input
-                      type="tel"
-                      value={settings.phone}
-                      onChange={(e) => setSettings({...settings, phone: e.target.value})}
+                    <label className="block mb-1">Address</label>
+                    <textarea
+                      value={settings.address}
+                      onChange={(e) => setSettings({...settings, address: e.target.value})}
+                      rows="3"
+                      className="w-full border rounded px-3 py-2"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block mb-1">Address</label>
-                  <textarea
-                    value={settings.address}
-                    onChange={(e) => setSettings({...settings, address: e.target.value})}
-                    rows="3"
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <button
-                  onClick={() => handleSave("Profile")}
-                  className="btn btn-primary"
-                >
-                  Save Profile
-                </button>
               </div>
-            </div>
-          )}
 
-          {activeTab === "notifications" && (
-            <div className="card">
-              <h2 className="text-xl font-semibold mb-4">Notification Preferences</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="font-medium">Email Notifications</label>
-                    <p className="text-sm text-gray-600">Receive updates via email</p>
+              {/* Notification Preferences Section */}
+              <div className="card">
+                <h2 className="text-xl font-semibold mb-4">Notification Preferences</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">Email Notifications</label>
+                      <p className="text-sm text-gray-600">Receive updates via email</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.email}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, email: e.target.checked }
+                      })}
+                      className="rounded"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={settings.notifications.email}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, email: e.target.checked }
-                    })}
-                    className="rounded"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="font-medium">SMS Notifications</label>
-                    <p className="text-sm text-gray-600">Receive updates via SMS</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">SMS Notifications</label>
+                      <p className="text-sm text-gray-600">Receive updates via SMS</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.sms}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, sms: e.target.checked }
+                      })}
+                      className="rounded"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={settings.notifications.sms}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, sms: e.target.checked }
-                    })}
-                    className="rounded"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="font-medium">Push Notifications</label>
-                    <p className="text-sm text-gray-600">Receive browser notifications</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">Push Notifications</label>
+                      <p className="text-sm text-gray-600">Receive browser notifications</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.push}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        notifications: { ...settings.notifications, push: e.target.checked }
+                      })}
+                      className="rounded"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={settings.notifications.push}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, push: e.target.checked }
-                    })}
-                    className="rounded"
-                  />
                 </div>
+              </div>
+
+              <div className="flex gap-3">
                 <button
-                  onClick={() => handleSave("Notifications")}
+                  onClick={() => handleSave("Profile & Notifications")}
                   className="btn btn-primary"
                 >
-                  Save Preferences
+                  Save All Settings
+                </button>
+                <button className="btn btn-outline">
+                  Reset to Defaults
                 </button>
               </div>
             </div>

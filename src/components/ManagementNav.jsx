@@ -8,7 +8,7 @@ const managementRoutes = [
   { path: '/fleet', label: 'Fleet', roles: ['Admin'] }
 ];
 
-export default function ManagementNav({ currentUser, sidebarOpen }) {
+export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const location = useLocation();
 
@@ -25,6 +25,12 @@ export default function ManagementNav({ currentUser, sidebarOpen }) {
   if (allowedRoutes.length === 0) {
     return null;
   }
+
+  const handleLinkClick = () => {
+    if (onMobileClick) {
+      onMobileClick();
+    }
+  };
 
   return (
     <li>
@@ -67,6 +73,7 @@ export default function ManagementNav({ currentUser, sidebarOpen }) {
                       isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-600'
                     }`
                   }
+                  onClick={handleLinkClick}
                 >
                   {route.label}
                 </NavLink>
