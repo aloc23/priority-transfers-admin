@@ -10,7 +10,11 @@ import {
   ReportsIcon, 
   ViewIcon, 
   FilterIcon, 
-  DownloadIcon 
+  DownloadIcon,
+  OutsourceIcon,
+  SuccessIcon,
+  TrendUpIcon,
+  TrendDownIcon
 } from "../components/Icons";
 import ReportDetailsModal from "../components/ReportDetailsModal";
 
@@ -20,6 +24,8 @@ export default function Reports() {
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [outsourcingExpanded, setOutsourcingExpanded] = useState(false);
 
   const generateReport = (type) => {
     alert(`Generating ${type} report...`);
@@ -59,6 +65,38 @@ export default function Reports() {
     totalInvoiceValue: invoices.reduce((sum, inv) => sum + inv.amount, 0)
   };
 
+  // Enhanced KPIs with trend analysis
+  const enhancedKPIs = {
+    customerRetention: 85.4, // percentage
+    averageBookingValue: monthlyStats.revenue / (monthlyStats.totalBookings || 1),
+    growthRate: 12.3, // percentage month-over-month
+    customerSatisfaction: 4.7,
+    operationalEfficiency: 92.1, // percentage
+    profitMargin: 23.8, // percentage
+    repeatCustomers: customers.filter(c => c.totalBookings > 1).length,
+    peakHours: "9:00-11:00 AM, 5:00-7:00 PM"
+  };
+
+  // Outsourcing partners data
+  const outsourcingPartners = [
+    { id: 1, name: "City Cab Co.", contact: "John Smith", phone: "555-0401", status: "active", rating: 4.5, completedBookings: 23, revenue: 1250 },
+    { id: 2, name: "Express Rides", contact: "Sarah Jones", phone: "555-0402", status: "active", rating: 4.2, completedBookings: 18, revenue: 980 },
+    { id: 3, name: "Metro Transport", contact: "Mike Wilson", phone: "555-0403", status: "inactive", rating: 3.8, completedBookings: 8, revenue: 420 }
+  ];
+
+  const outsourcedBookings = [
+    { id: 1, customer: "Alice Johnson", partner: "City Cab Co.", date: "2024-01-20", amount: 65, status: "completed" },
+    { id: 2, customer: "Bob Smith", partner: "Express Rides", date: "2024-01-21", amount: 45, status: "in-progress" },
+    { id: 3, customer: "Carol Brown", partner: "City Cab Co.", date: "2024-01-22", amount: 55, status: "pending" }
+  ];
+
+  const outsourcingStats = {
+    totalPartners: outsourcingPartners.length,
+    activePartners: outsourcingPartners.filter(p => p.status === "active").length,
+    totalOutsourcedRevenue: outsourcingPartners.reduce((sum, p) => sum + p.revenue, 0),
+    averagePartnerRating: outsourcingPartners.reduce((sum, p) => sum + p.rating, 0) / outsourcingPartners.length
+  };
+
   const reportTypes = [
     {
       id: 'revenue',
@@ -77,7 +115,7 @@ export default function Reports() {
     {
       id: 'customer',
       title: 'Customer Analytics',
-      description: 'Customer behavior and preferences',
+      description: 'Customer insights and behavior patterns',
       icon: CustomerIcon,
       color: 'text-blue-600'
     },
@@ -106,157 +144,430 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-        <div className="flex items-center gap-4">
-          <FilterIcon className="w-5 h-5 text-gray-500" />
-          <div className="flex items-center gap-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showPriority}
-                onChange={(e) => setShowPriority(e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm">Priority Transfers</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showOutsourced}
-                onChange={(e) => setShowOutsourced(e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm">Outsourced</span>
-            </label>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Reports & Analytics</h1>
+        
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => setActiveTab("overview")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === "overview" 
+                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
+                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+            }`}
+          >
+            Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab("history")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === "history" 
+                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
+                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+            }`}
+          >
+            History
+          </button>
+          <button 
+            onClick={() => setActiveTab("outsourcing")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === "outsourcing" 
+                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
+                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+            }`}
+          >
+            Outsourcing
+          </button>
         </div>
       </div>
 
-      {/* Monthly Overview */}
-      <div className="card hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Monthly Overview</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{monthlyStats.totalBookings}</div>
-            <div className="text-sm text-gray-600">Total Bookings</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Priority: {monthlyStats.priorityBookings} | Outsourced: {monthlyStats.outsourcedBookings}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{monthlyStats.completedBookings}</div>
-            <div className="text-sm text-gray-600">Completed</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {monthlyStats.totalBookings > 0 ? Math.round((monthlyStats.completedBookings / monthlyStats.totalBookings) * 100) : 0}% completion rate
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{formatCurrency(monthlyStats.revenue)}</div>
-            <div className="text-sm text-gray-600">Revenue</div>
-            <div className="text-xs text-gray-500 mt-1">
-              From completed bookings
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">{monthlyStats.averageRating}</div>
-            <div className="text-sm text-gray-600">Avg Rating</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Based on customer feedback
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Invoice & Revenue Stats */}
-      <div className="card hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Invoice & Payment Overview</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{invoiceStats.totalInvoices}</div>
-            <div className="text-sm text-gray-600">Total Invoices</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{invoiceStats.paidInvoices}</div>
-            <div className="text-sm text-gray-600">Paid Invoices</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">{invoiceStats.pendingInvoices}</div>
-            <div className="text-sm text-gray-600">Pending Payment</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{formatCurrency(invoiceStats.totalInvoiceValue)}</div>
-            <div className="text-sm text-gray-600">Invoice Value</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Report Generation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reportTypes.map((report) => {
-          const IconComponent = report.icon;
-          return (
-            <div key={report.id} className="card hover:shadow-lg transition-shadow">
+      {activeTab === "overview" && (
+        <>
+          {/* Enhanced KPI Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="card p-4">
               <div className="text-center">
-                <div className={`${report.color} mb-4 flex justify-center`}>
-                  <IconComponent className="w-12 h-12" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{report.title}</h3>
-                <p className="text-gray-600 mb-4">{report.description}</p>
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => viewReport(report.title)}
-                    className="btn btn-outline w-full hover:shadow-sm transition-shadow"
-                  >
-                    <ViewIcon className="w-4 h-4 mr-2" />
-                    View Report
-                  </button>
-                  <button 
-                    onClick={() => generateReport(report.title)}
-                    className="btn btn-primary w-full hover:shadow-sm transition-shadow"
-                  >
-                    <DownloadIcon className="w-4 h-4 mr-2" />
-                    Generate Report
-                  </button>
+                <div className="text-2xl font-bold text-emerald-600">{enhancedKPIs.customerRetention}%</div>
+                <div className="text-xs text-slate-600">Customer Retention</div>
+                <div className="flex items-center justify-center mt-1">
+                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+                  <span className="text-xs text-emerald-500">+2.3%</span>
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Quick Stats */}
-      <div className="card hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">System Statistics</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-gray-900">{customers.length}</div>
-            <div className="text-sm text-gray-600">Active Customers</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">{drivers.length}</div>
-            <div className="text-sm text-gray-600">Total Drivers</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">{vehicles.length}</div>
-            <div className="text-sm text-gray-600">Fleet Size</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">
-              {drivers.filter(d => d.status === "available").length}
+            
+            <div className="card p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{formatCurrency(enhancedKPIs.averageBookingValue)}</div>
+                <div className="text-xs text-slate-600">Avg Booking Value</div>
+                <div className="flex items-center justify-center mt-1">
+                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+                  <span className="text-xs text-emerald-500">+5.1%</span>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Available Drivers</div>
+            
+            <div className="card p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{enhancedKPIs.growthRate}%</div>
+                <div className="text-xs text-slate-600">Growth Rate</div>
+                <div className="flex items-center justify-center mt-1">
+                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+                  <span className="text-xs text-emerald-500">MoM</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-600">{enhancedKPIs.customerSatisfaction}</div>
+                <div className="text-xs text-slate-600">Satisfaction</div>
+                <div className="flex items-center justify-center mt-1">
+                  <StarIcon className="w-3 h-3 text-amber-500 mr-1" />
+                  <span className="text-xs text-slate-500">Rating</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-cyan-600">{enhancedKPIs.operationalEfficiency}%</div>
+                <div className="text-xs text-slate-600">Efficiency</div>
+                <div className="flex items-center justify-center mt-1">
+                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+                  <span className="text-xs text-emerald-500">+1.2%</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{enhancedKPIs.profitMargin}%</div>
+                <div className="text-xs text-slate-600">Profit Margin</div>
+                <div className="flex items-center justify-center mt-1">
+                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+                  <span className="text-xs text-emerald-500">+3.4%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Monthly Overview */}
+          <div className="card">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Monthly Overview</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{monthlyStats.totalBookings}</div>
+                <div className="text-sm text-slate-600">Total Bookings</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Priority: {monthlyStats.priorityBookings} | Outsourced: {monthlyStats.outsourcedBookings}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{monthlyStats.completedBookings}</div>
+                <div className="text-sm text-slate-600">Completed</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {monthlyStats.totalBookings > 0 ? Math.round((monthlyStats.completedBookings / monthlyStats.totalBookings) * 100) : 0}% completion rate
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{formatCurrency(monthlyStats.revenue)}</div>
+                <div className="text-sm text-slate-600">Revenue</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  From completed bookings
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-yellow-600">{monthlyStats.averageRating}</div>
+                <div className="text-sm text-slate-600">Avg Rating</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Based on customer feedback
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Report Types Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {reportTypes.map((report) => {
+              const IconComponent = report.icon;
+              return (
+                <div key={report.id} className="card hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer"
+                     onClick={() => viewReport(report.title)}>
+                  <div className="flex items-center mb-4">
+                    <div className={`p-3 rounded-lg ${report.color} bg-opacity-10 mr-4`}>
+                      <IconComponent className={`w-6 h-6 ${report.color}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">{report.title}</h3>
+                      <p className="text-sm text-slate-600">{report.description}</p>
+                    </div>
+                  </div>
+                  <button className="btn btn-outline w-full">
+                    <ViewIcon className="w-4 h-4 mr-2" />
+                    View Report
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {activeTab === "history" && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Booking History & Analytics</h2>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showPriority}
+                    onChange={(e) => setShowPriority(e.target.checked)}
+                    className="mr-2 rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Priority Transfers</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showOutsourced}
+                    onChange={(e) => setShowOutsourced(e.target.checked)}
+                    className="mr-2 rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Outsourced</span>
+                </label>
+              </div>
+              <button className="btn btn-outline text-sm">
+                <FilterIcon className="w-4 h-4 mr-2" />
+                More Filters
+              </button>
+              <button className="btn btn-outline text-sm">
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                Export
+              </button>
+            </div>
+
+            {/* History Table */}
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Route</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBookings.map((booking) => (
+                    <tr key={booking.id}>
+                      <td>{booking.date}</td>
+                      <td className="font-medium">{booking.customer}</td>
+                      <td className="text-sm text-slate-600">
+                        {booking.pickup} → {booking.destination}
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          booking.type === 'priority' ? 'badge-blue' : 'badge-purple'
+                        }`}>
+                          {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          booking.status === 'completed' ? 'badge-green' :
+                          booking.status === 'confirmed' ? 'badge-blue' :
+                          'badge-yellow'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="font-bold">{formatCurrency(booking.amount || EURO_PRICE_PER_BOOKING)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "outsourcing" && (
+        <div className="space-y-6">
+          {/* Outsourcing Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-500 rounded-lg p-3 text-white mr-4">
+                  <OutsourceIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.totalPartners}</p>
+                  <p className="text-sm text-slate-600">Total Partners</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-emerald-600 to-cyan-500 rounded-lg p-3 text-white mr-4">
+                  <SuccessIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.activePartners}</p>
+                  <p className="text-sm text-slate-600">Active Partners</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-orange-600 to-pink-500 rounded-lg p-3 text-white mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(outsourcingStats.totalOutsourcedRevenue)}</p>
+                  <p className="text-sm text-slate-600">Total Revenue</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg p-3 text-white mr-4">
+                  <StarIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.averagePartnerRating.toFixed(1)}</p>
+                  <p className="text-sm text-slate-600">Avg Rating</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Outsourcing Partners */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Outsourcing Partners</h2>
+              <button 
+                onClick={() => setOutsourcingExpanded(!outsourcingExpanded)}
+                className="btn btn-outline"
+              >
+                {outsourcingExpanded ? 'Collapse' : 'Expand'} Details
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Partner</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Rating</th>
+                    {outsourcingExpanded && (
+                      <>
+                        <th>Completed Bookings</th>
+                        <th>Revenue</th>
+                      </>
+                    )}
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outsourcingPartners.map((partner) => (
+                    <tr key={partner.id}>
+                      <td className="font-medium">{partner.name}</td>
+                      <td>
+                        <div className="text-sm">
+                          <div>{partner.contact}</div>
+                          <div className="text-slate-500">{partner.phone}</div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          partner.status === 'active' ? 'badge-green' : 'badge-red'
+                        }`}>
+                          {partner.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center">
+                          <StarIcon className="w-4 h-4 text-yellow-500 mr-1" />
+                          {partner.rating}
+                        </div>
+                      </td>
+                      {outsourcingExpanded && (
+                        <>
+                          <td>{partner.completedBookings}</td>
+                          <td className="font-bold">{formatCurrency(partner.revenue)}</td>
+                        </>
+                      )}
+                      <td>
+                        <button className="btn btn-outline text-xs px-2 py-1 mr-2">Edit</button>
+                        <button className="btn btn-outline text-xs px-2 py-1">View</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Recent Outsourced Bookings */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Recent Outsourced Bookings</h3>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Partner</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outsourcedBookings.map((booking) => (
+                    <tr key={booking.id}>
+                      <td className="font-medium">{booking.customer}</td>
+                      <td>{booking.partner}</td>
+                      <td>{booking.date}</td>
+                      <td className="font-bold">{formatCurrency(booking.amount)}</td>
+                      <td>
+                        <span className={`badge ${
+                          booking.status === 'completed' ? 'badge-green' :
+                          booking.status === 'in-progress' ? 'badge-blue' :
+                          'badge-yellow'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report Details Modal */}
-      <ReportDetailsModal
-        report={selectedReport}
-        isOpen={showReportModal}
-        onClose={closeReportModal}
-        data={{ monthlyStats, invoiceStats, customers, drivers, vehicles }}
-      />
+      {showReportModal && selectedReport && (
+        <ReportDetailsModal
+          report={selectedReport}
+          isOpen={showReportModal}
+          onClose={closeReportModal}
+        />
+      )}
     </div>
   );
 }

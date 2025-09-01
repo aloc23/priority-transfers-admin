@@ -205,7 +205,7 @@ label { @apply text-sm font-semibold text-slate-700; }
   border-right: none;
 }
 
-/* Mobile FAB (Floating Action Button) Styles */
+/* Mobile FAB (Floating Action Button) Styles - Professional Theme */
 .fab-container {
   @apply fixed bottom-6 right-6 z-50;
 }
@@ -215,19 +215,24 @@ label { @apply text-sm font-semibold text-slate-700; }
 }
 
 .fab-main {
-  @apply w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 focus:outline-none flex items-center justify-center;
-  background: linear-gradient(135deg, var(--primary-600) 0%, var(--accent-600) 100%);
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+  @apply w-14 h-14 text-white rounded-full transition-all duration-300 hover:scale-110 focus:outline-none flex items-center justify-center;
+  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.fab-main:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .fab-main:focus {
-  --tw-ring-color: var(--primary-500);
+  --tw-ring-color: var(--neon-purple);
   @apply ring-4 ring-opacity-30;
 }
 
 .fab-main.fab-open {
   @apply rotate-45;
-  background: linear-gradient(135deg, var(--error-500) 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--neon-pink) 0%, #dc2626 100%);
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
 .fab-actions {
@@ -235,12 +240,18 @@ label { @apply text-sm font-semibold text-slate-700; }
 }
 
 .fab-action {
-  @apply w-12 h-12 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0;
+  @apply w-12 h-12 rounded-full text-white transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0;
   animation: fabSlideIn 0.3s ease-out forwards;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.fab-action:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .fab-action-label {
-  @apply absolute right-14 bg-gray-900 text-white px-3 py-1 rounded-lg text-xs whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none;
+  @apply absolute right-14 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
 .fab-action:hover .fab-action-label {
@@ -261,10 +272,10 @@ label { @apply text-sm font-semibold text-slate-700; }
   }
 }
 
-/* Mobile responsiveness improvements */
+/* Mobile and tablet responsiveness improvements */
 @media (max-width: 768px) {
   .card {
-    @apply p-4;
+    @apply p-4 mx-2;
   }
   
   .btn {
@@ -295,7 +306,7 @@ label { @apply text-sm font-semibold text-slate-700; }
   
   .table th,
   .table td {
-    @apply p-2;
+    @apply p-2 text-xs;
   }
   
   /* Better touch targets */
@@ -306,5 +317,91 @@ label { @apply text-sm font-semibold text-slate-700; }
   /* Responsive grid adjustments */
   .responsive-grid {
     @apply grid-cols-1 gap-4;
+  }
+  
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    @apply text-base py-3 px-4 rounded-lg;
+  }
+  
+  /* Stats cards on mobile */
+  .stats-grid {
+    @apply grid-cols-2 gap-3;
+  }
+}
+
+/* Tablet-specific improvements (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .card {
+    @apply p-5;
+  }
+  
+  .container {
+    @apply px-6;
+  }
+  
+  /* Tablet grid layouts */
+  .tablet-grid-2 {
+    @apply grid-cols-2;
+  }
+  
+  .tablet-grid-3 {
+    @apply grid-cols-3;
+  }
+  
+  /* Better table spacing for tablets */
+  .table th,
+  .table td {
+    @apply p-3 text-sm;
+  }
+  
+  /* Sidebar on tablets */
+  .tablet-sidebar {
+    @apply w-20 lg:w-64;
+  }
+  
+  /* Stats cards on tablets */
+  .stats-grid {
+    @apply grid-cols-4 gap-4;
+  }
+}
+
+/* Large tablet and desktop improvements (1024px+) */
+@media (min-width: 1025px) {
+  .container {
+    @apply px-8;
+  }
+  
+  .card {
+    @apply p-6;
+  }
+  
+  /* Enhanced hover effects for desktop */
+  .card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Desktop-specific layouts */
+  .desktop-grid-4 {
+    @apply grid-cols-4;
+  }
+  
+  .desktop-grid-6 {
+    @apply grid-cols-6;
+  }
+}
+
+/* Ultra-wide screen optimizations (1440px+) */
+@media (min-width: 1440px) {
+  .container {
+    @apply max-w-7xl mx-auto;
+  }
+  
+  .ultra-wide-grid {
+    @apply grid-cols-6;
   }
 }

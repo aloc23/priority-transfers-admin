@@ -17,25 +17,25 @@ export default function Dashboard() {
       name: "Total Bookings",
       value: bookings.length,
       icon: BookingIcon,
-      color: "bg-blue-500"
+      color: "bg-gradient-to-r from-purple-600 to-blue-500"
     },
     {
       name: "Active Customers",
       value: customers.length,
       icon: CustomerIcon,
-      color: "bg-green-500"
+      color: "bg-gradient-to-r from-emerald-600 to-cyan-500"
     },
     {
       name: "Available Drivers", 
       value: drivers.filter(d => d.status === "available").length,
       icon: DriverIcon,
-      color: "bg-yellow-500"
+      color: "bg-gradient-to-r from-orange-600 to-pink-500"
     },
     {
       name: "Active Vehicles",
       value: vehicles.filter(v => v.status === "active").length,
       icon: VehicleIcon,
-      color: "bg-purple-500"
+      color: "bg-gradient-to-r from-slate-600 to-slate-700"
     }
   ];
 
@@ -44,9 +44,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <div className="text-sm text-gray-500">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h1>
+        <div className="text-sm text-slate-500">
           {new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -57,18 +57,18 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="stats-grid grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
         {stats.map((stat) => {
           const IconComponent = stat.icon;
           return (
-            <div key={stat.name} className="card hover:shadow-lg transition-shadow">
+            <div key={stat.name} className="card hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
               <div className="flex items-center">
-                <div className={`${stat.color} rounded-lg p-3 text-white mr-4`}>
-                  <IconComponent className="w-6 h-6" />
+                <div className={`${stat.color} rounded-lg p-3 text-white mr-3 lg:mr-4`}>
+                  <IconComponent className="w-5 h-5 lg:w-6 lg:h-6" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-sm text-gray-600">{stat.name}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-slate-900">{stat.value}</p>
+                  <p className="text-xs lg:text-sm text-slate-600">{stat.name}</p>
                 </div>
               </div>
             </div>
