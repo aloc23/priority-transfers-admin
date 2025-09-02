@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AppStoreContext = createContext();
 
+// Currency utility - using Euro pricing
+const EURO_PRICE_PER_BOOKING = 45;
+
 export function useAppStore() {
   const context = useContext(AppStoreContext);
   if (!context) {
@@ -19,6 +22,12 @@ export function AppStoreProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [activityHistory, setActivityHistory] = useState([]);
+  
+  // New data models for enhanced functionality
+  const [partners, setPartners] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [income, setIncome] = useState([]);
+  const [estimations, setEstimations] = useState([]);
 
   // Safe localStorage utility functions
   const safeLocalStorage = {
@@ -142,6 +151,55 @@ export function AppStoreProvider({ children }) {
         setActivityHistory([]);
       }
     }
+
+    // Load new data models
+    const storedPartners = safeLocalStorage.getItem("partners");
+    if (storedPartners) {
+      try {
+        setPartners(JSON.parse(storedPartners));
+      } catch (error) {
+        console.warn('Failed to parse stored partners data:', error);
+        initializePartners();
+      }
+    } else {
+      initializePartners();
+    }
+
+    const storedExpenses = safeLocalStorage.getItem("expenses");
+    if (storedExpenses) {
+      try {
+        setExpenses(JSON.parse(storedExpenses));
+      } catch (error) {
+        console.warn('Failed to parse stored expenses data:', error);
+        initializeExpenses();
+      }
+    } else {
+      initializeExpenses();
+    }
+
+    const storedIncome = safeLocalStorage.getItem("income");
+    if (storedIncome) {
+      try {
+        setIncome(JSON.parse(storedIncome));
+      } catch (error) {
+        console.warn('Failed to parse stored income data:', error);
+        initializeIncome();
+      }
+    } else {
+      initializeIncome();
+    }
+
+    const storedEstimations = safeLocalStorage.getItem("estimations");
+    if (storedEstimations) {
+      try {
+        setEstimations(JSON.parse(storedEstimations));
+      } catch (error) {
+        console.warn('Failed to parse stored estimations data:', error);
+        initializeEstimations();
+      }
+    } else {
+      initializeEstimations();
+    }
   }, []);
 
   const initializeBookings = () => {
@@ -210,6 +268,184 @@ export function AppStoreProvider({ children }) {
     const sampleInvoices = [];
     setInvoices(sampleInvoices);
     safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
+  };
+
+  const initializePartners = () => {
+    const samplePartners = [
+      { 
+        id: 1, 
+        name: "City Cab Co.", 
+        contact: "John Smith", 
+        phone: "555-0401", 
+        email: "john@citycab.com",
+        status: "active", 
+        rating: 4.5,
+        address: "123 Main St, City",
+        completedBookings: 23,
+        totalRevenue: 1250,
+        commissionRate: 15,
+        paymentTerms: "NET30",
+        contractStart: "2024-01-01",
+        contractEnd: "2024-12-31"
+      },
+      { 
+        id: 2, 
+        name: "Express Rides", 
+        contact: "Sarah Jones", 
+        phone: "555-0402", 
+        email: "sarah@expressrides.com",
+        status: "active", 
+        rating: 4.2,
+        address: "456 Oak Ave, City",
+        completedBookings: 18,
+        totalRevenue: 980,
+        commissionRate: 12,
+        paymentTerms: "NET15",
+        contractStart: "2024-02-01",
+        contractEnd: "2024-12-31"
+      },
+      { 
+        id: 3, 
+        name: "Metro Transport", 
+        contact: "Mike Wilson", 
+        phone: "555-0403", 
+        email: "mike@metrotransport.com",
+        status: "inactive", 
+        rating: 3.8,
+        address: "789 Pine St, City",
+        completedBookings: 8,
+        totalRevenue: 420,
+        commissionRate: 18,
+        paymentTerms: "NET30",
+        contractStart: "2023-06-01",
+        contractEnd: "2024-05-31"
+      }
+    ];
+    setPartners(samplePartners);
+    safeLocalStorage.setItem("partners", JSON.stringify(samplePartners));
+  };
+
+  const initializeExpenses = () => {
+    const sampleExpenses = [
+      {
+        id: 1,
+        date: "2024-01-15",
+        description: "Fuel for Fleet Vehicle ABC123",
+        category: "fuel",
+        amount: 85.50,
+        type: "internal",
+        vehicle: "ABC123",
+        driver: "Mike Johnson",
+        receipt: "REC-001",
+        status: "approved"
+      },
+      {
+        id: 2,
+        date: "2024-01-16",
+        description: "Partner Commission - City Cab Co.",
+        category: "outsourced_commission",
+        amount: 12.75,
+        type: "outsourced",
+        partner: "City Cab Co.",
+        bookingId: 1,
+        invoice: "INV-CC-001",
+        status: "pending"
+      },
+      {
+        id: 3,
+        date: "2024-01-17",
+        description: "Vehicle Maintenance - Honda Accord",
+        category: "maintenance",
+        amount: 150.00,
+        type: "internal",
+        vehicle: "XYZ789",
+        service: "Oil change and inspection",
+        vendor: "Auto Service Plus",
+        status: "approved"
+      }
+    ];
+    setExpenses(sampleExpenses);
+    safeLocalStorage.setItem("expenses", JSON.stringify(sampleExpenses));
+  };
+
+  const initializeIncome = () => {
+    const sampleIncome = [
+      {
+        id: 1,
+        date: "2024-01-15",
+        description: "Priority Transfer - John Doe",
+        category: "priority_transfer",
+        amount: 45.00,
+        type: "internal",
+        customer: "John Doe",
+        bookingId: 1,
+        driver: "Mike Johnson",
+        vehicle: "ABC123",
+        status: "received",
+        paymentMethod: "credit_card"
+      },
+      {
+        id: 2,
+        date: "2024-01-16",
+        description: "Outsourced Transfer Revenue Share",
+        category: "outsourced_share",
+        amount: 32.25,
+        type: "outsourced",
+        partner: "City Cab Co.",
+        bookingId: 2,
+        originalAmount: 45.00,
+        commissionRate: 15,
+        status: "received",
+        paymentMethod: "bank_transfer"
+      }
+    ];
+    setIncome(sampleIncome);
+    safeLocalStorage.setItem("income", JSON.stringify(sampleIncome));
+  };
+
+  const initializeEstimations = () => {
+    const sampleEstimations = [
+      {
+        id: 1,
+        date: "2024-01-18",
+        customer: "Corporate Client A",
+        customerEmail: "procurement@corporatea.com",
+        fromAddress: "Airport Terminal 2",
+        toAddress: "Downtown Conference Center",
+        distance: 15.5,
+        estimatedDuration: 25,
+        serviceType: "priority",
+        vehicleType: "luxury",
+        basePrice: 65.00,
+        additionalFees: 10.00,
+        totalPrice: 75.00,
+        status: "pending",
+        validUntil: "2024-01-25",
+        notes: "VIP client - requires luxury vehicle",
+        createdBy: "Admin User"
+      },
+      {
+        id: 2,
+        date: "2024-01-19",
+        customer: "Event Organizer B",
+        customerEmail: "logistics@eventorg.com",
+        fromAddress: "Hotel Grand Plaza",
+        toAddress: "Convention Center",
+        distance: 8.2,
+        estimatedDuration: 15,
+        serviceType: "standard",
+        vehicleType: "standard",
+        basePrice: 35.00,
+        additionalFees: 5.00,
+        totalPrice: 40.00,
+        status: "approved",
+        validUntil: "2024-01-26",
+        notes: "Multiple trips may be required",
+        createdBy: "Admin User"
+      }
+    ];
+    setEstimations(sampleEstimations);
+    safeLocalStorage.setItem("estimations", JSON.stringify(sampleEstimations));
   };
 
   const addActivityLog = (activity) => {
@@ -841,6 +1077,322 @@ export function AppStoreProvider({ children }) {
     return { success: false, error: 'Invoice not found' };
   };
 
+  // Partners CRUD operations
+  const addPartner = (partnerData) => {
+    try {
+      const newPartner = { 
+        ...partnerData, 
+        id: Date.now(), 
+        status: partnerData.status || "active",
+        rating: partnerData.rating || 5.0,
+        completedBookings: 0,
+        totalRevenue: 0
+      };
+      const updatedPartners = [...partners, newPartner];
+      setPartners(updatedPartners);
+      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
+      addActivityLog({
+        type: 'partner_created',
+        description: `New partner ${newPartner.name} added`,
+        relatedId: newPartner.id
+      });
+      
+      return { success: true, partner: newPartner };
+    } catch (error) {
+      console.error('Failed to add partner:', error);
+      return { success: false, error: 'Failed to create partner' };
+    }
+  };
+
+  const updatePartner = (id, updates) => {
+    try {
+      const updatedPartners = partners.map(partner => 
+        partner.id === id ? { ...partner, ...updates } : partner
+      );
+      setPartners(updatedPartners);
+      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
+      addActivityLog({
+        type: 'partner_updated',
+        description: `Partner ${updates.name || 'information'} updated`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update partner:', error);
+      return { success: false, error: 'Failed to update partner' };
+    }
+  };
+
+  const deletePartner = (id) => {
+    try {
+      const partner = partners.find(p => p.id === id);
+      const updatedPartners = partners.filter(partner => partner.id !== id);
+      setPartners(updatedPartners);
+      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
+      addActivityLog({
+        type: 'partner_deleted',
+        description: `Partner ${partner?.name || id} deleted`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete partner:', error);
+      return { success: false, error: 'Failed to delete partner' };
+    }
+  };
+
+  // Expenses CRUD operations
+  const addExpense = (expenseData) => {
+    try {
+      const newExpense = { 
+        ...expenseData, 
+        id: Date.now(),
+        date: expenseData.date || new Date().toISOString().split('T')[0],
+        status: expenseData.status || "pending"
+      };
+      const updatedExpenses = [...expenses, newExpense];
+      setExpenses(updatedExpenses);
+      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
+      addActivityLog({
+        type: 'expense_created',
+        description: `New expense: ${newExpense.description}`,
+        relatedId: newExpense.id
+      });
+      
+      return { success: true, expense: newExpense };
+    } catch (error) {
+      console.error('Failed to add expense:', error);
+      return { success: false, error: 'Failed to create expense' };
+    }
+  };
+
+  const updateExpense = (id, updates) => {
+    try {
+      const updatedExpenses = expenses.map(expense => 
+        expense.id === id ? { ...expense, ...updates } : expense
+      );
+      setExpenses(updatedExpenses);
+      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
+      addActivityLog({
+        type: 'expense_updated',
+        description: `Expense updated: ${updates.description || 'details'}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update expense:', error);
+      return { success: false, error: 'Failed to update expense' };
+    }
+  };
+
+  const deleteExpense = (id) => {
+    try {
+      const expense = expenses.find(e => e.id === id);
+      const updatedExpenses = expenses.filter(expense => expense.id !== id);
+      setExpenses(updatedExpenses);
+      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
+      addActivityLog({
+        type: 'expense_deleted',
+        description: `Expense deleted: ${expense?.description || id}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete expense:', error);
+      return { success: false, error: 'Failed to delete expense' };
+    }
+  };
+
+  // Income CRUD operations
+  const addIncome = (incomeData) => {
+    try {
+      const newIncome = { 
+        ...incomeData, 
+        id: Date.now(),
+        date: incomeData.date || new Date().toISOString().split('T')[0],
+        status: incomeData.status || "received"
+      };
+      const updatedIncome = [...income, newIncome];
+      setIncome(updatedIncome);
+      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
+      addActivityLog({
+        type: 'income_created',
+        description: `New income: ${newIncome.description}`,
+        relatedId: newIncome.id
+      });
+      
+      return { success: true, income: newIncome };
+    } catch (error) {
+      console.error('Failed to add income:', error);
+      return { success: false, error: 'Failed to create income' };
+    }
+  };
+
+  const updateIncome = (id, updates) => {
+    try {
+      const updatedIncome = income.map(inc => 
+        inc.id === id ? { ...inc, ...updates } : inc
+      );
+      setIncome(updatedIncome);
+      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
+      addActivityLog({
+        type: 'income_updated',
+        description: `Income updated: ${updates.description || 'details'}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update income:', error);
+      return { success: false, error: 'Failed to update income' };
+    }
+  };
+
+  const deleteIncome = (id) => {
+    try {
+      const inc = income.find(i => i.id === id);
+      const updatedIncome = income.filter(inc => inc.id !== id);
+      setIncome(updatedIncome);
+      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
+      addActivityLog({
+        type: 'income_deleted',
+        description: `Income deleted: ${inc?.description || id}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete income:', error);
+      return { success: false, error: 'Failed to delete income' };
+    }
+  };
+
+  // Estimations CRUD operations
+  const addEstimation = (estimationData) => {
+    try {
+      const newEstimation = { 
+        ...estimationData, 
+        id: Date.now(),
+        date: estimationData.date || new Date().toISOString().split('T')[0],
+        status: estimationData.status || "pending",
+        createdBy: currentUser?.name || "System"
+      };
+      const updatedEstimations = [...estimations, newEstimation];
+      setEstimations(updatedEstimations);
+      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
+      addActivityLog({
+        type: 'estimation_created',
+        description: `New estimation for ${newEstimation.customer}`,
+        relatedId: newEstimation.id
+      });
+      
+      return { success: true, estimation: newEstimation };
+    } catch (error) {
+      console.error('Failed to add estimation:', error);
+      return { success: false, error: 'Failed to create estimation' };
+    }
+  };
+
+  const updateEstimation = (id, updates) => {
+    try {
+      const updatedEstimations = estimations.map(estimation => 
+        estimation.id === id ? { ...estimation, ...updates } : estimation
+      );
+      setEstimations(updatedEstimations);
+      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
+      addActivityLog({
+        type: 'estimation_updated',
+        description: `Estimation updated for ${updates.customer || 'customer'}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update estimation:', error);
+      return { success: false, error: 'Failed to update estimation' };
+    }
+  };
+
+  const deleteEstimation = (id) => {
+    try {
+      const estimation = estimations.find(e => e.id === id);
+      const updatedEstimations = estimations.filter(estimation => estimation.id !== id);
+      setEstimations(updatedEstimations);
+      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
+      addActivityLog({
+        type: 'estimation_deleted',
+        description: `Estimation deleted for ${estimation?.customer || id}`,
+        relatedId: id
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete estimation:', error);
+      return { success: false, error: 'Failed to delete estimation' };
+    }
+  };
+
+  const convertEstimationToBooking = (estimationId) => {
+    try {
+      const estimation = estimations.find(e => e.id === estimationId);
+      if (!estimation) {
+        return { success: false, error: 'Estimation not found' };
+      }
+
+      // Create booking from estimation
+      const bookingData = {
+        customer: estimation.customer,
+        pickup: estimation.fromAddress,
+        destination: estimation.toAddress,
+        date: new Date().toISOString().split('T')[0],
+        time: "09:00", // Default time
+        status: "confirmed",
+        type: estimation.serviceType,
+        amount: estimation.totalPrice,
+        estimationId: estimationId
+      };
+
+      const bookingResult = addBooking(bookingData);
+      
+      if (bookingResult.success) {
+        // Update estimation status
+        updateEstimation(estimationId, { 
+          status: "converted",
+          convertedToBookingId: bookingResult.booking.id
+        });
+
+        addActivityLog({
+          type: 'estimation_converted',
+          description: `Estimation converted to booking for ${estimation.customer}`,
+          relatedId: estimationId
+        });
+
+        return { success: true, booking: bookingResult.booking };
+      }
+
+      return bookingResult;
+    } catch (error) {
+      console.error('Failed to convert estimation to booking:', error);
+      return { success: false, error: 'Failed to convert estimation' };
+    }
+  };
+
   const value = {
     currentUser,
     bookings,
@@ -850,6 +1402,10 @@ export function AppStoreProvider({ children }) {
     notifications,
     invoices,
     activityHistory,
+    partners,
+    expenses,
+    income,
+    estimations,
     login,
     logout,
     addBooking,
@@ -878,7 +1434,21 @@ export function AppStoreProvider({ children }) {
     resetToDemo,
     markInvoiceAsPaid,
     sendBookingReminder,
-    syncBookingData
+    syncBookingData,
+    // New CRUD operations
+    addPartner,
+    updatePartner,
+    deletePartner,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    addIncome,
+    updateIncome,
+    deleteIncome,
+    addEstimation,
+    updateEstimation,
+    deleteEstimation,
+    convertEstimationToBooking
   };
 
   return (
