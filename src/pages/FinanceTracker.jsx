@@ -421,9 +421,13 @@ export default function FinanceTracker() {
 
   const handleSendInvoice = (invoice) => {
     if (invoice.customerEmail) {
-      sendInvoice(invoice.id, invoice.customerEmail);
+      const result = sendInvoice(invoice.id, invoice.customerEmail);
+      if (result.success) {
+        // Success feedback would be handled by the store notification system
+      }
     } else {
-      alert('Customer email is required to send invoice');
+      // Could be enhanced with a proper notification system
+      console.warn('Customer email is required to send invoice');
     }
   };
 
@@ -435,7 +439,7 @@ export default function FinanceTracker() {
     if (bookingWithoutInvoice) {
       generateInvoiceFromBooking(bookingWithoutInvoice);
     } else {
-      alert('All completed bookings already have invoices generated');
+      console.info('All completed bookings already have invoices generated');
     }
   };
 
@@ -450,14 +454,57 @@ export default function FinanceTracker() {
 
   // Estimation handlers
   const calculateTotalPrice = () => {
-    const base = Number(estimationForm.basePrice) || 0;
+    const distance = Number(estimationForm.distance) || 0;
+    const duration = Number(estimationForm.estimatedDuration) || 0;
+    
+    // Base rates per km and per minute based on service type
+    const rates = {
+      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+    };
+    
+    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+    
+    // Calculate base price from distance and duration
+    const distancePrice = distance * serviceRate.perKm;
+    const timePrice = duration * serviceRate.perMin;
+    const automaticBasePrice = serviceRate.baseRate + distancePrice + timePrice;
+    
+    // Use manual base price if it's higher than calculated, otherwise use calculated
+    const basePrice = Math.max(Number(estimationForm.basePrice) || 0, automaticBasePrice);
     const fees = Number(estimationForm.additionalFees) || 0;
-    return base + fees;
+    
+    return basePrice + fees;
   };
 
   const updateTotalPrice = () => {
     const total = calculateTotalPrice();
-    setEstimationForm({...estimationForm, totalPrice: total});
+    
+    // Also update the base price to the calculated value if it's higher
+    const distance = Number(estimationForm.distance) || 0;
+    const duration = Number(estimationForm.estimatedDuration) || 0;
+    
+    if (distance > 0 || duration > 0) {
+      const rates = {
+        priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+        standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+        luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+      };
+      
+      const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+      const distancePrice = distance * serviceRate.perKm;
+      const timePrice = duration * serviceRate.perMin;
+      const calculatedBasePrice = serviceRate.baseRate + distancePrice + timePrice;
+      
+      setEstimationForm({
+        ...estimationForm, 
+        basePrice: calculatedBasePrice.toFixed(2),
+        totalPrice: total
+      });
+    } else {
+      setEstimationForm({...estimationForm, totalPrice: total});
+    }
   };
 
   const handleEstimationSubmit = (e) => {
@@ -521,9 +568,10 @@ export default function FinanceTracker() {
     if (confirm("Convert this estimation to a booking?")) {
       const result = convertEstimationToBooking(id);
       if (result.success) {
-        alert("Estimation successfully converted to booking!");
+        console.log("Estimation successfully converted to booking");
+        // Success feedback would be handled by the store notification system
       } else {
-        alert("Failed to convert estimation: " + result.error);
+        console.error("Failed to convert estimation:", result.error);
       }
     }
   };
@@ -1100,9 +1148,14 @@ export default function FinanceTracker() {
                   <input
                     type="number"
                     value={estimationForm.distance}
-                    onChange={(e) => setEstimationForm({...estimationForm, distance: e.target.value})}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, distance: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
                     className="form-input"
                     placeholder="0"
+                    min="0"
+                    step="0.1"
                   />
                 </div>
                 <div>
@@ -1110,9 +1163,13 @@ export default function FinanceTracker() {
                   <input
                     type="number"
                     value={estimationForm.estimatedDuration}
-                    onChange={(e) => setEstimationForm({...estimationForm, estimatedDuration: e.target.value})}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, estimatedDuration: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
                     className="form-input"
                     placeholder="0"
+                    min="0"
                   />
                 </div>
               </div>
@@ -1122,7 +1179,10 @@ export default function FinanceTracker() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
                   <select
                     value={estimationForm.serviceType}
-                    onChange={(e) => setEstimationForm({...estimationForm, serviceType: e.target.value})}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, serviceType: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
                     className="form-select"
                   >
                     <option value="priority">Priority Transfer</option>
@@ -1158,6 +1218,25 @@ export default function FinanceTracker() {
                     step="0.01"
                   />
                 </div>
+              </div>
+              
+              {/* Pricing Information */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">Pricing Structure</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-blue-800">
+                  <div>
+                    <strong>Standard:</strong> €10 base + €2.0/km + €1.0/min
+                  </div>
+                  <div>
+                    <strong>Priority:</strong> €15 base + €2.5/km + €1.2/min
+                  </div>
+                  <div>
+                    <strong>Luxury:</strong> €25 base + €3.5/km + €1.8/min
+                  </div>
+                </div>
+                <p className="text-xs text-blue-700 mt-2">
+                  * Base price is automatically calculated from distance and time. You can adjust it manually if needed.
+                </p>
               </div>
               
               <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">

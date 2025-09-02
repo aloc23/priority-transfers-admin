@@ -41,10 +41,6 @@ export default function Reports() {
     sortOrder: 'desc'
   });
 
-  const generateReport = (type) => {
-    alert(`Generating ${type} report...`);
-  };
-
   // Load saved views on component mount
   useEffect(() => {
     const savedViewsData = localStorage.getItem('reportViews');

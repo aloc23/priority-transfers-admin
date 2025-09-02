@@ -199,7 +199,7 @@ export default function Dashboard() {
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <Link to="/estimations" className="block w-full btn btn-primary text-sm">
+            <Link to="/finance" className="block w-full btn btn-primary text-sm">
               <EstimationIcon className="w-4 h-4 mr-2" />
               New Estimation
             </Link>
