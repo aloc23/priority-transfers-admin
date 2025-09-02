@@ -591,6 +591,12 @@ export default function FinanceTracker() {
     }
   };
 
+  const handleDeleteEstimation = (id) => {
+    if (confirm("Are you sure you want to delete this estimation?")) {
+      deleteEstimation(id);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1464,6 +1470,12 @@ export default function FinanceTracker() {
                                   className="btn btn-outline px-2 py-1 text-xs"
                                 >
                                   <EditIcon className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteEstimation(estimation.id)}
+                                  className="btn btn-outline px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                >
+                                  <TrashIcon className="w-3 h-3" />
                                 </button>
                                 {estimation.status === 'pending' && (
                                   <button 
