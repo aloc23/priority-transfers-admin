@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { calculatePriceBreakdown, calculateTotalPrice, formatPriceBreakdown, getPricingConfiguration } from "../utils/priceCalculator";
 import { 
   PlusIcon, 
   EditIcon, 
@@ -453,105 +454,55 @@ export default function FinanceTracker() {
     setInvoiceFormData({ ...invoiceFormData, items: newItems });
   };
 
-  // Estimation handlers
-  const calculateTotalPrice = () => {
-    const distance = Number(estimationForm.distance) || 0;
-    const duration = Number(estimationForm.estimatedDuration) || 0;
-    
-    // Base rates per km and per minute based on service type
-    const rates = {
-      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
-      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
-      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+  // Estimation handlers - using new price calculator
+  const calculateEstimationTotalPrice = () => {
+    const params = {
+      distance: Number(estimationForm.distance) || 0,
+      duration: Number(estimationForm.estimatedDuration) || 0,
+      serviceType: estimationForm.serviceType || 'standard',
+      vehicleType: estimationForm.vehicleType || 'standard',
+      additionalFees: Number(estimationForm.additionalFees) || 0,
+      manualBasePrice: Number(estimationForm.basePrice) || null
     };
     
-    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
-    
-    // Calculate base price from distance and duration
-    const distancePrice = distance * serviceRate.perKm;
-    const timePrice = duration * serviceRate.perMin;
-    const automaticBasePrice = serviceRate.baseRate + distancePrice + timePrice;
-    
-    // Use manual base price if it's higher than calculated, otherwise use calculated
-    const basePrice = Math.max(Number(estimationForm.basePrice) || 0, automaticBasePrice);
-    const fees = Number(estimationForm.additionalFees) || 0;
-    
-    return basePrice + fees;
+    return calculateTotalPrice(params);
   };
 
   const updateTotalPrice = () => {
-    const total = calculateTotalPrice();
+    const params = {
+      distance: Number(estimationForm.distance) || 0,
+      duration: Number(estimationForm.estimatedDuration) || 0,
+      serviceType: estimationForm.serviceType || 'standard',
+      vehicleType: estimationForm.vehicleType || 'standard',
+      additionalFees: Number(estimationForm.additionalFees) || 0,
+      manualBasePrice: Number(estimationForm.basePrice) || null
+    };
     
-    // Also update the base price to the calculated value if it's higher
-    const distance = Number(estimationForm.distance) || 0;
-    const duration = Number(estimationForm.estimatedDuration) || 0;
+    const breakdown = calculatePriceBreakdown(params);
     
-    if (distance > 0 || duration > 0) {
-      const rates = {
-        priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
-        standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
-        luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
-      };
-      
-      const serviceRate = rates[estimationForm.serviceType] || rates.standard;
-      const distancePrice = distance * serviceRate.perKm;
-      const timePrice = duration * serviceRate.perMin;
-      const calculatedBasePrice = serviceRate.baseRate + distancePrice + timePrice;
-      
+    // Update form with calculated values
+    if (params.distance > 0 || params.duration > 0) {
       setEstimationForm({
         ...estimationForm, 
-        basePrice: calculatedBasePrice.toFixed(2),
-        totalPrice: total
+        basePrice: breakdown.finalBasePrice.toFixed(2),
+        totalPrice: breakdown.total
       });
     } else {
-      setEstimationForm({...estimationForm, totalPrice: total});
+      setEstimationForm({...estimationForm, totalPrice: breakdown.total});
     }
   };
 
-  const getPriceBreakdown = () => {
-    const distance = Number(estimationForm.distance) || 0;
-    const duration = Number(estimationForm.estimatedDuration) || 0;
-    
-    const rates = {
-      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
-      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
-      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+  const getEstimationPriceBreakdown = () => {
+    const params = {
+      distance: Number(estimationForm.distance) || 0,
+      duration: Number(estimationForm.estimatedDuration) || 0,
+      serviceType: estimationForm.serviceType || 'standard',
+      vehicleType: estimationForm.vehicleType || 'standard',
+      additionalFees: Number(estimationForm.additionalFees) || 0,
+      manualBasePrice: Number(estimationForm.basePrice) || null
     };
     
-    const vehicleMultipliers = {
-      standard: 1.0,
-      premium: 1.2,
-      luxury: 1.5,
-      van: 1.3
-    };
-    
-    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
-    const vehicleMultiplier = vehicleMultipliers[estimationForm.vehicleType] || 1.0;
-    
-    const baseRate = serviceRate.baseRate;
-    const distancePrice = distance * serviceRate.perKm;
-    const timePrice = duration * serviceRate.perMin;
-    const subtotal = baseRate + distancePrice + timePrice;
-    const vehicleAdjustment = subtotal * (vehicleMultiplier - 1);
-    
-    const currentHour = new Date().getHours();
-    const isPeakHour = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
-    const peakSurcharge = isPeakHour ? subtotal * vehicleMultiplier * 0.25 : 0;
-    
-    const calculatedBase = Math.max(subtotal * vehicleMultiplier + peakSurcharge, baseRate * vehicleMultiplier);
-    const fees = Number(estimationForm.additionalFees) || 0;
-    
-    return {
-      baseRate,
-      distancePrice,
-      timePrice,
-      vehicleAdjustment,
-      peakSurcharge,
-      calculatedBase,
-      fees,
-      total: Math.max(Number(estimationForm.basePrice) || 0, calculatedBase) + fees,
-      isPeakHour
-    };
+    return calculatePriceBreakdown(params);
   };
 
   const handleEstimationSubmit = (e) => {
@@ -563,7 +514,7 @@ export default function FinanceTracker() {
       estimatedDuration: Number(estimationForm.estimatedDuration),
       basePrice: Number(estimationForm.basePrice),
       additionalFees: Number(estimationForm.additionalFees),
-      totalPrice: Number(estimationForm.basePrice) + Number(estimationForm.additionalFees)
+      totalPrice: calculateEstimationTotalPrice()
     };
     
     if (editingEstimation) {
@@ -1189,7 +1140,7 @@ export default function FinanceTracker() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">Price Calculator</h3>
                     <div className="text-sm text-slate-500">
-                      {getPriceBreakdown().isPeakHour && (
+                      {getEstimationPriceBreakdown().isPeakHour && (
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
                           Peak Hours (+25%)
                         </span>
@@ -1321,35 +1272,40 @@ export default function FinanceTracker() {
                       <h4 className="text-sm font-semibold text-blue-900 mb-3">Price Breakdown</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                         {(() => {
-                          const breakdown = getPriceBreakdown();
+                          const breakdown = getEstimationPriceBreakdown();
+                          const formatted = formatPriceBreakdown(breakdown);
                           return (
                             <>
                               <div className="text-blue-800">
                                 <div className="font-semibold">Base Rate</div>
-                                <div>€{breakdown.baseRate.toFixed(2)}</div>
+                                <div>€{formatted.baseRate}</div>
                               </div>
                               <div className="text-blue-800">
                                 <div className="font-semibold">Distance</div>
-                                <div>€{breakdown.distancePrice.toFixed(2)}</div>
+                                <div>€{formatted.distancePrice}</div>
                               </div>
                               <div className="text-blue-800">
                                 <div className="font-semibold">Time</div>
-                                <div>€{breakdown.timePrice.toFixed(2)}</div>
+                                <div>€{formatted.timePrice}</div>
                               </div>
                               <div className="text-blue-800">
-                                <div className="font-semibold">Vehicle</div>
-                                <div>€{breakdown.vehicleAdjustment.toFixed(2)}</div>
+                                <div className="font-semibold">Vehicle Adj.</div>
+                                <div>€{formatted.vehicleAdjustment}</div>
                               </div>
                               {breakdown.peakSurcharge > 0 && (
                                 <div className="text-orange-800">
                                   <div className="font-semibold">Peak Hours</div>
-                                  <div>€{breakdown.peakSurcharge.toFixed(2)}</div>
+                                  <div>€{formatted.peakSurcharge}</div>
                                 </div>
                               )}
-                              {breakdown.fees > 0 && (
+                              <div className="text-green-800">
+                                <div className="font-semibold">Driver Cost</div>
+                                <div>€{formatted.driverCost}</div>
+                              </div>
+                              {breakdown.additionalFees > 0 && (
                                 <div className="text-blue-800">
                                   <div className="font-semibold">Additional</div>
-                                  <div>€{breakdown.fees.toFixed(2)}</div>
+                                  <div>€{formatted.additionalFees}</div>
                                 </div>
                               )}
                             </>
@@ -1389,13 +1345,19 @@ export default function FinanceTracker() {
                       <div>
                         <strong>Peak Hours:</strong> 7-9 AM & 5-7 PM (+25% surcharge)
                       </div>
+                      <div>
+                        <strong>Driver Rates:</strong> Standard (15%), Priority (18%), Luxury (20%)
+                      </div>
+                      <div>
+                        <strong>Components:</strong> Base + Distance + Time + Vehicle + Peak + Driver + Fees
+                      </div>
                     </div>
                   </div>
                   
                   {/* Total Price & Actions */}
                   <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
                     <div className="text-lg font-semibold mb-2 sm:mb-0">
-                      Total Price: <span className="text-2xl text-purple-600">{formatCurrency(calculateTotalPrice())}</span>
+                      Total Price: <span className="text-2xl text-purple-600">{formatCurrency(calculateEstimationTotalPrice())}</span>
                     </div>
                     <div className="flex gap-2">
                       <button 
