@@ -508,6 +508,52 @@ export default function FinanceTracker() {
     }
   };
 
+  const getPriceBreakdown = () => {
+    const distance = Number(estimationForm.distance) || 0;
+    const duration = Number(estimationForm.estimatedDuration) || 0;
+    
+    const rates = {
+      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+    };
+    
+    const vehicleMultipliers = {
+      standard: 1.0,
+      premium: 1.2,
+      luxury: 1.5,
+      van: 1.3
+    };
+    
+    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+    const vehicleMultiplier = vehicleMultipliers[estimationForm.vehicleType] || 1.0;
+    
+    const baseRate = serviceRate.baseRate;
+    const distancePrice = distance * serviceRate.perKm;
+    const timePrice = duration * serviceRate.perMin;
+    const subtotal = baseRate + distancePrice + timePrice;
+    const vehicleAdjustment = subtotal * (vehicleMultiplier - 1);
+    
+    const currentHour = new Date().getHours();
+    const isPeakHour = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
+    const peakSurcharge = isPeakHour ? subtotal * vehicleMultiplier * 0.25 : 0;
+    
+    const calculatedBase = Math.max(subtotal * vehicleMultiplier + peakSurcharge, baseRate * vehicleMultiplier);
+    const fees = Number(estimationForm.additionalFees) || 0;
+    
+    return {
+      baseRate,
+      distancePrice,
+      timePrice,
+      vehicleAdjustment,
+      peakSurcharge,
+      calculatedBase,
+      fees,
+      total: Math.max(Number(estimationForm.basePrice) || 0, calculatedBase) + fees,
+      isPeakHour
+    };
+  };
+
   const handleEstimationSubmit = (e) => {
     e.preventDefault();
     
