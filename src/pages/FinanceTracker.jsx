@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { calculatePriceBreakdown, calculateTotalPrice, formatPriceBreakdown, getPricingConfiguration } from "../utils/priceCalculator";
@@ -55,6 +56,22 @@ export default function FinanceTracker() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [editingIncome, setEditingIncome] = useState(null);
+
+  // URL parameter handling for navigation
+  const [searchParams] = useSearchParams();
+  
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const subtab = searchParams.get('subtab');
+    
+    if (tab) {
+      setActiveTab(tab);
+    }
+    
+    if (subtab && tab === 'billing') {
+      setBillingSubTab(subtab);
+    }
+  }, [searchParams]);
 
   const [filters, setFilters] = useState({
     dateFrom: '',

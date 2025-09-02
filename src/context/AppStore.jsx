@@ -1069,6 +1069,47 @@ export function AppStoreProvider({ children }) {
     }
   };
 
+  const refreshAllData = () => {
+    try {
+      // Force reload all data from localStorage to sync any inconsistencies
+      const bookingsData = safeLocalStorage.getItem("bookings");
+      const customersData = safeLocalStorage.getItem("customers");
+      const driversData = safeLocalStorage.getItem("drivers");
+      const vehiclesData = safeLocalStorage.getItem("vehicles");
+      const invoicesData = safeLocalStorage.getItem("invoices");
+      const activityData = safeLocalStorage.getItem("activityHistory");
+      const notificationsData = safeLocalStorage.getItem("notifications");
+      const partnersData = safeLocalStorage.getItem("partners");
+      const expensesData = safeLocalStorage.getItem("expenses");
+      const incomeData = safeLocalStorage.getItem("income");
+      const estimationsData = safeLocalStorage.getItem("estimations");
+
+      // Refresh all state with latest data from storage
+      if (bookingsData) setBookings(JSON.parse(bookingsData));
+      if (customersData) setCustomers(JSON.parse(customersData));
+      if (driversData) setDrivers(JSON.parse(driversData));
+      if (vehiclesData) setVehicles(JSON.parse(vehiclesData));
+      if (invoicesData) setInvoices(JSON.parse(invoicesData));
+      if (activityData) setActivityHistory(JSON.parse(activityData));
+      if (notificationsData) setNotifications(JSON.parse(notificationsData));
+      if (partnersData) setPartners(JSON.parse(partnersData));
+      if (expensesData) setExpenses(JSON.parse(expensesData));
+      if (incomeData) setIncome(JSON.parse(incomeData));
+      if (estimationsData) setEstimations(JSON.parse(estimationsData));
+
+      addActivityLog({
+        type: 'data_refresh',
+        description: 'All KPI and analytics data refreshed successfully',
+        relatedId: null
+      });
+      
+      return { success: true, message: 'All data refreshed successfully. KPIs and analytics updated.' };
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      return { success: false, error: 'Failed to refresh data' };
+    }
+  };
+
   const resendInvoice = (id) => {
     const invoice = invoices.find(inv => inv.id === id);
     if (invoice) {
@@ -1432,6 +1473,7 @@ export function AppStoreProvider({ children }) {
     clearDemoData,
     loadRealData,
     resetToDemo,
+    refreshAllData,
     markInvoiceAsPaid,
     sendBookingReminder,
     syncBookingData,
