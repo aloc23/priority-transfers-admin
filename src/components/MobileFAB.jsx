@@ -63,7 +63,7 @@ export default function MobileFAB() {
     {
       label: 'Add Invoice',
       icon: InvoiceIcon,
-      href: '#/billing',
+      href: '#/finance',
       color: 'bg-gradient-to-r from-orange-600 to-pink-500 hover:from-orange-700 hover:to-pink-600',
       permission: ['Admin'].includes(currentUser?.role)
     }

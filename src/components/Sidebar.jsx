@@ -42,12 +42,6 @@ const navigationItems = [
     roles: ["Admin", "Dispatcher", "Driver"]
   },
   {
-    path: "/outsource",
-    label: "Outsource",
-    icon: OutsourceIcon,
-    roles: ["Admin"]
-  },
-  {
     path: "/history",
     label: "History",
     icon: HistoryIcon,

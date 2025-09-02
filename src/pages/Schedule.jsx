@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { useAppStore } from "../context/AppStore";
+import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { CalendarIcon, PlusIcon } from "../components/Icons";
+import { CalendarIcon, PlusIcon, InvoiceIcon } from "../components/Icons";
 
 // Add TableIcon here since it's not in Icons.jsx yet  
 const TableIcon = ({ className = "w-4 h-4", ...props }) => (
@@ -17,7 +18,7 @@ const TableIcon = ({ className = "w-4 h-4", ...props }) => (
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, sendBookingReminder } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, sendBookingReminder, currentUser } = useAppStore();
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
@@ -127,6 +128,16 @@ export default function Schedule() {
               </>
             )}
           </button>
+          {/* Quick Invoice Creation - Only show for Admin */}
+          {currentUser?.role === 'Admin' && (
+            <Link
+              to="/finance"
+              className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+            >
+              <InvoiceIcon className="w-4 h-4" />
+              Create Invoice
+            </Link>
+          )}
           <button
             onClick={() => setShowModal(true)}
             className="btn btn-primary flex items-center gap-2"
