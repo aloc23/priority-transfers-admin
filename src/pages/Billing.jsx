@@ -37,7 +37,7 @@ export default function Billing() {
   });
 
   const completedBookings = bookings.filter(booking => booking.status === "completed");
-  const totalRevenue = calculateRevenue(bookings, "completed");
+  const totalRevenue = calculateRevenue(bookings, "completed", invoices);
   const pendingPayments = invoices.filter(inv => inv.status === 'pending' || inv.status === 'sent').reduce((sum, inv) => sum + inv.amount, 0);
   const paidInvoices = invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0);
 

@@ -498,6 +498,30 @@ export function AppStoreProvider({ children }) {
 
   const addInvoice = (invoiceData) => {
     try {
+      // Auto-create customer if they don't exist
+      const existingCustomer = customers.find(c => c.name === invoiceData.customer);
+      if (!existingCustomer && invoiceData.customer) {
+        const newCustomer = {
+          id: Date.now(),
+          name: invoiceData.customer,
+          email: invoiceData.customerEmail || '',
+          phone: '',
+          totalBookings: 0,
+          totalSpent: 0,
+          status: 'active',
+          lastBooking: new Date().toISOString().split('T')[0]
+        };
+        const updatedCustomers = [...customers, newCustomer];
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
+        addActivityLog({
+          type: 'customer_auto_created',
+          description: `Customer ${invoiceData.customer} automatically created from invoice`,
+          relatedId: newCustomer.id
+        });
+      }
+
       const invoice = {
         id: `INV-${Date.now()}`,
         bookingId: null, // Independent invoice not linked to a booking
@@ -531,6 +555,9 @@ export function AppStoreProvider({ children }) {
         relatedId: invoice.id
       });
       
+      // Sync invoice data with customer records
+      syncInvoiceData(invoice.id);
+      
       return { success: true, invoice };
     } catch (error) {
       console.error('Failed to create invoice:', error);
@@ -555,7 +582,7 @@ export function AppStoreProvider({ children }) {
       setBookings(updatedBookings);
       safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
       
-      // Update customer totalBookings count
+      // Auto-create customer if they don't exist
       const customerName = newBooking.customer;
       const customer = customers.find(c => c.name === customerName);
       if (customer) {
@@ -564,6 +591,27 @@ export function AppStoreProvider({ children }) {
         );
         setCustomers(updatedCustomers);
         safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      } else if (customerName) {
+        // Create new customer
+        const newCustomer = {
+          id: Date.now(),
+          name: customerName,
+          email: booking.customerEmail || '',
+          phone: booking.customerPhone || '',
+          totalBookings: 1,
+          totalSpent: 0,
+          status: 'active',
+          lastBooking: newBooking.date
+        };
+        const updatedCustomers = [...customers, newCustomer];
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
+        addActivityLog({
+          type: 'customer_auto_created',
+          description: `Customer ${customerName} automatically created from booking`,
+          relatedId: newCustomer.id
+        });
       }
       
       addActivityLog({
@@ -785,6 +833,11 @@ export function AppStoreProvider({ children }) {
 
   const markInvoiceAsPaid = (id, paymentDate = new Date().toISOString()) => {
     try {
+      const invoice = invoices.find(inv => inv.id === id);
+      if (!invoice) {
+        return { success: false, error: 'Invoice not found' };
+      }
+
       const updatedInvoices = invoices.map(invoice => 
         invoice.id === id ? { 
           ...invoice, 
@@ -795,10 +848,34 @@ export function AppStoreProvider({ children }) {
       setInvoices(updatedInvoices);
       safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
       
+      // Auto-create corresponding income entry
+      const incomeEntry = {
+        id: Date.now(),
+        date: paymentDate.split('T')[0],
+        description: `Payment received for invoice ${id} - ${invoice.customer}`,
+        category: invoice.type === 'outsourced' ? 'outsourced_payment' : 'priority_transfer',
+        amount: invoice.amount,
+        type: invoice.type || 'priority',
+        customer: invoice.customer,
+        invoiceId: id,
+        paymentMethod: 'credit_card', // Default payment method
+        status: 'received'
+      };
+      
+      const updatedIncome = [...income, incomeEntry];
+      setIncome(updatedIncome);
+      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       addActivityLog({
         type: 'payment_received',
         description: `Payment received for invoice ${id}`,
         relatedId: id
+      });
+      
+      addActivityLog({
+        type: 'income_created',
+        description: `Income entry created from invoice payment: ${invoice.customer}`,
+        relatedId: incomeEntry.id
       });
       
       addNotification({
@@ -806,6 +883,9 @@ export function AppStoreProvider({ children }) {
         message: `Payment for invoice ${id} has been recorded`,
         type: 'success'
       });
+      
+      // Sync payment data with customer records
+      syncInvoiceData(id);
       
       return { success: true };
     } catch (error) {
@@ -837,6 +917,41 @@ export function AppStoreProvider({ children }) {
     } catch (error) {
       console.error('Failed to send reminder:', error);
       return { success: false, error: 'Failed to send reminder' };
+    }
+  };
+
+  // Enhanced sync function to update related data when invoices change
+  const syncInvoiceData = (invoiceId) => {
+    try {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) return { success: false, error: 'Invoice not found' };
+
+      // Update customer's total spent and invoice count
+      const customerName = invoice.customer;
+      const customer = customers.find(c => c.name === customerName);
+      if (customer) {
+        const customerInvoices = invoices.filter(inv => inv.customer === customerName);
+        const paidInvoices = customerInvoices.filter(inv => inv.status === 'paid');
+        
+        // Recalculate total spent from all paid invoices
+        const totalSpentFromInvoices = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+        
+        const updatedCustomers = customers.map(c => 
+          c.name === customerName ? { 
+            ...c, 
+            totalInvoices: customerInvoices.length,
+            totalSpent: totalSpentFromInvoices,
+            lastInvoice: invoice.date
+          } : c
+        );
+        setCustomers(updatedCustomers);
+        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to sync invoice data:', error);
+      return { success: false, error: 'Failed to sync invoice data' };
     }
   };
 
@@ -1489,6 +1604,7 @@ export function AppStoreProvider({ children }) {
     markInvoiceAsPaid,
     sendBookingReminder,
     syncBookingData,
+    syncInvoiceData,
     // New CRUD operations
     addPartner,
     updatePartner,
