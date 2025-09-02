@@ -815,6 +815,14 @@ export default function Reports() {
           report={selectedReport}
           isOpen={showReportModal}
           onClose={closeReportModal}
+          data={{
+            monthlyStats,
+            invoiceStats,
+            customers,
+            drivers,
+            vehicles,
+            bookings: filteredBookings
+          }}
         />
       )}
     </div>
