@@ -5,8 +5,8 @@ import Schedule from "./pages/Schedule";
 import Customers from "./pages/Customers";
 import Drivers from "./pages/Drivers";
 import Fleet from "./pages/Fleet";
+import Partners from "./pages/Partners";
 import Reports from "./pages/Reports";
-import Outsource from "./pages/Outsource";
 import History from "./pages/History";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
@@ -41,9 +41,9 @@ function AuthenticatedShell() {
             <Route path="/customers" element={<RequireRole roles={["Admin","Dispatcher"]}><Customers /></RequireRole>} />
             <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
+            <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
             <Route path="/finance" element={<RequireRole roles={["Admin"]}><FinanceTracker /></RequireRole>} />
             <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
-            <Route path="/outsource" element={<RequireRole roles={["Admin"]}><Outsource /></RequireRole>} />
             <Route path="/history" element={<RequireRole roles={["Admin"]}><History /></RequireRole>} />
             <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
             <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />

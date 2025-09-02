@@ -7,7 +7,8 @@ import { useResponsive } from '../hooks/useResponsive';
 const managementRoutes = [
   { path: '/customers', label: 'Customers', roles: ['Admin', 'Dispatcher'] },
   { path: '/drivers', label: 'Drivers', roles: ['Admin', 'Dispatcher'] },
-  { path: '/fleet', label: 'Fleet', roles: ['Admin'] }
+  { path: '/fleet', label: 'Fleet', roles: ['Admin'] },
+  { path: '/partners', label: 'Partners', roles: ['Admin'] }
 ];
 
 export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick }) {

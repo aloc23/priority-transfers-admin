@@ -11,7 +11,8 @@ import {
   TrendDownIcon,
   EstimationIcon,
   OutsourceIcon,
-  RevenueIcon
+  RevenueIcon,
+  InvoiceIcon
 } from "../components/Icons";
 
 export default function Dashboard() {
@@ -206,6 +207,10 @@ export default function Dashboard() {
             <Link to="/schedule" className="block w-full btn btn-outline text-sm">
               <BookingIcon className="w-4 h-4 mr-2" />
               New Booking
+            </Link>
+            <Link to="/finance" className="block w-full btn btn-outline text-sm">
+              <InvoiceIcon className="w-4 h-4 mr-2" />
+              Create Invoice
             </Link>
             <Link to="/finance" className="block w-full btn btn-outline text-sm">
               <RevenueIcon className="w-4 h-4 mr-2" />
