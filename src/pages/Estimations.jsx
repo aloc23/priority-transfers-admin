@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { calculateTotalPrice } from "../utils/priceCalculator";
 import { 
   PlusIcon, 
   EditIcon, 
@@ -152,14 +153,21 @@ export default function Estimations() {
     }
   };
 
-  const calculateTotalPrice = () => {
-    const base = Number(estimationForm.basePrice) || 0;
-    const fees = Number(estimationForm.additionalFees) || 0;
-    return base + fees;
+  const calculateEstimationTotalPrice = () => {
+    const params = {
+      distance: Number(estimationForm.distance) || 0,
+      duration: Number(estimationForm.estimatedDuration) || 0,
+      serviceType: estimationForm.serviceType || 'standard',
+      vehicleType: estimationForm.vehicleType || 'standard',
+      additionalFees: Number(estimationForm.additionalFees) || 0,
+      manualBasePrice: Number(estimationForm.basePrice) || null
+    };
+    
+    return calculateTotalPrice(params);
   };
 
   const updateTotalPrice = () => {
-    const total = calculateTotalPrice();
+    const total = calculateEstimationTotalPrice();
     setEstimationForm({...estimationForm, totalPrice: total});
   };
 
@@ -598,7 +606,7 @@ export default function Estimations() {
                   </label>
                   <input
                     type="number"
-                    value={calculateTotalPrice()}
+                    value={calculateEstimationTotalPrice()}
                     className="form-input bg-gray-100"
                     readOnly
                   />
