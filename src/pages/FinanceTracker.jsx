@@ -48,7 +48,8 @@ export default function FinanceTracker() {
     drivers
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState('calculator');
+  const [activeTab, setActiveTab] = useState('expenses');
+  const [billingSubTab, setBillingSubTab] = useState('invoices');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -313,7 +314,7 @@ export default function FinanceTracker() {
         data = filteredInvoices;
         headers = ['Invoice #', 'Customer', 'Date', 'Amount', 'Status', 'Type'];
         break;
-      case 'calculator':
+      case 'estimations':
         data = filteredEstimations;
         headers = ['Customer', 'From', 'To', 'Service Type', 'Total Price', 'Status', 'Date'];
         break;
@@ -345,7 +346,7 @@ export default function FinanceTracker() {
               item.status,
               item.type || 'manual'
             ].join(',');
-          case 'calculator':
+          case 'estimations':
             return [
               `"${item.customer}"`,
               `"${item.fromAddress}"`,
@@ -452,44 +453,24 @@ export default function FinanceTracker() {
     setInvoiceFormData({ ...invoiceFormData, items: newItems });
   };
 
-  // Enhanced Estimation handlers with improved pricing logic
+  // Estimation handlers
   const calculateTotalPrice = () => {
     const distance = Number(estimationForm.distance) || 0;
     const duration = Number(estimationForm.estimatedDuration) || 0;
     
-    // Enhanced rates per km and per minute based on service type
+    // Base rates per km and per minute based on service type
     const rates = {
       priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
       standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
       luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
     };
     
-    // Vehicle type multipliers
-    const vehicleMultipliers = {
-      standard: 1.0,
-      premium: 1.2,
-      luxury: 1.5,
-      van: 1.3
-    };
-    
     const serviceRate = rates[estimationForm.serviceType] || rates.standard;
-    const vehicleMultiplier = vehicleMultipliers[estimationForm.vehicleType] || 1.0;
     
     // Calculate base price from distance and duration
     const distancePrice = distance * serviceRate.perKm;
     const timePrice = duration * serviceRate.perMin;
-    let automaticBasePrice = (serviceRate.baseRate + distancePrice + timePrice) * vehicleMultiplier;
-    
-    // Time-based pricing adjustments (peak hours)
-    const currentHour = new Date().getHours();
-    const isPeakHour = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
-    if (isPeakHour) {
-      automaticBasePrice *= 1.25; // 25% surcharge for peak hours
-    }
-    
-    // Minimum price enforcement
-    const minimumPrice = serviceRate.baseRate * vehicleMultiplier;
-    automaticBasePrice = Math.max(automaticBasePrice, minimumPrice);
+    const automaticBasePrice = serviceRate.baseRate + distancePrice + timePrice;
     
     // Use manual base price if it's higher than calculated, otherwise use calculated
     const basePrice = Math.max(Number(estimationForm.basePrice) || 0, automaticBasePrice);
@@ -498,64 +479,28 @@ export default function FinanceTracker() {
     return basePrice + fees;
   };
 
-  const getPriceBreakdown = () => {
-    const distance = Number(estimationForm.distance) || 0;
-    const duration = Number(estimationForm.estimatedDuration) || 0;
-    
-    const rates = {
-      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
-      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
-      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
-    };
-    
-    const vehicleMultipliers = {
-      standard: 1.0,
-      premium: 1.2,
-      luxury: 1.5,
-      van: 1.3
-    };
-    
-    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
-    const vehicleMultiplier = vehicleMultipliers[estimationForm.vehicleType] || 1.0;
-    
-    const baseRate = serviceRate.baseRate;
-    const distancePrice = distance * serviceRate.perKm;
-    const timePrice = duration * serviceRate.perMin;
-    const subtotal = baseRate + distancePrice + timePrice;
-    const vehicleAdjustment = subtotal * (vehicleMultiplier - 1);
-    
-    const currentHour = new Date().getHours();
-    const isPeakHour = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
-    const peakSurcharge = isPeakHour ? subtotal * vehicleMultiplier * 0.25 : 0;
-    
-    const calculatedBase = Math.max(subtotal * vehicleMultiplier + peakSurcharge, baseRate * vehicleMultiplier);
-    const fees = Number(estimationForm.additionalFees) || 0;
-    
-    return {
-      baseRate,
-      distancePrice,
-      timePrice,
-      vehicleAdjustment,
-      peakSurcharge,
-      calculatedBase,
-      fees,
-      total: Math.max(Number(estimationForm.basePrice) || 0, calculatedBase) + fees,
-      isPeakHour
-    };
-  };
-
   const updateTotalPrice = () => {
     const total = calculateTotalPrice();
-    const breakdown = getPriceBreakdown();
     
-    // Update the base price to the calculated value if it's higher
+    // Also update the base price to the calculated value if it's higher
     const distance = Number(estimationForm.distance) || 0;
     const duration = Number(estimationForm.estimatedDuration) || 0;
     
     if (distance > 0 || duration > 0) {
+      const rates = {
+        priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+        standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+        luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+      };
+      
+      const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+      const distancePrice = distance * serviceRate.perKm;
+      const timePrice = duration * serviceRate.perMin;
+      const calculatedBasePrice = serviceRate.baseRate + distancePrice + timePrice;
+      
       setEstimationForm({
         ...estimationForm, 
-        basePrice: breakdown.calculatedBase.toFixed(2),
+        basePrice: calculatedBasePrice.toFixed(2),
         totalPrice: total
       });
     } else {
@@ -822,17 +767,7 @@ export default function FinanceTracker() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Billing & Invoices
-            </button>
-            <button
-              onClick={() => setActiveTab('calculator')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'calculator'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🧮 Price Calculator
+              Billing & Estimations
             </button>
           </nav>
         </div>
@@ -847,8 +782,7 @@ export default function FinanceTracker() {
             Export {
               activeTab === 'expenses' ? 'Expenses' : 
               activeTab === 'income' ? 'Income' :
-              activeTab === 'billing' ? 'Invoices' :
-              activeTab === 'calculator' ? 'Estimations' : 'Data'
+              activeTab === 'billing' ? 'Billing Data' : 'Data'
             }
           </button>
         </div>
@@ -1039,468 +973,499 @@ export default function FinanceTracker() {
               </div>
             </div>
 
-            {/* Billing Controls */}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-4">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="form-select"
+            {/* Sub-tabs Navigation */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setBillingSubTab('invoices')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    billingSubTab === 'invoices'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="sent">Sent</option>
-                  <option value="paid">Paid</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="form-select"
-                >
-                  <option value="all">All Types</option>
-                  <option value="auto">Auto Generated</option>
-                  <option value="manual">Manual</option>
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={handleGenerateInvoice}
-                  className="btn btn-primary"
-                >
-                  Generate Invoice
+                  Invoices
                 </button>
-                <button 
-                  onClick={() => setShowInvoiceModal(true)}
-                  className="btn btn-outline"
+                <button
+                  onClick={() => setBillingSubTab('estimations')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    billingSubTab === 'estimations'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Create Invoice
+                  Price Calculator
                 </button>
-              </div>
+              </nav>
             </div>
 
-            {/* Invoices Table */}
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Invoice #</th>
-                    <th>Customer</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredInvoices.map((invoice) => (
-                    <tr key={invoice.id}>
-                      <td className="font-mono text-sm">INV-{invoice.id}</td>
-                      <td className="font-medium">{invoice.customer}</td>
-                      <td>{invoice.date}</td>
-                      <td className="font-bold">{formatCurrency(invoice.amount)}</td>
-                      <td>
-                        <span className={`badge ${
-                          invoice.status === 'paid' ? 'badge-green' :
-                          invoice.status === 'sent' ? 'badge-blue' :
-                          invoice.status === 'pending' ? 'badge-yellow' :
-                          'badge-red'
-                        }`}>
-                          {invoice.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleInvoiceEdit(invoice)}
-                            className="btn btn-outline px-2 py-1 text-xs"
-                          >
-                            <EditIcon className="w-3 h-3" />
-                          </button>
-                          {invoice.status === 'pending' && (
-                            <button 
-                              onClick={() => handleSendInvoice(invoice)}
-                              className="btn btn-primary px-2 py-1 text-xs"
-                            >
-                              <SendIcon className="w-3 h-3" />
-                            </button>
-                          )}
-                          {invoice.status === 'sent' && (
-                            <button 
-                              onClick={() => markInvoiceAsPaid(invoice.id)}
-                              className="btn btn-outline px-2 py-1 text-xs"
-                            >
-                              Mark Paid
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+            {/* Invoices Sub-tab Content */}
+            {billingSubTab === 'invoices' && (
+              <>
+                {/* Billing Controls */}
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-4">
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="form-select"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="sent">Sent</option>
+                      <option value="paid">Paid</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="form-select"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="auto">Auto Generated</option>
+                      <option value="manual">Manual</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleGenerateInvoice}
+                      className="btn btn-primary"
+                    >
+                      Generate Invoice
+                    </button>
+                    <button 
+                      onClick={() => setShowInvoiceModal(true)}
+                      className="btn btn-outline"
+                    >
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Create Invoice
+                    </button>
+                  </div>
+                </div>
 
-        {/* Price Calculator Tab */}
-        {activeTab === 'calculator' && (
-          <div className="space-y-4">
-            {/* Estimation Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="card p-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{estimationStats.total}</div>
-                  <div className="text-xs text-slate-600">Total</div>
-                </div>
-              </div>
-              <div className="card p-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{estimationStats.pending}</div>
-                  <div className="text-xs text-slate-600">Pending</div>
-                </div>
-              </div>
-              <div className="card p-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{estimationStats.approved}</div>
-                  <div className="text-xs text-slate-600">Approved</div>
-                </div>
-              </div>
-              <div className="card p-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{estimationStats.converted}</div>
-                  <div className="text-xs text-slate-600">Converted</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Price Calculator */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">🧮 Advanced Price Calculator</h3>
-                <div className="text-sm text-slate-500">
-                  {getPriceBreakdown().isPeakHour && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                      ⚡ Peak Hours (+25%)
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Route Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Address</label>
-                  <input
-                    type="text"
-                    value={estimationForm.fromAddress}
-                    onChange={(e) => setEstimationForm({...estimationForm, fromAddress: e.target.value})}
-                    className="form-input"
-                    placeholder="Pickup location"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">To Address</label>
-                  <input
-                    type="text"
-                    value={estimationForm.toAddress}
-                    onChange={(e) => setEstimationForm({...estimationForm, toAddress: e.target.value})}
-                    className="form-input"
-                    placeholder="Destination"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Distance (km)</label>
-                  <input
-                    type="number"
-                    value={estimationForm.distance}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, distance: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-input"
-                    placeholder="0"
-                    min="0"
-                    step="0.1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
-                  <input
-                    type="number"
-                    value={estimationForm.estimatedDuration}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, estimatedDuration: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-input"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-              </div>
-              
-              {/* Service & Vehicle Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
-                  <select
-                    value={estimationForm.serviceType}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, serviceType: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-select"
-                  >
-                    <option value="standard">🚗 Standard Transfer</option>
-                    <option value="priority">⚡ Priority Transfer</option>
-                    <option value="luxury">✨ Luxury Transfer</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
-                  <select
-                    value={estimationForm.vehicleType}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, vehicleType: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-select"
-                  >
-                    <option value="standard">🚗 Standard Car</option>
-                    <option value="premium">🚙 Premium SUV (+20%)</option>
-                    <option value="luxury">🏎️ Luxury Vehicle (+50%)</option>
-                    <option value="van">🚐 Van/Minibus (+30%)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (€)</label>
-                  <input
-                    type="number"
-                    value={estimationForm.basePrice}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, basePrice: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-input"
-                    min="0"
-                    step="0.01"
-                  />
-                  <div className="text-xs text-gray-500 mt-1">Auto-calculated from inputs</div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Additional Fees (€)</label>
-                  <input
-                    type="number"
-                    value={estimationForm.additionalFees}
-                    onChange={(e) => {
-                      setEstimationForm({...estimationForm, additionalFees: e.target.value});
-                      setTimeout(updateTotalPrice, 50);
-                    }}
-                    className="form-input"
-                    min="0"
-                    step="0.01"
-                  />
-                  <div className="text-xs text-gray-500 mt-1">Airport fees, tolls, etc.</div>
-                </div>
-              </div>
-              
-              {/* Enhanced Pricing Breakdown */}
-              {(estimationForm.distance || estimationForm.estimatedDuration) && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-3">💰 Price Breakdown</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                    {(() => {
-                      const breakdown = getPriceBreakdown();
-                      return (
-                        <>
-                          <div className="text-blue-800">
-                            <div className="font-semibold">Base Rate</div>
-                            <div>€{breakdown.baseRate.toFixed(2)}</div>
-                          </div>
-                          <div className="text-blue-800">
-                            <div className="font-semibold">Distance</div>
-                            <div>€{breakdown.distancePrice.toFixed(2)}</div>
-                          </div>
-                          <div className="text-blue-800">
-                            <div className="font-semibold">Time</div>
-                            <div>€{breakdown.timePrice.toFixed(2)}</div>
-                          </div>
-                          <div className="text-blue-800">
-                            <div className="font-semibold">Vehicle</div>
-                            <div>€{breakdown.vehicleAdjustment.toFixed(2)}</div>
-                          </div>
-                          {breakdown.peakSurcharge > 0 && (
-                            <div className="text-orange-800">
-                              <div className="font-semibold">Peak Hours</div>
-                              <div>€{breakdown.peakSurcharge.toFixed(2)}</div>
-                            </div>
-                          )}
-                          {breakdown.fees > 0 && (
-                            <div className="text-blue-800">
-                              <div className="font-semibold">Additional</div>
-                              <div>€{breakdown.fees.toFixed(2)}</div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
-              
-              {/* Pricing Information */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-                <h4 className="text-sm font-semibold text-slate-900 mb-2">📋 Pricing Structure</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                    <div>
-                      <strong>Standard:</strong> €10 base + €2.0/km + €1.0/min
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-                    <div>
-                      <strong>Priority:</strong> €15 base + €2.5/km + €1.2/min
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-                    <div>
-                      <strong>Luxury:</strong> €25 base + €3.5/km + €1.8/min
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 mt-3 pt-3 border-t border-slate-200">
-                  <div>
-                    <strong>Vehicle Multipliers:</strong> Premium (+20%), Luxury (+50%), Van (+30%)
-                  </div>
-                  <div>
-                    <strong>Peak Hours:</strong> 7-9 AM & 5-7 PM (+25% surcharge)
-                  </div>
-                </div>
-              </div>
-              
-              {/* Total Price & Actions */}
-              <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                <div className="text-lg font-semibold mb-2 sm:mb-0">
-                  Total Price: <span className="text-2xl text-purple-600">{formatCurrency(calculateTotalPrice())}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => {
-                      setEstimationForm({
-                        ...estimationForm,
-                        customer: '',
-                        customerEmail: '',
-                        fromAddress: '',
-                        toAddress: '',
-                        distance: '',
-                        estimatedDuration: '',
-                        basePrice: 45,
-                        additionalFees: 0,
-                        totalPrice: 45
-                      });
-                    }}
-                    className="btn btn-outline"
-                  >
-                    🔄 Reset
-                  </button>
-                  <button 
-                    onClick={() => setShowEstimationModal(true)}
-                    className="btn btn-primary"
-                    disabled={!estimationForm.fromAddress || !estimationForm.toAddress}
-                  >
-                    💾 Save Estimation
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Estimations List */}
-            <div className="card">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Estimations</h3>
-                <div className="flex gap-2">
-                  <select
-                    value={estimationFilters.status}
-                    onChange={(e) => setEstimationFilters({...estimationFilters, status: e.target.value})}
-                    className="form-select text-sm"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="converted">Converted</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Route</th>
-                      <th>Service</th>
-                      <th>Price</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEstimations.map((estimation) => (
-                      <tr key={estimation.id}>
-                        <td className="font-medium">{estimation.customer}</td>
-                        <td className="text-sm">{estimation.fromAddress} → {estimation.toAddress}</td>
-                        <td>
-                          <span className="badge badge-blue">
-                            {estimation.serviceType}
-                          </span>
-                        </td>
-                        <td className="font-bold">{formatCurrency(estimation.totalPrice)}</td>
-                        <td>
-                          <span className={`badge ${
-                            estimation.status === 'approved' ? 'badge-green' :
-                            estimation.status === 'converted' ? 'badge-purple' :
-                            'badge-yellow'
-                          }`}>
-                            {estimation.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => handleEstimationEdit(estimation)}
-                              className="btn btn-outline px-2 py-1 text-xs"
-                            >
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                            {estimation.status === 'pending' && (
+                {/* Invoices Table */}
+                <div className="overflow-x-auto">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.map((invoice) => (
+                        <tr key={invoice.id}>
+                          <td className="font-mono text-sm">INV-{invoice.id}</td>
+                          <td className="font-medium">{invoice.customer}</td>
+                          <td>{invoice.date}</td>
+                          <td className="font-bold">{formatCurrency(invoice.amount)}</td>
+                          <td>
+                            <span className={`badge ${
+                              invoice.status === 'paid' ? 'badge-green' :
+                              invoice.status === 'sent' ? 'badge-blue' :
+                              invoice.status === 'pending' ? 'badge-yellow' :
+                              'badge-red'
+                            }`}>
+                              {invoice.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="flex gap-2">
                               <button 
-                                onClick={() => handleApprove(estimation.id)}
-                                className="btn btn-primary px-2 py-1 text-xs"
-                              >
-                                Approve
-                              </button>
-                            )}
-                            {estimation.status === 'approved' && (
-                              <button 
-                                onClick={() => handleConvert(estimation.id)}
+                                onClick={() => handleInvoiceEdit(invoice)}
                                 className="btn btn-outline px-2 py-1 text-xs"
                               >
-                                <BookingIcon className="w-3 h-3" />
+                                <EditIcon className="w-3 h-3" />
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              {invoice.status === 'pending' && (
+                                <button 
+                                  onClick={() => handleSendInvoice(invoice)}
+                                  className="btn btn-primary px-2 py-1 text-xs"
+                                >
+                                  <SendIcon className="w-3 h-3" />
+                                </button>
+                              )}
+                              {invoice.status === 'sent' && (
+                                <button 
+                                  onClick={() => markInvoiceAsPaid(invoice.id)}
+                                  className="btn btn-outline px-2 py-1 text-xs"
+                                >
+                                  Mark Paid
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Price Calculator Sub-tab Content */}
+            {billingSubTab === 'estimations' && (
+              <div className="space-y-4">
+                {/* Estimation Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="card p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{estimationStats.total}</div>
+                      <div className="text-xs text-slate-600">Total</div>
+                    </div>
+                  </div>
+                  <div className="card p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">{estimationStats.pending}</div>
+                      <div className="text-xs text-slate-600">Pending</div>
+                    </div>
+                  </div>
+                  <div className="card p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{estimationStats.approved}</div>
+                      <div className="text-xs text-slate-600">Approved</div>
+                    </div>
+                  </div>
+                  <div className="card p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{estimationStats.converted}</div>
+                      <div className="text-xs text-slate-600">Converted</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Calculator */}
+                <div className="card">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Price Calculator</h3>
+                    <div className="text-sm text-slate-500">
+                      {getPriceBreakdown().isPeakHour && (
+                        <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                          Peak Hours (+25%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Route Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">From Address</label>
+                      <input
+                        type="text"
+                        value={estimationForm.fromAddress}
+                        onChange={(e) => setEstimationForm({...estimationForm, fromAddress: e.target.value})}
+                        className="form-input"
+                        placeholder="Pickup location"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">To Address</label>
+                      <input
+                        type="text"
+                        value={estimationForm.toAddress}
+                        onChange={(e) => setEstimationForm({...estimationForm, toAddress: e.target.value})}
+                        className="form-input"
+                        placeholder="Destination"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Distance (km)</label>
+                      <input
+                        type="number"
+                        value={estimationForm.distance}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, distance: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-input"
+                        placeholder="0"
+                        min="0"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                      <input
+                        type="number"
+                        value={estimationForm.estimatedDuration}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, estimatedDuration: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-input"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Service & Vehicle Configuration */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                      <select
+                        value={estimationForm.serviceType}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, serviceType: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-select"
+                      >
+                        <option value="standard">Standard Transfer</option>
+                        <option value="priority">Priority Transfer</option>
+                        <option value="luxury">Luxury Transfer</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                      <select
+                        value={estimationForm.vehicleType}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, vehicleType: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-select"
+                      >
+                        <option value="standard">Standard Car</option>
+                        <option value="premium">Premium SUV (+20%)</option>
+                        <option value="luxury">Luxury Vehicle (+50%)</option>
+                        <option value="van">Van/Minibus (+30%)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (€)</label>
+                      <input
+                        type="number"
+                        value={estimationForm.basePrice}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, basePrice: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-input"
+                        min="0"
+                        step="0.01"
+                      />
+                      <div className="text-xs text-gray-500 mt-1">Auto-calculated from inputs</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Additional Fees (€)</label>
+                      <input
+                        type="number"
+                        value={estimationForm.additionalFees}
+                        onChange={(e) => {
+                          setEstimationForm({...estimationForm, additionalFees: e.target.value});
+                          setTimeout(updateTotalPrice, 50);
+                        }}
+                        className="form-input"
+                        min="0"
+                        step="0.01"
+                      />
+                      <div className="text-xs text-gray-500 mt-1">Airport fees, tolls, etc.</div>
+                    </div>
+                  </div>
+                  
+                  {/* Price Breakdown */}
+                  {(estimationForm.distance || estimationForm.estimatedDuration) && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-3">Price Breakdown</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                        {(() => {
+                          const breakdown = getPriceBreakdown();
+                          return (
+                            <>
+                              <div className="text-blue-800">
+                                <div className="font-semibold">Base Rate</div>
+                                <div>€{breakdown.baseRate.toFixed(2)}</div>
+                              </div>
+                              <div className="text-blue-800">
+                                <div className="font-semibold">Distance</div>
+                                <div>€{breakdown.distancePrice.toFixed(2)}</div>
+                              </div>
+                              <div className="text-blue-800">
+                                <div className="font-semibold">Time</div>
+                                <div>€{breakdown.timePrice.toFixed(2)}</div>
+                              </div>
+                              <div className="text-blue-800">
+                                <div className="font-semibold">Vehicle</div>
+                                <div>€{breakdown.vehicleAdjustment.toFixed(2)}</div>
+                              </div>
+                              {breakdown.peakSurcharge > 0 && (
+                                <div className="text-orange-800">
+                                  <div className="font-semibold">Peak Hours</div>
+                                  <div>€{breakdown.peakSurcharge.toFixed(2)}</div>
+                                </div>
+                              )}
+                              {breakdown.fees > 0 && (
+                                <div className="text-blue-800">
+                                  <div className="font-semibold">Additional</div>
+                                  <div>€{breakdown.fees.toFixed(2)}</div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Pricing Information */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-2">Pricing Structure</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <div>
+                          <strong>Standard:</strong> €10 base + €2.0/km + €1.0/min
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
+                        <div>
+                          <strong>Priority:</strong> €15 base + €2.5/km + €1.2/min
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                        <div>
+                          <strong>Luxury:</strong> €25 base + €3.5/km + €1.8/min
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 mt-3 pt-3 border-t border-slate-200">
+                      <div>
+                        <strong>Vehicle Multipliers:</strong> Premium (+20%), Luxury (+50%), Van (+30%)
+                      </div>
+                      <div>
+                        <strong>Peak Hours:</strong> 7-9 AM & 5-7 PM (+25% surcharge)
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Total Price & Actions */}
+                  <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                    <div className="text-lg font-semibold mb-2 sm:mb-0">
+                      Total Price: <span className="text-2xl text-purple-600">{formatCurrency(calculateTotalPrice())}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setEstimationForm({
+                            ...estimationForm,
+                            customer: '',
+                            customerEmail: '',
+                            fromAddress: '',
+                            toAddress: '',
+                            distance: '',
+                            estimatedDuration: '',
+                            basePrice: 45,
+                            additionalFees: 0,
+                            totalPrice: 45
+                          });
+                        }}
+                        className="btn btn-outline"
+                      >
+                        Reset
+                      </button>
+                      <button 
+                        onClick={() => setShowEstimationModal(true)}
+                        className="btn btn-primary"
+                        disabled={!estimationForm.fromAddress || !estimationForm.toAddress}
+                      >
+                        Save Estimation
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estimations List */}
+                <div className="card">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Estimations</h3>
+                    <div className="flex gap-2">
+                      <select
+                        value={estimationFilters.status}
+                        onChange={(e) => setEstimationFilters({...estimationFilters, status: e.target.value})}
+                        className="form-select text-sm"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="converted">Converted</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Customer</th>
+                          <th>Route</th>
+                          <th>Service</th>
+                          <th>Price</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredEstimations.map((estimation) => (
+                          <tr key={estimation.id}>
+                            <td className="font-medium">{estimation.customer}</td>
+                            <td className="text-sm">{estimation.fromAddress} → {estimation.toAddress}</td>
+                            <td>
+                              <span className="badge badge-blue">
+                                {estimation.serviceType}
+                              </span>
+                            </td>
+                            <td className="font-bold">{formatCurrency(estimation.totalPrice)}</td>
+                            <td>
+                              <span className={`badge ${
+                                estimation.status === 'approved' ? 'badge-green' :
+                                estimation.status === 'converted' ? 'badge-purple' :
+                                'badge-yellow'
+                              }`}>
+                                {estimation.status}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => handleEstimationEdit(estimation)}
+                                  className="btn btn-outline px-2 py-1 text-xs"
+                                >
+                                  <EditIcon className="w-3 h-3" />
+                                </button>
+                                {estimation.status === 'pending' && (
+                                  <button 
+                                    onClick={() => handleApprove(estimation.id)}
+                                    className="btn btn-primary px-2 py-1 text-xs"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+                                {estimation.status === 'approved' && (
+                                  <button 
+                                    onClick={() => handleConvert(estimation.id)}
+                                    className="btn btn-outline px-2 py-1 text-xs"
+                                  >
+                                    <BookingIcon className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
