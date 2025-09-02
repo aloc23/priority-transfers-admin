@@ -11,7 +11,8 @@ import {
   OutsourceIcon, 
   HistoryIcon, 
   NotificationIcon, 
-  SettingsIcon 
+  SettingsIcon,
+  TrendUpIcon
 } from "./Icons";
 
 const navigationItems = [
@@ -31,6 +32,12 @@ const navigationItems = [
     path: "/billing",
     label: "Billing",
     icon: RevenueIcon,
+    roles: ["Admin"]
+  },
+  {
+    path: "/finance",
+    label: "Finance",
+    icon: TrendUpIcon,
     roles: ["Admin"]
   },
   {
