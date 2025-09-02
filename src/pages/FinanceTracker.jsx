@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { 
   PlusIcon, 
   EditIcon, 
@@ -7,7 +8,14 @@ import {
   FilterIcon, 
   DownloadIcon,
   TrendUpIcon,
-  TrendDownIcon
+  TrendDownIcon,
+  RevenueIcon, 
+  InvoiceIcon, 
+  ViewIcon, 
+  SendIcon, 
+  XIcon,
+  CheckIcon,
+  BookingIcon
 } from "../components/Icons";
 
 export default function FinanceTracker() {
@@ -20,7 +28,24 @@ export default function FinanceTracker() {
     addIncome,
     updateIncome,
     deleteIncome,
-    partners
+    partners,
+    // Billing related
+    bookings, 
+    invoices, 
+    updateInvoice, 
+    cancelInvoice, 
+    sendInvoice, 
+    generateInvoiceFromBooking,
+    addInvoice,
+    markInvoiceAsPaid,
+    // Estimations related
+    estimations, 
+    addEstimation, 
+    updateEstimation, 
+    deleteEstimation,
+    convertEstimationToBooking,
+    customers,
+    drivers
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -64,6 +89,45 @@ export default function FinanceTracker() {
     status: 'received'
   });
 
+  // Billing state
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [invoiceFormData, setInvoiceFormData] = useState({
+    customer: '',
+    customerEmail: '',
+    amount: EURO_PRICE_PER_BOOKING,
+    items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+  });
+
+  // Estimations state
+  const [showEstimationModal, setShowEstimationModal] = useState(false);
+  const [editingEstimation, setEditingEstimation] = useState(null);
+  const [estimationFilters, setEstimationFilters] = useState({
+    status: 'all',
+    dateFrom: '',
+    dateTo: '',
+    serviceType: 'all'
+  });
+
+  const [estimationForm, setEstimationForm] = useState({
+    customer: '',
+    customerEmail: '',
+    fromAddress: '',
+    toAddress: '',
+    distance: '',
+    estimatedDuration: '',
+    serviceType: 'priority',
+    vehicleType: 'standard',
+    basePrice: 45,
+    additionalFees: 0,
+    totalPrice: 45,
+    validUntil: '',
+    notes: '',
+    status: 'pending'
+  });
+
   // Filter data based on filters
   const filteredExpenses = expenses.filter(expense => {
     const expenseDate = new Date(expense.date);
@@ -92,6 +156,42 @@ export default function FinanceTracker() {
     
     return true;
   });
+
+  // Filter billing data
+  const completedBookings = bookings.filter(booking => booking.status === "completed");
+  const totalRevenue = calculateRevenue(bookings, "completed");
+  const pendingPayments = invoices.filter(inv => inv.status === 'pending' || inv.status === 'sent').reduce((sum, inv) => sum + inv.amount, 0);
+  const paidInvoices = invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0);
+
+  const filteredInvoices = invoices.filter(invoice => {
+    const statusMatch = filterStatus === 'all' || invoice.status === filterStatus;
+    const typeMatch = filterType === 'all' || invoice.type === filterType;
+    return statusMatch && typeMatch;
+  });
+
+  // Filter estimations data
+  const filteredEstimations = estimations.filter(estimation => {
+    const estimationDate = new Date(estimation.date);
+    const fromDate = estimationFilters.dateFrom ? new Date(estimationFilters.dateFrom) : null;
+    const toDate = estimationFilters.dateTo ? new Date(estimationFilters.dateTo) : null;
+    
+    if (fromDate && estimationDate < fromDate) return false;
+    if (toDate && estimationDate > toDate) return false;
+    if (estimationFilters.status !== 'all' && estimation.status !== estimationFilters.status) return false;
+    if (estimationFilters.serviceType !== 'all' && estimation.serviceType !== estimationFilters.serviceType) return false;
+    
+    return true;
+  });
+
+  // Calculate estimation statistics
+  const estimationStats = {
+    total: estimations.length,
+    pending: estimations.filter(e => e.status === 'pending').length,
+    approved: estimations.filter(e => e.status === 'approved').length,
+    converted: estimations.filter(e => e.status === 'converted').length,
+    totalValue: estimations.reduce((sum, e) => sum + e.totalPrice, 0),
+    averageValue: estimations.length > 0 ? estimations.reduce((sum, e) => sum + e.totalPrice, 0) / estimations.length : 0
+  };
 
   // Calculate financial metrics
   const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -198,22 +298,67 @@ export default function FinanceTracker() {
   };
 
   const exportData = (type) => {
-    const data = type === 'expenses' ? filteredExpenses : filteredIncome;
-    const headers = type === 'expenses' 
-      ? ['Date', 'Description', 'Category', 'Type', 'Amount', 'Status']
-      : ['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method', 'Status'];
+    let data, headers;
+    
+    switch (type) {
+      case 'expenses':
+        data = filteredExpenses;
+        headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Status'];
+        break;
+      case 'income':
+        data = filteredIncome;
+        headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method', 'Status'];
+        break;
+      case 'billing':
+        data = filteredInvoices;
+        headers = ['Invoice #', 'Customer', 'Date', 'Amount', 'Status', 'Type'];
+        break;
+      case 'estimations':
+        data = filteredEstimations;
+        headers = ['Customer', 'From', 'To', 'Service Type', 'Total Price', 'Status', 'Date'];
+        break;
+      default:
+        return;
+    }
     
     const csvContent = [
       headers.join(','),
-      ...data.map(item => [
-        item.date,
-        `"${item.description}"`,
-        item.category,
-        item.type,
-        item.amount,
-        ...(type === 'income' ? [item.paymentMethod] : []),
-        item.status
-      ].join(','))
+      ...data.map(item => {
+        switch (type) {
+          case 'expenses':
+          case 'income':
+            return [
+              item.date,
+              `"${item.description}"`,
+              item.category,
+              item.type,
+              item.amount,
+              ...(type === 'income' ? [item.paymentMethod] : []),
+              item.status
+            ].join(',');
+          case 'billing':
+            return [
+              `INV-${item.id}`,
+              `"${item.customer}"`,
+              item.date,
+              item.amount,
+              item.status,
+              item.type || 'manual'
+            ].join(',');
+          case 'estimations':
+            return [
+              `"${item.customer}"`,
+              `"${item.fromAddress}"`,
+              `"${item.toAddress}"`,
+              item.serviceType,
+              item.totalPrice,
+              item.status,
+              item.date || new Date().toISOString().split('T')[0]
+            ].join(',');
+          default:
+            return '';
+        }
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -223,6 +368,212 @@ export default function FinanceTracker() {
     a.download = `${type}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  // Billing handlers
+  const handleInvoiceEdit = (invoice) => {
+    setEditingInvoice(invoice);
+    setInvoiceFormData({
+      customer: invoice.customer,
+      customerEmail: invoice.customerEmail,
+      amount: invoice.amount,
+      items: invoice.items || [{ description: '', quantity: 1, rate: invoice.amount, amount: invoice.amount }]
+    });
+    setShowInvoiceModal(true);
+  };
+
+  const handleInvoiceSubmit = (e) => {
+    e.preventDefault();
+    
+    const totalAmount = invoiceFormData.items.reduce((sum, item) => sum + item.amount, 0);
+    const invoiceData = {
+      ...invoiceFormData,
+      amount: totalAmount,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      type: 'manual'
+    };
+    
+    if (editingInvoice) {
+      const result = updateInvoice(editingInvoice.id, invoiceData);
+      if (result.success) {
+        setShowInvoiceModal(false);
+        setEditingInvoice(null);
+        resetInvoiceForm();
+      }
+    } else {
+      const result = addInvoice(invoiceData);
+      if (result.success) {
+        setShowInvoiceModal(false);
+        resetInvoiceForm();
+      }
+    }
+  };
+
+  const resetInvoiceForm = () => {
+    setInvoiceFormData({
+      customer: '',
+      customerEmail: '',
+      amount: EURO_PRICE_PER_BOOKING,
+      items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+    });
+  };
+
+  const handleSendInvoice = (invoice) => {
+    if (invoice.customerEmail) {
+      const result = sendInvoice(invoice.id, invoice.customerEmail);
+      if (result.success) {
+        // Success feedback would be handled by the store notification system
+      }
+    } else {
+      // Could be enhanced with a proper notification system
+      console.warn('Customer email is required to send invoice');
+    }
+  };
+
+  const handleGenerateInvoice = () => {
+    const bookingWithoutInvoice = completedBookings.find(booking => 
+      !invoices.some(inv => inv.bookingId === booking.id)
+    );
+    
+    if (bookingWithoutInvoice) {
+      generateInvoiceFromBooking(bookingWithoutInvoice);
+    } else {
+      console.info('All completed bookings already have invoices generated');
+    }
+  };
+
+  const updateItemAmount = (index, field, value) => {
+    const newItems = [...invoiceFormData.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    if (field === 'quantity' || field === 'rate') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].rate;
+    }
+    setInvoiceFormData({ ...invoiceFormData, items: newItems });
+  };
+
+  // Estimation handlers
+  const calculateTotalPrice = () => {
+    const distance = Number(estimationForm.distance) || 0;
+    const duration = Number(estimationForm.estimatedDuration) || 0;
+    
+    // Base rates per km and per minute based on service type
+    const rates = {
+      priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+      standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+      luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+    };
+    
+    const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+    
+    // Calculate base price from distance and duration
+    const distancePrice = distance * serviceRate.perKm;
+    const timePrice = duration * serviceRate.perMin;
+    const automaticBasePrice = serviceRate.baseRate + distancePrice + timePrice;
+    
+    // Use manual base price if it's higher than calculated, otherwise use calculated
+    const basePrice = Math.max(Number(estimationForm.basePrice) || 0, automaticBasePrice);
+    const fees = Number(estimationForm.additionalFees) || 0;
+    
+    return basePrice + fees;
+  };
+
+  const updateTotalPrice = () => {
+    const total = calculateTotalPrice();
+    
+    // Also update the base price to the calculated value if it's higher
+    const distance = Number(estimationForm.distance) || 0;
+    const duration = Number(estimationForm.estimatedDuration) || 0;
+    
+    if (distance > 0 || duration > 0) {
+      const rates = {
+        priority: { perKm: 2.5, perMin: 1.2, baseRate: 15 },
+        standard: { perKm: 2.0, perMin: 1.0, baseRate: 10 },
+        luxury: { perKm: 3.5, perMin: 1.8, baseRate: 25 }
+      };
+      
+      const serviceRate = rates[estimationForm.serviceType] || rates.standard;
+      const distancePrice = distance * serviceRate.perKm;
+      const timePrice = duration * serviceRate.perMin;
+      const calculatedBasePrice = serviceRate.baseRate + distancePrice + timePrice;
+      
+      setEstimationForm({
+        ...estimationForm, 
+        basePrice: calculatedBasePrice.toFixed(2),
+        totalPrice: total
+      });
+    } else {
+      setEstimationForm({...estimationForm, totalPrice: total});
+    }
+  };
+
+  const handleEstimationSubmit = (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      ...estimationForm,
+      distance: Number(estimationForm.distance),
+      estimatedDuration: Number(estimationForm.estimatedDuration),
+      basePrice: Number(estimationForm.basePrice),
+      additionalFees: Number(estimationForm.additionalFees),
+      totalPrice: Number(estimationForm.basePrice) + Number(estimationForm.additionalFees)
+    };
+    
+    if (editingEstimation) {
+      const result = updateEstimation(editingEstimation.id, formData);
+      if (result.success) {
+        setShowEstimationModal(false);
+        setEditingEstimation(null);
+        resetEstimationForm();
+      }
+    } else {
+      const result = addEstimation(formData);
+      if (result.success) {
+        setShowEstimationModal(false);
+        resetEstimationForm();
+      }
+    }
+  };
+
+  const resetEstimationForm = () => {
+    setEstimationForm({
+      customer: '',
+      customerEmail: '',
+      fromAddress: '',
+      toAddress: '',
+      distance: '',
+      estimatedDuration: '',
+      serviceType: 'priority',
+      vehicleType: 'standard',
+      basePrice: 45,
+      additionalFees: 0,
+      totalPrice: 45,
+      validUntil: '',
+      notes: '',
+      status: 'pending'
+    });
+  };
+
+  const handleEstimationEdit = (estimation) => {
+    setEditingEstimation(estimation);
+    setEstimationForm(estimation);
+    setShowEstimationModal(true);
+  };
+
+  const handleApprove = (id) => {
+    updateEstimation(id, { status: 'approved' });
+  };
+
+  const handleConvert = (id) => {
+    if (confirm("Convert this estimation to a booking?")) {
+      const result = convertEstimationToBooking(id);
+      if (result.success) {
+        console.log("Estimation successfully converted to booking");
+        // Success feedback would be handled by the store notification system
+      } else {
+        console.error("Failed to convert estimation:", result.error);
+      }
+    }
   };
 
   return (
@@ -407,6 +758,26 @@ export default function FinanceTracker() {
             >
               Income ({filteredIncome.length})
             </button>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'billing'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Billing & Invoices
+            </button>
+            <button
+              onClick={() => setActiveTab('estimations')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'estimations'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Estimates Calculator
+            </button>
           </nav>
         </div>
 
@@ -417,7 +788,12 @@ export default function FinanceTracker() {
             className="btn btn-outline flex items-center gap-2"
           >
             <DownloadIcon className="w-4 h-4" />
-            Export {activeTab === 'expenses' ? 'Expenses' : 'Income'}
+            Export {
+              activeTab === 'expenses' ? 'Expenses' : 
+              activeTab === 'income' ? 'Income' :
+              activeTab === 'billing' ? 'Invoices' :
+              activeTab === 'estimations' ? 'Estimations' : 'Data'
+            }
           </button>
         </div>
 
@@ -550,6 +926,414 @@ export default function FinanceTracker() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Billing Tab */}
+        {activeTab === 'billing' && (
+          <div className="space-y-4">
+            {/* Billing Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="card">
+                <div className="flex items-center">
+                  <div className="bg-emerald-600 rounded-lg p-3 text-white mr-4">
+                    <RevenueIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+                    <p className="text-sm text-slate-600">Total Revenue</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="flex items-center">
+                  <div className="bg-blue-600 rounded-lg p-3 text-white mr-4">
+                    <InvoiceIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{invoices.length}</p>
+                    <p className="text-sm text-slate-600">Total Invoices</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="flex items-center">
+                  <div className="bg-yellow-600 rounded-lg p-3 text-white mr-4">
+                    <ViewIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(pendingPayments)}</p>
+                    <p className="text-sm text-slate-600">Pending Payments</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="flex items-center">
+                  <div className="bg-green-600 rounded-lg p-3 text-white mr-4">
+                    <CheckIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(paidInvoices)}</p>
+                    <p className="text-sm text-slate-600">Paid Invoices</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Controls */}
+            <div className="flex justify-between items-center">
+              <div className="flex gap-4">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="sent">Sent</option>
+                  <option value="paid">Paid</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="all">All Types</option>
+                  <option value="auto">Auto Generated</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleGenerateInvoice}
+                  className="btn btn-primary"
+                >
+                  Generate Invoice
+                </button>
+                <button 
+                  onClick={() => setShowInvoiceModal(true)}
+                  className="btn btn-outline"
+                >
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Create Invoice
+                </button>
+              </div>
+            </div>
+
+            {/* Invoices Table */}
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInvoices.map((invoice) => (
+                    <tr key={invoice.id}>
+                      <td className="font-mono text-sm">INV-{invoice.id}</td>
+                      <td className="font-medium">{invoice.customer}</td>
+                      <td>{invoice.date}</td>
+                      <td className="font-bold">{formatCurrency(invoice.amount)}</td>
+                      <td>
+                        <span className={`badge ${
+                          invoice.status === 'paid' ? 'badge-green' :
+                          invoice.status === 'sent' ? 'badge-blue' :
+                          invoice.status === 'pending' ? 'badge-yellow' :
+                          'badge-red'
+                        }`}>
+                          {invoice.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleInvoiceEdit(invoice)}
+                            className="btn btn-outline px-2 py-1 text-xs"
+                          >
+                            <EditIcon className="w-3 h-3" />
+                          </button>
+                          {invoice.status === 'pending' && (
+                            <button 
+                              onClick={() => handleSendInvoice(invoice)}
+                              className="btn btn-primary px-2 py-1 text-xs"
+                            >
+                              <SendIcon className="w-3 h-3" />
+                            </button>
+                          )}
+                          {invoice.status === 'sent' && (
+                            <button 
+                              onClick={() => markInvoiceAsPaid(invoice.id)}
+                              className="btn btn-outline px-2 py-1 text-xs"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Estimations Tab */}
+        {activeTab === 'estimations' && (
+          <div className="space-y-4">
+            {/* Estimation Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="card p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{estimationStats.total}</div>
+                  <div className="text-xs text-slate-600">Total</div>
+                </div>
+              </div>
+              <div className="card p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{estimationStats.pending}</div>
+                  <div className="text-xs text-slate-600">Pending</div>
+                </div>
+              </div>
+              <div className="card p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{estimationStats.approved}</div>
+                  <div className="text-xs text-slate-600">Approved</div>
+                </div>
+              </div>
+              <div className="card p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{estimationStats.converted}</div>
+                  <div className="text-xs text-slate-600">Converted</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Estimation Calculator */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Price Calculator</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From Address</label>
+                  <input
+                    type="text"
+                    value={estimationForm.fromAddress}
+                    onChange={(e) => setEstimationForm({...estimationForm, fromAddress: e.target.value})}
+                    className="form-input"
+                    placeholder="Pickup location"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">To Address</label>
+                  <input
+                    type="text"
+                    value={estimationForm.toAddress}
+                    onChange={(e) => setEstimationForm({...estimationForm, toAddress: e.target.value})}
+                    className="form-input"
+                    placeholder="Destination"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Distance (km)</label>
+                  <input
+                    type="number"
+                    value={estimationForm.distance}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, distance: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                  <input
+                    type="number"
+                    value={estimationForm.estimatedDuration}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, estimatedDuration: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                  <select
+                    value={estimationForm.serviceType}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, serviceType: e.target.value});
+                      setTimeout(updateTotalPrice, 100); // Delay to ensure state update
+                    }}
+                    className="form-select"
+                  >
+                    <option value="priority">Priority Transfer</option>
+                    <option value="standard">Standard Transfer</option>
+                    <option value="luxury">Luxury Transfer</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (€)</label>
+                  <input
+                    type="number"
+                    value={estimationForm.basePrice}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, basePrice: e.target.value});
+                      updateTotalPrice();
+                    }}
+                    className="form-input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Additional Fees (€)</label>
+                  <input
+                    type="number"
+                    value={estimationForm.additionalFees}
+                    onChange={(e) => {
+                      setEstimationForm({...estimationForm, additionalFees: e.target.value});
+                      updateTotalPrice();
+                    }}
+                    className="form-input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              
+              {/* Pricing Information */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">Pricing Structure</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-blue-800">
+                  <div>
+                    <strong>Standard:</strong> €10 base + €2.0/km + €1.0/min
+                  </div>
+                  <div>
+                    <strong>Priority:</strong> €15 base + €2.5/km + €1.2/min
+                  </div>
+                  <div>
+                    <strong>Luxury:</strong> €25 base + €3.5/km + €1.8/min
+                  </div>
+                </div>
+                <p className="text-xs text-blue-700 mt-2">
+                  * Base price is automatically calculated from distance and time. You can adjust it manually if needed.
+                </p>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                <div className="text-lg font-semibold">
+                  Total Price: <span className="text-purple-600">{formatCurrency(calculateTotalPrice())}</span>
+                </div>
+                <button 
+                  onClick={() => setShowEstimationModal(true)}
+                  className="btn btn-primary"
+                >
+                  Save Estimation
+                </button>
+              </div>
+            </div>
+
+            {/* Estimations List */}
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Estimations</h3>
+                <div className="flex gap-2">
+                  <select
+                    value={estimationFilters.status}
+                    onChange={(e) => setEstimationFilters({...estimationFilters, status: e.target.value})}
+                    className="form-select text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="converted">Converted</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Route</th>
+                      <th>Service</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEstimations.map((estimation) => (
+                      <tr key={estimation.id}>
+                        <td className="font-medium">{estimation.customer}</td>
+                        <td className="text-sm">{estimation.fromAddress} → {estimation.toAddress}</td>
+                        <td>
+                          <span className="badge badge-blue">
+                            {estimation.serviceType}
+                          </span>
+                        </td>
+                        <td className="font-bold">{formatCurrency(estimation.totalPrice)}</td>
+                        <td>
+                          <span className={`badge ${
+                            estimation.status === 'approved' ? 'badge-green' :
+                            estimation.status === 'converted' ? 'badge-purple' :
+                            'badge-yellow'
+                          }`}>
+                            {estimation.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleEstimationEdit(estimation)}
+                              className="btn btn-outline px-2 py-1 text-xs"
+                            >
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                            {estimation.status === 'pending' && (
+                              <button 
+                                onClick={() => handleApprove(estimation.id)}
+                                className="btn btn-primary px-2 py-1 text-xs"
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {estimation.status === 'approved' && (
+                              <button 
+                                onClick={() => handleConvert(estimation.id)}
+                                className="btn btn-outline px-2 py-1 text-xs"
+                              >
+                                <BookingIcon className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -811,6 +1595,198 @@ export default function FinanceTracker() {
                     setShowIncomeModal(false);
                     setEditingIncome(null);
                     resetIncomeForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-3xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
+            </h3>
+            <form onSubmit={handleInvoiceSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer *
+                  </label>
+                  <input
+                    type="text"
+                    value={invoiceFormData.customer}
+                    onChange={(e) => setInvoiceFormData({...invoiceFormData, customer: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Email
+                  </label>
+                  <input
+                    type="email"
+                    value={invoiceFormData.customerEmail}
+                    onChange={(e) => setInvoiceFormData({...invoiceFormData, customerEmail: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              {/* Invoice Items */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Invoice Items
+                </label>
+                {invoiceFormData.items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={item.description}
+                      onChange={(e) => updateItemAmount(index, 'description', e.target.value)}
+                      className="form-input"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      onChange={(e) => updateItemAmount(index, 'quantity', Number(e.target.value))}
+                      className="form-input"
+                      min="1"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Rate"
+                      value={item.rate}
+                      onChange={(e) => updateItemAmount(index, 'rate', Number(e.target.value))}
+                      className="form-input"
+                      min="0"
+                      step="0.01"
+                    />
+                    <input
+                      type="text"
+                      value={formatCurrency(item.amount)}
+                      className="form-input bg-gray-50"
+                      readOnly
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button type="submit" className="btn btn-primary">
+                  {editingInvoice ? 'Update' : 'Create'} Invoice
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInvoiceModal(false);
+                    setEditingInvoice(null);
+                    resetInvoiceForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Estimation Modal */}
+      {showEstimationModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-3xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingEstimation ? 'Edit Estimation' : 'Save New Estimation'}
+            </h3>
+            <form onSubmit={handleEstimationSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={estimationForm.customer}
+                    onChange={(e) => setEstimationForm({...estimationForm, customer: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Email
+                  </label>
+                  <input
+                    type="email"
+                    value={estimationForm.customerEmail}
+                    onChange={(e) => setEstimationForm({...estimationForm, customerEmail: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Valid Until
+                  </label>
+                  <input
+                    type="date"
+                    value={estimationForm.validUntil}
+                    onChange={(e) => setEstimationForm({...estimationForm, validUntil: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={estimationForm.vehicleType}
+                    onChange={(e) => setEstimationForm({...estimationForm, vehicleType: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="luxury">Luxury</option>
+                    <option value="van">Van</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={estimationForm.notes}
+                  onChange={(e) => setEstimationForm({...estimationForm, notes: e.target.value})}
+                  className="form-input"
+                  rows="3"
+                  placeholder="Additional notes for the estimation..."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button type="submit" className="btn btn-primary">
+                  {editingEstimation ? 'Update' : 'Save'} Estimation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEstimationModal(false);
+                    setEditingEstimation(null);
+                    resetEstimationForm();
                   }}
                   className="btn btn-outline"
                 >

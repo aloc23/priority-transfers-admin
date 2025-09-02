@@ -26,7 +26,7 @@ export default function Reports() {
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("consolidated");
   const [outsourcingExpanded, setOutsourcingExpanded] = useState(false);
   const [savedViews, setSavedViews] = useState([]);
   const [filters, setFilters] = useState({
@@ -40,10 +40,6 @@ export default function Reports() {
     sortBy: 'date',
     sortOrder: 'desc'
   });
-
-  const generateReport = (type) => {
-    alert(`Generating ${type} report...`);
-  };
 
   // Load saved views on component mount
   useEffect(() => {
@@ -135,6 +131,99 @@ export default function Reports() {
       } else if (format === 'PDF' || format === 'Excel') {
         await exportReportData('booking', exportData);
       }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  };
+
+  const handleExportReport = async (reportType, format) => {
+    try {
+      let exportData = [];
+      
+      switch (reportType) {
+        case 'revenue':
+          exportData = bookings.map(booking => ({
+            Date: booking.date,
+            Customer: booking.customer,
+            Amount: formatCurrency(booking.amount || EURO_PRICE_PER_BOOKING),
+            Status: booking.status,
+            Type: booking.type
+          }));
+          break;
+          
+        case 'customer':
+          exportData = customers.map(customer => ({
+            Name: customer.name,
+            Email: customer.email,
+            Phone: customer.phone,
+            TotalBookings: customer.totalBookings || 0,
+            LastBooking: customer.lastBooking || 'N/A',
+            Status: customer.status || 'active'
+          }));
+          break;
+          
+        case 'driver':
+          exportData = drivers.map(driver => ({
+            Name: driver.name,
+            Email: driver.email,
+            Phone: driver.phone,
+            Status: driver.status,
+            Rating: driver.rating || 'N/A',
+            TotalTrips: driver.totalTrips || 0
+          }));
+          break;
+          
+        case 'fleet':
+          exportData = vehicles.map(vehicle => ({
+            Make: vehicle.make,
+            Model: vehicle.model,
+            LicensePlate: vehicle.licensePlate,
+            Status: vehicle.status,
+            LastMaintenance: vehicle.lastMaintenance || 'N/A'
+          }));
+          break;
+          
+        case 'financial':
+          exportData = invoices.map(invoice => ({
+            Date: invoice.date,
+            Customer: invoice.customer,
+            Amount: formatCurrency(invoice.amount),
+            Status: invoice.status,
+            Type: invoice.type || 'Standard'
+          }));
+          break;
+          
+        case 'growth':
+          exportData = [
+            { Metric: 'Customer Retention', Value: `${enhancedKPIs.customerRetention}%` },
+            { Metric: 'Average Booking Value', Value: formatCurrency(enhancedKPIs.averageBookingValue) },
+            { Metric: 'Growth Rate', Value: `${enhancedKPIs.growthRate}%` },
+            { Metric: 'Customer Satisfaction', Value: enhancedKPIs.customerSatisfaction },
+            { Metric: 'Operational Efficiency', Value: `${enhancedKPIs.operationalEfficiency}%` },
+            { Metric: 'Profit Margin', Value: `${enhancedKPIs.profitMargin}%` }
+          ];
+          break;
+          
+        default:
+          exportData = filteredBookings.map(booking => ({
+            Date: booking.date,
+            Customer: booking.customer,
+            Route: `${booking.pickup} → ${booking.destination}`,
+            Status: booking.status,
+            Amount: formatCurrency(booking.amount || EURO_PRICE_PER_BOOKING)
+          }));
+      }
+
+      const filename = `${reportType}-report-${new Date().toISOString().split('T')[0]}`;
+      
+      if (format === 'csv') {
+        await exportToCSV(exportData, filename);
+      } else {
+        await exportReportData(reportType, exportData, format);
+      }
+      
+      alert(`${reportType} report exported successfully as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Export failed:', error);
       alert('Export failed. Please try again.');
@@ -265,24 +354,25 @@ export default function Reports() {
             Overview
           </button>
           <button 
-            onClick={() => setActiveTab("history")}
+            onClick={() => setActiveTab("consolidated")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === "history" 
+              activeTab === "consolidated" 
                 ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
                 : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
             }`}
           >
-            History
+            History & Outsourcing
           </button>
           <button 
-            onClick={() => setActiveTab("outsourcing")}
+            onClick={() => setActiveTab("export")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === "outsourcing" 
+              activeTab === "export" 
                 ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
                 : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
             }`}
           >
-            Outsourcing
+            <DownloadIcon className="w-4 h-4 inline mr-1" />
+            Export
           </button>
         </div>
       </div>
@@ -420,7 +510,7 @@ export default function Reports() {
         </>
       )}
 
-      {activeTab === "history" && (
+      {activeTab === "consolidated" && (
         <div className="space-y-6">
           {/* Advanced Filters */}
           <AdvancedFilters
@@ -432,6 +522,57 @@ export default function Reports() {
             savedViews={savedViews}
             exportFormats={['CSV', 'PDF', 'Excel']}
           />
+
+          {/* Outsourcing Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-500 rounded-lg p-3 text-white mr-4">
+                  <OutsourceIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.totalPartners}</p>
+                  <p className="text-sm text-slate-600">Total Partners</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-emerald-600 to-cyan-500 rounded-lg p-3 text-white mr-4">
+                  <SuccessIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.activePartners}</p>
+                  <p className="text-sm text-slate-600">Active Partners</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-orange-600 to-pink-500 rounded-lg p-3 text-white mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(outsourcingStats.totalOutsourcedRevenue)}</p>
+                  <p className="text-sm text-slate-600">Total Revenue</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg p-3 text-white mr-4">
+                  <StarIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.averagePartnerRating.toFixed(1)}</p>
+                  <p className="text-sm text-slate-600">Avg Rating</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="card">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">
@@ -515,61 +656,6 @@ export default function Reports() {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === "outsourcing" && (
-        <div className="space-y-6">
-          {/* Outsourcing Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="card">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-500 rounded-lg p-3 text-white mr-4">
-                  <OutsourceIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.totalPartners}</p>
-                  <p className="text-sm text-slate-600">Total Partners</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-r from-emerald-600 to-cyan-500 rounded-lg p-3 text-white mr-4">
-                  <SuccessIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.activePartners}</p>
-                  <p className="text-sm text-slate-600">Active Partners</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-r from-orange-600 to-pink-500 rounded-lg p-3 text-white mr-4">
-                  <RevenueIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(outsourcingStats.totalOutsourcedRevenue)}</p>
-                  <p className="text-sm text-slate-600">Total Revenue</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg p-3 text-white mr-4">
-                  <StarIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{outsourcingStats.averagePartnerRating.toFixed(1)}</p>
-                  <p className="text-sm text-slate-600">Avg Rating</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Outsourcing Partners */}
           <div className="card">
@@ -612,7 +698,7 @@ export default function Reports() {
                       </td>
                       <td>
                         <span className={`badge ${
-                          partner.status === 'active' ? 'badge-green' : 'badge-red'
+                          partner.status === 'active' ? 'badge-green' : 'badge-gray'
                         }`}>
                           {partner.status}
                         </span>
@@ -674,6 +760,50 @@ export default function Reports() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "export" && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-xl font-semibold text-slate-900 mb-6">Export Reports</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reportTypes.map((report) => (
+                <div key={report.id} className="border rounded-lg p-6 hover:border-purple-300 transition-colors">
+                  <div className="flex items-center mb-4">
+                    <div className={`w-12 h-12 rounded-lg ${report.color.replace('text-', 'bg-').replace('-600', '-100')} flex items-center justify-center mr-4`}>
+                      <report.icon className={`w-6 h-6 ${report.color}`} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">{report.title}</h3>
+                      <p className="text-sm text-slate-600">{report.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleExportReport(report.id, 'csv')}
+                      className="btn btn-outline flex-1"
+                    >
+                      CSV
+                    </button>
+                    <button 
+                      onClick={() => handleExportReport(report.id, 'pdf')}
+                      className="btn btn-outline flex-1"
+                    >
+                      PDF
+                    </button>
+                    <button 
+                      onClick={() => handleExportReport(report.id, 'excel')}
+                      className="btn btn-outline flex-1"
+                    >
+                      Excel
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
