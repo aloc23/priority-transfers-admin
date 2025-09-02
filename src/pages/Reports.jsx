@@ -246,7 +246,7 @@ export default function Reports() {
   const monthlyStats = {
     totalBookings: filteredBookings.length,
     completedBookings: filteredBookings.filter(b => b.status === "completed").length,
-    revenue: calculateRevenue(filteredBookings, "completed"),
+    revenue: calculateRevenue(filteredBookings, "completed", invoices),
     priorityBookings: filteredBookings.filter(b => b.type === "priority").length,
     outsourcedBookings: filteredBookings.filter(b => b.type === "outsourced").length,
     averageRating: 4.7

@@ -12,7 +12,15 @@ export const formatCurrency = (amount, currency = 'EUR') => {
 
 export const EURO_PRICE_PER_BOOKING = 45;
 
-export const calculateRevenue = (bookings, status = 'completed') => {
+export const calculateRevenue = (bookings, status = 'completed', invoices = []) => {
   const filteredBookings = bookings.filter(booking => booking.status === status);
-  return filteredBookings.length * EURO_PRICE_PER_BOOKING;
+  const bookingRevenue = filteredBookings.reduce((sum, booking) => 
+    sum + (booking.amount || EURO_PRICE_PER_BOOKING), 0);
+  
+  // Add revenue from paid independent invoices (not linked to bookings)
+  const independentInvoiceRevenue = invoices
+    .filter(invoice => invoice.status === 'paid' && !invoice.bookingId)
+    .reduce((sum, invoice) => sum + invoice.amount, 0);
+  
+  return bookingRevenue + independentInvoiceRevenue;
 };

@@ -3,7 +3,7 @@ import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../uti
 import { HistoryIcon, CheckIcon, ErrorIcon, RevenueIcon } from "../components/Icons";
 
 export default function History() {
-  const { bookings } = useAppStore();
+  const { bookings, invoices } = useAppStore();
 
   const completedBookings = bookings.filter(booking => 
     booking.status === "completed" || booking.status === "cancelled"
@@ -76,7 +76,7 @@ export default function History() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(calculateRevenue(completedBookings, "completed"))}
+                {formatCurrency(calculateRevenue(completedBookings, "completed", invoices))}
               </p>
               <p className="text-sm text-gray-600">Total Revenue</p>
             </div>
