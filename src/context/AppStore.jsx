@@ -902,6 +902,10 @@ export function AppStoreProvider({ children }) {
       setInvoices([]);
       setActivityHistory([]);
       setNotifications([]);
+      setPartners([]);
+      setExpenses([]);
+      setIncome([]);
+      setEstimations([]);
       
       // Clear localStorage
       safeLocalStorage.removeItem("bookings");
@@ -911,6 +915,10 @@ export function AppStoreProvider({ children }) {
       safeLocalStorage.removeItem("invoices");
       safeLocalStorage.removeItem("activityHistory");
       safeLocalStorage.removeItem("notifications");
+      safeLocalStorage.removeItem("partners");
+      safeLocalStorage.removeItem("expenses");
+      safeLocalStorage.removeItem("income");
+      safeLocalStorage.removeItem("estimations");
       
       addActivityLog({
         type: 'data_cleared',
@@ -1055,6 +1063,10 @@ export function AppStoreProvider({ children }) {
       initializeDrivers();
       initializeVehicles();
       initializeInvoices();
+      initializePartners();
+      initializeExpenses();
+      initializeIncome();
+      initializeEstimations();
       
       addActivityLog({
         type: 'demo_reset',

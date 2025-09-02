@@ -9,7 +9,6 @@ import {
   RevenueIcon, 
   ReportsIcon, 
   OutsourceIcon, 
-  HistoryIcon, 
   NotificationIcon, 
   SettingsIcon,
   TrendUpIcon,
@@ -40,12 +39,6 @@ const navigationItems = [
     label: "Reports",
     icon: ReportsIcon,
     roles: ["Admin", "Dispatcher", "Driver"]
-  },
-  {
-    path: "/history",
-    label: "History",
-    icon: HistoryIcon,
-    roles: ["Admin"]
   },
   {
     path: "/notifications",
