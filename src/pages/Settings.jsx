@@ -10,7 +10,7 @@ import {
 } from "../components/Icons";
 
 export default function Settings() {
-  const { currentUser, clearDemoData, loadRealData, resetToDemo } = useAppStore();
+  const { currentUser, clearDemoData, loadRealData, resetToDemo, refreshAllData } = useAppStore();
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -399,28 +399,16 @@ export default function Settings() {
                     Manage your application data for testing and production use. Always maintain demo login for testing purposes.
                   </p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border rounded-lg p-4 bg-white">
-                      <h4 className="font-medium text-slate-800 mb-2">Clear Demo Data</h4>
-                      <p className="text-sm text-slate-600 mb-3">Remove all demo data from the system</p>
+                      <h4 className="font-medium text-slate-800 mb-2">Refresh All Data</h4>
+                      <p className="text-sm text-slate-600 mb-3">Sync and refresh all KPIs, analytics, and dashboard data</p>
                       <button 
-                        onClick={() => handleDataOperation(clearDemoData, 'clear demo data')}
+                        onClick={() => handleDataOperation(refreshAllData, 'refresh all data')}
                         disabled={isLoading}
-                        className="btn btn-outline w-full text-red-600 border-red-300 hover:bg-red-50"
+                        className="btn btn-primary w-full bg-emerald-600 hover:bg-emerald-700"
                       >
-                        {isLoading ? 'Clearing...' : 'Clear Demo Data'}
-                      </button>
-                    </div>
-                    
-                    <div className="border rounded-lg p-4 bg-white">
-                      <h4 className="font-medium text-slate-800 mb-2">Load Real Data</h4>
-                      <p className="text-sm text-slate-600 mb-3">Load production-ready data sample</p>
-                      <button 
-                        onClick={() => handleDataOperation(loadRealData, 'load real data')}
-                        disabled={isLoading}
-                        className="btn btn-primary w-full"
-                      >
-                        {isLoading ? 'Loading...' : 'Load Real Data'}
+                        {isLoading ? 'Refreshing...' : 'Refresh All Data'}
                       </button>
                     </div>
                     
@@ -433,6 +421,30 @@ export default function Settings() {
                         className="btn btn-outline w-full text-amber-600 border-amber-300 hover:bg-amber-50"
                       >
                         {isLoading ? 'Resetting...' : 'Reset to Demo'}
+                      </button>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 bg-white">
+                      <h4 className="font-medium text-slate-800 mb-2">Clear Demo Data</h4>
+                      <p className="text-sm text-slate-600 mb-3">Remove all demo data from the system</p>
+                      <button 
+                        onClick={() => handleDataOperation(clearDemoData, 'clear demo data')}
+                        disabled={isLoading}
+                        className="btn btn-outline w-full text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        {isLoading ? 'Clearing...' : 'Clear Demo Data'}
+                      </button>
+                    </div>
+
+                    <div className="border rounded-lg p-4 bg-white">
+                      <h4 className="font-medium text-slate-800 mb-2">Load Real Data</h4>
+                      <p className="text-sm text-slate-600 mb-3">Load production-ready data sample</p>
+                      <button 
+                        onClick={() => handleDataOperation(loadRealData, 'load real data')}
+                        disabled={isLoading}
+                        className="btn btn-primary w-full"
+                      >
+                        {isLoading ? 'Loading...' : 'Load Real Data'}
                       </button>
                     </div>
                   </div>

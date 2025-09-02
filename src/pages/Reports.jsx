@@ -26,7 +26,7 @@ export default function Reports() {
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("consolidated");
+  const [activeTab, setActiveTab] = useState("overview");
   const [outsourcingExpanded, setOutsourcingExpanded] = useState(false);
   const [savedViews, setSavedViews] = useState([]);
   const [filters, setFilters] = useState({

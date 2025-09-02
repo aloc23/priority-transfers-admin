@@ -200,7 +200,7 @@ export default function Dashboard() {
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <Link to="/finance" className="block w-full btn btn-primary text-sm">
+            <Link to="/finance?tab=billing&subtab=estimations" className="block w-full btn btn-primary text-sm">
               <EstimationIcon className="w-4 h-4 mr-2" />
               New Estimation
             </Link>
@@ -208,11 +208,11 @@ export default function Dashboard() {
               <BookingIcon className="w-4 h-4 mr-2" />
               New Booking
             </Link>
-            <Link to="/finance" className="block w-full btn btn-outline text-sm">
+            <Link to="/finance?tab=billing&subtab=invoices" className="block w-full btn btn-outline text-sm">
               <InvoiceIcon className="w-4 h-4 mr-2" />
               Create Invoice
             </Link>
-            <Link to="/finance" className="block w-full btn btn-outline text-sm">
+            <Link to="/finance?tab=income" className="block w-full btn btn-outline text-sm">
               <RevenueIcon className="w-4 h-4 mr-2" />
               Add Income/Expense
             </Link>
