@@ -313,11 +313,13 @@ label { @apply text-sm font-semibold text-slate-700; }
   }
   
   .modal {
-    @apply mx-4 max-w-none;
+    @apply mx-2 max-w-none;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   
   .modal-backdrop {
-    @apply px-4;
+    @apply px-2;
   }
   
   /* Make sidebar responsive */
@@ -331,12 +333,14 @@ label { @apply text-sm font-semibold text-slate-700; }
   
   /* Improve table responsiveness */
   .table {
-    @apply text-sm;
+    @apply text-xs overflow-x-auto;
+    min-width: 600px; /* Ensure tables don't get too cramped */
   }
   
   .table th,
   .table td {
     @apply p-2 text-xs;
+    white-space: nowrap;
   }
   
   /* Better touch targets */
@@ -344,9 +348,24 @@ label { @apply text-sm font-semibold text-slate-700; }
     @apply min-h-[44px];
   }
   
+  /* Form improvements for mobile */
+  .form-input,
+  .form-select {
+    @apply text-base; /* Prevent zoom on iOS */
+    min-height: 44px;
+  }
+  
   /* Responsive grid adjustments */
   .responsive-grid {
     @apply grid-cols-1 gap-4;
+  }
+  
+  /* Force single column on mobile for stat cards */
+  .grid-cols-1\.md\\:grid-cols-2,
+  .grid-cols-1\.md\\:grid-cols-3,
+  .grid-cols-1\.md\\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
   
   /* Mobile navigation improvements */
@@ -357,6 +376,57 @@ label { @apply text-sm font-semibold text-slate-700; }
   /* Stats cards on mobile */
   .stats-grid {
     @apply grid-cols-2 gap-3;
+  }
+  
+  /* Mobile-specific layout adjustments */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Better padding for mobile containers */
+  main {
+    @apply px-4 py-4;
+  }
+  
+  /* Mobile table container */
+  .table-container {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
+  
+  /* Mobile form grids */
+  .grid\.grid-cols-1\.md\\:grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  
+  /* Mobile button groups */
+  .flex\.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .flex\.gap-2 > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Improve modal scrolling on mobile */
+  .modal form {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  /* Mobile filter improvements */
+  .flex\.flex-wrap\.items-center\.gap-4 {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .flex\.flex-wrap\.items-center\.gap-4 > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 

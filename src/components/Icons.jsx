@@ -151,6 +151,29 @@ export const CheckIcon = ({ className = "w-4 h-4", ...props }) => (
   </svg>
 );
 
+export const TrashIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <polyline points="3,6 5,6 21,6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+    <line x1="10" y1="11" x2="10" y2="17"/>
+    <line x1="14" y1="11" x2="14" y2="17"/>
+  </svg>
+);
+
+export const OutsourceIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 4l3 8-3 8H8l-3-8 3-8z"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+
+export const SuccessIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22,4 12,14.01 9,11.01"/>
+  </svg>
+);
+
 export const CalendarIcon = ({ className = "w-5 h-5", ...props }) => (
   <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -160,14 +183,6 @@ export const CalendarIcon = ({ className = "w-5 h-5", ...props }) => (
   </svg>
 );
 
-export const XIcon = ({ className = "w-4 h-4", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>
-);
-
-// Additional professional icons to replace emojis
 export const NotificationIcon = ({ className = "w-5 h-5", ...props }) => (
   <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -175,9 +190,34 @@ export const NotificationIcon = ({ className = "w-5 h-5", ...props }) => (
   </svg>
 );
 
-export const SuccessIcon = ({ className = "w-5 h-5", ...props }) => (
+export const TrendUpIcon = ({ className = "w-4 h-4", ...props }) => (
   <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+    <polyline points="17 6 23 6 23 12"/>
+  </svg>
+);
+
+export const TrendDownIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+    <polyline points="17 18 23 18 23 12"/>
+  </svg>
+);
+
+export const EstimationIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14,2 14,8 20,8"/>
+    <path d="M9 15h6"/>
+    <path d="M9 18h6"/>
+    <path d="M9 12h1"/>
+  </svg>
+);
+
+export const XIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 );
 
@@ -199,6 +239,21 @@ export const InfoIcon = ({ className = "w-5 h-5", ...props }) => (
   </svg>
 );
 
+export const CloseIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+export const PrintIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
+    <polyline points="6,9 6,2 18,2 18,9"/>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+    <rect x="6" y="14" width="12" height="8"/>
+  </svg>
+);
+
 export const InboxIcon = ({ className = "w-5 h-5", ...props }) => (
   <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
     <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
@@ -210,13 +265,6 @@ export const EmptyInboxIcon = ({ className = "w-5 h-5", ...props }) => (
   <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
     <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
     <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-  </svg>
-);
-
-export const OutsourceIcon = ({ className = "w-5 h-5", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
   </svg>
 );
 
@@ -242,34 +290,5 @@ export const SettingsListIcon = ({ className = "w-5 h-5", ...props }) => (
     <line x1="3" y1="6" x2="3.01" y2="6"/>
     <line x1="3" y1="12" x2="3.01" y2="12"/>
     <line x1="3" y1="18" x2="3.01" y2="18"/>
-  </svg>
-);
-
-export const CloseIcon = ({ className = "w-4 h-4", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>
-);
-
-export const PrintIcon = ({ className = "w-4 h-4", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <polyline points="6,9 6,2 18,2 18,9"/>
-    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-    <rect x="6" y="14" width="12" height="8"/>
-  </svg>
-);
-
-export const TrendUpIcon = ({ className = "w-5 h-5", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-    <polyline points="17 6 23 6 23 12"/>
-  </svg>
-);
-
-export const TrendDownIcon = ({ className = "w-5 h-5", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-    <polyline points="17 18 23 18 23 12"/>
   </svg>
 );
