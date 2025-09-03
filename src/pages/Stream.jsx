@@ -27,7 +27,10 @@ export default function Stream() {
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    return urlParams.get('tab') || "overview";
+  });
   const [outsourcingExpanded, setOutsourcingExpanded] = useState(false);
   const [savedViews, setSavedViews] = useState([]);
   const [filters, setFilters] = useState({
