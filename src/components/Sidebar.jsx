@@ -30,15 +30,9 @@ const navigationItems = [
   },
   {
     path: "/finance",
-    label: "Estimates",
-    icon: TrendUpIcon,
+    label: "Estimates & Quotes",
+    icon: EstimationIcon,
     roles: ["Admin"]
-  },
-  {
-    path: "/reports",
-    label: "Reports",
-    icon: ReportsIcon,
-    roles: ["Admin", "Dispatcher", "Driver"]
   },
   {
     path: "/notifications",
@@ -67,8 +61,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const getNavLinkClasses = (isActive) => `
     block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
     ${isActive 
-      ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm" 
-      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+      ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105" 
+      : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"
     }
     ${isMobile ? 'min-h-[44px] flex items-center' : ''} // Better touch targets on mobile
   `;
