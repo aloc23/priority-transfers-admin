@@ -12,7 +12,8 @@ import {
   NotificationIcon, 
   SettingsIcon,
   TrendUpIcon,
-  EstimationIcon
+  EstimationIcon,
+  InvoiceIcon
 } from "./Icons";
 
 const navigationItems = [
@@ -27,6 +28,12 @@ const navigationItems = [
     label: "Schedule",
     icon: CalendarIcon,
     roles: ["Admin", "Dispatcher", "Driver"]
+  },
+  {
+    path: "/invoices",
+    label: "Invoices",
+    icon: InvoiceIcon,
+    roles: ["Admin", "Dispatcher"]
   },
   {
     path: "/finance",

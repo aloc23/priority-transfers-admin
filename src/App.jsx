@@ -10,6 +10,7 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import FinanceTracker from "./pages/FinanceTracker";
+import Billing from "./pages/Billing";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
@@ -36,6 +37,7 @@ function AuthenticatedShell() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/schedule" element={<RequireAuth><Schedule /></RequireAuth>} />
+            <Route path="/invoices" element={<RequireRole roles={["Admin","Dispatcher"]}><Billing /></RequireRole>} />
             <Route path="/customers" element={<RequireRole roles={["Admin","Dispatcher"]}><Customers /></RequireRole>} />
             <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
