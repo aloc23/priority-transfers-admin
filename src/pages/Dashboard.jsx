@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
-import { Link } from "react-router-dom";
 import { 
   BookingIcon, 
   CustomerIcon, 
@@ -12,7 +13,9 @@ import {
   EstimationIcon,
   OutsourceIcon,
   RevenueIcon,
-  InvoiceIcon
+  InvoiceIcon,
+  ReportsIcon,
+  FilterIcon
 } from "../components/Icons";
 
 export default function Dashboard() {
@@ -27,6 +30,24 @@ export default function Dashboard() {
     income,
     estimations
   } = useAppStore();
+
+  // Tab management
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['overview', 'finance', 'reports'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Calculate enhanced financial metrics
   const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);
@@ -116,6 +137,68 @@ export default function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => handleTabChange('overview')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'overview'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => handleTabChange('finance')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'finance'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            Finance
+          </button>
+          <button
+            onClick={() => handleTabChange('reports')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'reports'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            Reports
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <OverviewTab 
+          enhancedStats={enhancedStats}
+          operationalStats={operationalStats}
+          totalRevenue={totalRevenue}
+          totalExpenses={totalExpenses}
+          netProfit={netProfit}
+          profitMargin={profitMargin}
+          internalRevenue={internalRevenue}
+          outsourcedRevenue={outsourcedRevenue}
+          recentBookings={recentBookings}
+          recentActivity={recentActivity}
+        />
+      )}
+      
+      {activeTab === 'finance' && (
+        <FinanceTab />
+      )}
+      
+      {activeTab === 'reports' && (
+        <ReportsTab />
+      )}
+    </div>
+  );
 
       {/* Enhanced Financial KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
