@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
+import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { 
   BookingIcon, 
   CustomerIcon, 
@@ -15,7 +16,10 @@ import {
   RevenueIcon,
   InvoiceIcon,
   ReportsIcon,
-  FilterIcon
+  FilterIcon,
+  EditIcon,
+  TrashIcon,
+  XIcon
 } from "../components/Icons";
 
 export default function Dashboard() {
@@ -28,17 +32,75 @@ export default function Dashboard() {
     partners,
     expenses,
     income,
-    estimations
+    estimations,
+    // Income functions
+    addIncome,
+    updateIncome,
+    deleteIncome,
+    // Invoice functions  
+    invoices,
+    addInvoice,
+    updateInvoice,
+    // Estimation functions
+    addEstimation,
+    updateEstimation,
+    deleteEstimation
   } = useAppStore();
 
   // Tab management
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Modal states
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showEstimationModal, setShowEstimationModal] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [editingEstimation, setEditingEstimation] = useState(null);
+
+  // Form states
+  const [incomeForm, setIncomeForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    category: 'priority_transfer',
+    amount: '',
+    type: 'internal',
+    customer: '',
+    partner: '',
+    bookingId: '',
+    paymentMethod: 'credit_card',
+    status: 'received'
+  });
+
+  const [invoiceFormData, setInvoiceFormData] = useState({
+    customer: '',
+    customerEmail: '',
+    amount: EURO_PRICE_PER_BOOKING,
+    items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+  });
+
+  const [estimationForm, setEstimationForm] = useState({
+    customer: '',
+    customerEmail: '',
+    fromAddress: '',
+    toAddress: '',
+    distance: '',
+    estimatedDuration: '',
+    serviceType: 'priority',
+    vehicleType: 'standard',
+    basePrice: 45,
+    additionalFees: 0,
+    totalPrice: 45,
+    validUntil: '',
+    notes: '',
+    status: 'pending'
+  });
   
   // Handle URL parameters for tab navigation
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'finance', 'reports'].includes(tab)) {
+    if (tab && ['overview', 'accounting'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -47,6 +109,149 @@ export default function Dashboard() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearchParams({ tab });
+  };
+
+  // Modal handlers
+  const handleIncomeSubmit = (e) => {
+    e.preventDefault();
+    
+    if (editingIncome) {
+      const result = updateIncome(editingIncome.id, {...incomeForm, amount: Number(incomeForm.amount)});
+      if (result.success) {
+        setShowIncomeModal(false);
+        setEditingIncome(null);
+        resetIncomeForm();
+      }
+    } else {
+      const result = addIncome({...incomeForm, amount: Number(incomeForm.amount)});
+      if (result.success) {
+        setShowIncomeModal(false);
+        resetIncomeForm();
+      }
+    }
+  };
+
+  const handleInvoiceSubmit = (e) => {
+    e.preventDefault();
+    
+    const totalAmount = invoiceFormData.items.reduce((sum, item) => sum + item.amount, 0);
+    const invoiceData = {
+      ...invoiceFormData,
+      amount: totalAmount,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      type: 'manual'
+    };
+    
+    if (editingInvoice) {
+      const result = updateInvoice(editingInvoice.id, invoiceData);
+      if (result.success) {
+        setShowInvoiceModal(false);
+        setEditingInvoice(null);
+        resetInvoiceForm();
+      }
+    } else {
+      const result = addInvoice(invoiceData);
+      if (result.success) {
+        setShowInvoiceModal(false);
+        resetInvoiceForm();
+      }
+    }
+  };
+
+  const handleEstimationSubmit = (e) => {
+    e.preventDefault();
+    
+    const calculateEstimationTotalPrice = () => {
+      return Number(estimationForm.basePrice) + Number(estimationForm.additionalFees);
+    };
+
+    const formData = {
+      ...estimationForm,
+      distance: Number(estimationForm.distance),
+      estimatedDuration: Number(estimationForm.estimatedDuration),
+      basePrice: Number(estimationForm.basePrice),
+      additionalFees: Number(estimationForm.additionalFees),
+      totalPrice: calculateEstimationTotalPrice()
+    };
+    
+    if (editingEstimation) {
+      const result = updateEstimation(editingEstimation.id, formData);
+      if (result.success) {
+        setShowEstimationModal(false);
+        setEditingEstimation(null);
+        resetEstimationForm();
+      }
+    } else {
+      const result = addEstimation(formData);
+      if (result.success) {
+        setShowEstimationModal(false);
+        resetEstimationForm();
+      }
+    }
+  };
+
+  // Reset form functions
+  const resetIncomeForm = () => {
+    setIncomeForm({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      category: 'priority_transfer',
+      amount: '',
+      type: 'internal',
+      customer: '',
+      partner: '',
+      bookingId: '',
+      paymentMethod: 'credit_card',
+      status: 'received'
+    });
+  };
+
+  const resetInvoiceForm = () => {
+    setInvoiceFormData({
+      customer: '',
+      customerEmail: '',
+      amount: EURO_PRICE_PER_BOOKING,
+      items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+    });
+  };
+
+  const resetEstimationForm = () => {
+    setEstimationForm({
+      customer: '',
+      customerEmail: '',
+      fromAddress: '',
+      toAddress: '',
+      distance: '',
+      estimatedDuration: '',
+      serviceType: 'priority',
+      vehicleType: 'standard',
+      basePrice: 45,
+      additionalFees: 0,
+      totalPrice: 45,
+      validUntil: '',
+      notes: '',
+      status: 'pending'
+    });
+  };
+
+  // Quick action handlers
+  const handleAddIncome = () => {
+    setEditingIncome(null);
+    resetIncomeForm();
+    setShowIncomeModal(true);
+  };
+
+  const handleAddInvoice = () => {
+    setEditingInvoice(null);
+    resetInvoiceForm();
+    setShowInvoiceModal(true);
+  };
+
+  const handleAddEstimation = () => {
+    setEditingEstimation(null);
+    resetEstimationForm();
+    setShowEstimationModal(true);
   };
 
   // Calculate enhanced financial metrics
@@ -152,24 +357,14 @@ export default function Dashboard() {
             Overview
           </button>
           <button
-            onClick={() => handleTabChange('finance')}
+            onClick={() => handleTabChange('accounting')}
             className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-              activeTab === 'finance'
+              activeTab === 'accounting'
                 ? 'border-purple-500 text-purple-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Finance
-          </button>
-          <button
-            onClick={() => handleTabChange('reports')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-              activeTab === 'reports'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            Reports
+            Accounting
           </button>
         </nav>
       </div>
@@ -187,19 +382,453 @@ export default function Dashboard() {
           outsourcedRevenue={outsourcedRevenue}
           recentBookings={recentBookings}
           recentActivity={recentActivity}
+          onAddIncome={handleAddIncome}
+          onAddInvoice={handleAddInvoice}
+          onAddEstimation={handleAddEstimation}
         />
       )}
       
-      {activeTab === 'finance' && (
-        <FinanceTab />
+      {activeTab === 'accounting' && (
+        <AccountingTab />
       )}
-      
-      {activeTab === 'reports' && (
-        <ReportsTab />
+
+      {/* Income Modal */}
+      {showIncomeModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingIncome ? 'Edit Income' : 'Add New Income'}
+            </h3>
+            <form onSubmit={handleIncomeSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={incomeForm.date}
+                    onChange={(e) => setIncomeForm({...incomeForm, date: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount (€) *
+                  </label>
+                  <input
+                    type="number"
+                    value={incomeForm.amount}
+                    onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
+                    className="form-input"
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <input
+                    type="text"
+                    value={incomeForm.description}
+                    onChange={(e) => setIncomeForm({...incomeForm, description: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={incomeForm.category}
+                    onChange={(e) => setIncomeForm({...incomeForm, category: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="priority_transfer">Priority Transfer</option>
+                    <option value="outsourced_share">Outsourced Share</option>
+                    <option value="subscription">Subscription</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={incomeForm.type}
+                    onChange={(e) => setIncomeForm({...incomeForm, type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="internal">Internal</option>
+                    <option value="outsourced">Outsourced</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer
+                  </label>
+                  <input
+                    type="text"
+                    value={incomeForm.customer}
+                    onChange={(e) => setIncomeForm({...incomeForm, customer: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={incomeForm.paymentMethod}
+                    onChange={(e) => setIncomeForm({...incomeForm, paymentMethod: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="credit_card">Credit Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={incomeForm.status}
+                    onChange={(e) => setIncomeForm({...incomeForm, status: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="received">Received</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button type="submit" className="btn btn-primary">
+                  {editingIncome ? 'Update' : 'Add'} Income
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncomeModal(false);
+                    setEditingIncome(null);
+                    resetIncomeForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-3xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
+            </h3>
+            <form onSubmit={handleInvoiceSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={invoiceFormData.customer}
+                    onChange={(e) => setInvoiceFormData({...invoiceFormData, customer: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={invoiceFormData.customerEmail}
+                    onChange={(e) => setInvoiceFormData({...invoiceFormData, customerEmail: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Invoice Items
+                </label>
+                {invoiceFormData.items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={item.description}
+                      onChange={(e) => {
+                        const newItems = [...invoiceFormData.items];
+                        newItems[index].description = e.target.value;
+                        setInvoiceFormData({...invoiceFormData, items: newItems});
+                      }}
+                      className="form-input"
+                      required
+                    />
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newItems = [...invoiceFormData.items];
+                        newItems[index].quantity = Number(e.target.value);
+                        newItems[index].amount = newItems[index].quantity * newItems[index].rate;
+                        setInvoiceFormData({...invoiceFormData, items: newItems});
+                      }}
+                      className="form-input"
+                      min="1"
+                      required
+                    />
+                    <input
+                      type="number"
+                      placeholder="Rate (€)"
+                      value={item.rate}
+                      onChange={(e) => {
+                        const newItems = [...invoiceFormData.items];
+                        newItems[index].rate = Number(e.target.value);
+                        newItems[index].amount = newItems[index].quantity * newItems[index].rate;
+                        setInvoiceFormData({...invoiceFormData, items: newItems});
+                      }}
+                      className="form-input"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={formatCurrency(item.amount)}
+                      className="form-input bg-gray-50"
+                      readOnly
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button type="submit" className="btn btn-primary">
+                  {editingInvoice ? 'Update' : 'Create'} Invoice
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInvoiceModal(false);
+                    setEditingInvoice(null);
+                    resetInvoiceForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Estimation Modal */}
+      {showEstimationModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-3xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingEstimation ? 'Edit Estimation' : 'Create New Estimation'}
+            </h3>
+            <form onSubmit={handleEstimationSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={estimationForm.customer}
+                    onChange={(e) => setEstimationForm({...estimationForm, customer: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Email
+                  </label>
+                  <input
+                    type="email"
+                    value={estimationForm.customerEmail}
+                    onChange={(e) => setEstimationForm({...estimationForm, customerEmail: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    From Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={estimationForm.fromAddress}
+                    onChange={(e) => setEstimationForm({...estimationForm, fromAddress: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    To Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={estimationForm.toAddress}
+                    onChange={(e) => setEstimationForm({...estimationForm, toAddress: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Service Type
+                  </label>
+                  <select
+                    value={estimationForm.serviceType}
+                    onChange={(e) => setEstimationForm({...estimationForm, serviceType: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="priority">Priority</option>
+                    <option value="outsourced">Outsourced</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={estimationForm.vehicleType}
+                    onChange={(e) => setEstimationForm({...estimationForm, vehicleType: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="premium">Premium</option>
+                    <option value="luxury">Luxury</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Base Price (€) *
+                  </label>
+                  <input
+                    type="number"
+                    value={estimationForm.basePrice}
+                    onChange={(e) => setEstimationForm({...estimationForm, basePrice: e.target.value})}
+                    className="form-input"
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Additional Fees (€)
+                  </label>
+                  <input
+                    type="number"
+                    value={estimationForm.additionalFees}
+                    onChange={(e) => setEstimationForm({...estimationForm, additionalFees: e.target.value})}
+                    className="form-input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Valid Until
+                  </label>
+                  <input
+                    type="date"
+                    value={estimationForm.validUntil}
+                    onChange={(e) => setEstimationForm({...estimationForm, validUntil: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Price (€)
+                  </label>
+                  <input
+                    type="text"
+                    value={formatCurrency(Number(estimationForm.basePrice) + Number(estimationForm.additionalFees))}
+                    className="form-input bg-gray-50"
+                    readOnly
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={estimationForm.notes}
+                    onChange={(e) => setEstimationForm({...estimationForm, notes: e.target.value})}
+                    className="form-input"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <button type="submit" className="btn btn-primary">
+                  {editingEstimation ? 'Update' : 'Create'} Estimation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEstimationModal(false);
+                    setEditingEstimation(null);
+                    resetEstimationForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
+}
 
+// OverviewTab Component
+function OverviewTab({ 
+  enhancedStats, 
+  operationalStats, 
+  totalRevenue, 
+  totalExpenses, 
+  netProfit, 
+  profitMargin, 
+  internalRevenue, 
+  outsourcedRevenue, 
+  recentBookings, 
+  recentActivity,
+  onAddIncome,
+  onAddInvoice,
+  onAddEstimation
+}) {
+  return (
+    <div className="space-y-6">
       {/* Enhanced Financial KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {enhancedStats.map((stat, index) => {
@@ -283,22 +912,22 @@ export default function Dashboard() {
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <Link to="/finance?tab=billing&subtab=estimations" className="block w-full btn btn-primary text-sm">
+            <button onClick={onAddEstimation} className="block w-full btn btn-primary text-sm">
               <EstimationIcon className="w-4 h-4 mr-2" />
               New Estimation
-            </Link>
+            </button>
             <Link to="/schedule" className="block w-full btn btn-outline text-sm">
               <BookingIcon className="w-4 h-4 mr-2" />
               New Booking
             </Link>
-            <Link to="/finance?tab=billing&subtab=invoices" className="block w-full btn btn-outline text-sm">
+            <button onClick={onAddInvoice} className="block w-full btn btn-outline text-sm">
               <InvoiceIcon className="w-4 h-4 mr-2" />
               Create Invoice
-            </Link>
-            <Link to="/finance?tab=income" className="block w-full btn btn-outline text-sm">
+            </button>
+            <button onClick={onAddIncome} className="block w-full btn btn-outline text-sm">
               <RevenueIcon className="w-4 h-4 mr-2" />
               Add Income/Expense
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -409,6 +1038,258 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// AccountingTab Component (combines Finance and Reports)
+function AccountingTab() {
+  const { bookings, customers, drivers, vehicles, invoices, expenses, income } = useAppStore();
+  const [activeSubTab, setActiveSubTab] = useState('finance');
+
+  // Financial calculations for Finance sub-tab
+  const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);
+  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const internalIncome = income.filter(inc => inc.type === 'internal').reduce((sum, inc) => sum + inc.amount, 0);
+  const outsourcedIncome = income.filter(inc => inc.type === 'outsourced').reduce((sum, inc) => sum + inc.amount, 0);
+  const internalExpenses = expenses.filter(exp => exp.type === 'internal').reduce((sum, exp) => sum + exp.amount, 0);
+  const outsourcedExpenses = expenses.filter(exp => exp.type === 'outsourced').reduce((sum, exp) => sum + exp.amount, 0);
+
+  // Filter bookings for Reports sub-tab
+  const filteredBookings = bookings;
+  
+  // Monthly stats for Reports
+  const monthlyStats = {
+    totalBookings: filteredBookings.length,
+    completedBookings: filteredBookings.filter(b => b.status === "completed").length,
+    revenue: totalRevenue,
+    averageBookingValue: filteredBookings.length > 0 ? totalRevenue / filteredBookings.length : 0,
+    priorityBookings: filteredBookings.filter(b => b.type === "priority").length,
+    outsourcedBookings: filteredBookings.filter(b => b.type === "outsourced").length,
+    averageRating: 4.7
+  };
+
+  const invoiceStats = {
+    totalInvoices: invoices.length,
+    paidInvoices: invoices.filter(inv => inv.status === 'paid').length,
+    pendingInvoices: invoices.filter(inv => inv.status === 'pending' || inv.status === 'sent').length,
+    totalInvoiceValue: invoices.reduce((sum, inv) => sum + inv.amount, 0)
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tabs Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveSubTab('finance')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeSubTab === 'finance'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Financial Overview
+          </button>
+          <button
+            onClick={() => setActiveSubTab('reports')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeSubTab === 'reports'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Reports & Analytics
+          </button>
+        </nav>
+      </div>
+
+      {/* Finance Sub-tab Content */}
+      {activeSubTab === 'finance' && (
+        <div className="space-y-6">
+          {/* Financial KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-sm text-slate-600">Total Revenue</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-red-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <span className="text-lg font-bold">€</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                  <p className="text-sm text-slate-600">Total Expenses</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className={`${netProfit >= 0 ? 'bg-emerald-500' : 'bg-orange-500'} rounded-lg p-3 text-white flex items-center justify-center mr-4`}>
+                  <span className="text-lg font-bold">€</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(netProfit)}
+                  </p>
+                  <p className="text-sm text-slate-600">Net Profit</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className={`${profitMargin >= 0 ? 'bg-blue-500' : 'bg-gray-500'} rounded-lg p-3 text-white flex items-center justify-center mr-4`}>
+                  <span className="text-lg font-bold">%</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                    {profitMargin.toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-slate-600">Profit Margin</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown by Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Income Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Internal Revenue</span>
+                  <span className="font-semibold text-green-600">{formatCurrency(internalIncome)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Revenue</span>
+                  <span className="font-semibold text-blue-600">{formatCurrency(outsourcedIncome)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Internal Costs</span>
+                  <span className="font-semibold text-red-600">{formatCurrency(internalExpenses)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Costs</span>
+                  <span className="font-semibold text-orange-600">{formatCurrency(outsourcedExpenses)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reports Sub-tab Content */}
+      {activeSubTab === 'reports' && (
+        <div className="space-y-6">
+          {/* Monthly Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-blue-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <BookingIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{monthlyStats.totalBookings}</p>
+                  <p className="text-sm text-slate-600">Total Bookings</p>
+                  <p className="text-xs text-slate-500">{monthlyStats.completedBookings} completed</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(monthlyStats.revenue)}</p>
+                  <p className="text-sm text-slate-600">Monthly Revenue</p>
+                  <p className="text-xs text-slate-500">Avg: {formatCurrency(monthlyStats.averageBookingValue)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-purple-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <CustomerIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{customers.length}</p>
+                  <p className="text-sm text-slate-600">Active Customers</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-yellow-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <InvoiceIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{invoiceStats.totalInvoices}</p>
+                  <p className="text-sm text-slate-600">Total Invoices</p>
+                  <p className="text-xs text-slate-500">{invoiceStats.pendingInvoices} pending</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Service Type Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Priority Transfers</span>
+                  <span className="font-semibold text-purple-600">{monthlyStats.priorityBookings}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Services</span>
+                  <span className="font-semibold text-blue-600">{monthlyStats.outsourcedBookings}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Status</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Paid Invoices</span>
+                  <span className="font-semibold text-green-600">{invoiceStats.paidInvoices}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Pending Invoices</span>
+                  <span className="font-semibold text-yellow-600">{invoiceStats.pendingInvoices}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Value</span>
+                  <span className="font-semibold text-slate-900">{formatCurrency(invoiceStats.totalInvoiceValue)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
