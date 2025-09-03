@@ -29,15 +29,9 @@ const navigationItems = [
     roles: ["Admin", "Dispatcher", "Driver"]
   },
   {
-    path: "/finance",
-    label: "Finance",
+    path: "/stream",
+    label: "Stream",
     icon: TrendUpIcon,
-    roles: ["Admin"]
-  },
-  {
-    path: "/reports",
-    label: "Reports",
-    icon: ReportsIcon,
     roles: ["Admin", "Dispatcher", "Driver"]
   },
   {

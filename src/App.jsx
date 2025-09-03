@@ -6,11 +6,10 @@ import Customers from "./pages/Customers";
 import Drivers from "./pages/Drivers";
 import Fleet from "./pages/Fleet";
 import Partners from "./pages/Partners";
-import Reports from "./pages/Reports";
+import Stream from "./pages/Stream";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import FinanceTracker from "./pages/FinanceTracker";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
@@ -41,11 +40,13 @@ function AuthenticatedShell() {
             <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
             <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
-            <Route path="/finance" element={<RequireRole roles={["Admin"]}><FinanceTracker /></RequireRole>} />
-            <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
-            <Route path="/history" element={<Navigate to="/reports" replace />} />
+            <Route path="/stream" element={<RequireAuth><Stream /></RequireAuth>} />
             <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
             <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />
+            {/* Legacy redirects */}
+            <Route path="/finance" element={<Navigate to="/" replace />} />
+            <Route path="/reports" element={<Navigate to="/stream" replace />} />
+            <Route path="/history" element={<Navigate to="/stream" replace />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>

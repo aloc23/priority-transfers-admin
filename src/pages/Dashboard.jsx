@@ -14,6 +14,7 @@ import {
   RevenueIcon,
   InvoiceIcon
 } from "../components/Icons";
+import FinanceTrackerSection from "../components/FinanceTrackerSection";
 
 export default function Dashboard() {
   const { 
@@ -200,7 +201,7 @@ export default function Dashboard() {
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <Link to="/finance?tab=billing&subtab=estimations" className="block w-full btn btn-primary text-sm">
+            <Link to="/stream?tab=finance&subtab=billing" className="block w-full btn btn-primary text-sm">
               <EstimationIcon className="w-4 h-4 mr-2" />
               New Estimation
             </Link>
@@ -208,11 +209,11 @@ export default function Dashboard() {
               <BookingIcon className="w-4 h-4 mr-2" />
               New Booking
             </Link>
-            <Link to="/finance?tab=billing&subtab=invoices" className="block w-full btn btn-outline text-sm">
+            <Link to="/stream?tab=finance&subtab=billing" className="block w-full btn btn-outline text-sm">
               <InvoiceIcon className="w-4 h-4 mr-2" />
               Create Invoice
             </Link>
-            <Link to="/finance?tab=income" className="block w-full btn btn-outline text-sm">
+            <Link to="/stream?tab=finance" className="block w-full btn btn-outline text-sm">
               <RevenueIcon className="w-4 h-4 mr-2" />
               Add Income/Expense
             </Link>
@@ -238,6 +239,11 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Finance Tracker Section */}
+      <div className="space-y-6">
+        <FinanceTrackerSection showHeader={true} compact={false} />
       </div>
 
       {/* Recent Activity and Bookings */}
