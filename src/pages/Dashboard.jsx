@@ -1305,7 +1305,16 @@ function OverviewTab({
 // AccountingTab Component (combines Finance and Reports)
 function AccountingTab() {
   const { bookings, customers, drivers, vehicles, invoices, expenses, income } = useAppStore();
+  const [searchParams] = useSearchParams();
   const [activeSubTab, setActiveSubTab] = useState('finance');
+
+  // Handle URL parameters for subtab navigation
+  useEffect(() => {
+    const subtab = searchParams.get('subtab');
+    if (subtab && ['finance', 'income-expenses', 'reports'].includes(subtab)) {
+      setActiveSubTab(subtab);
+    }
+  }, [searchParams]);
 
   // Financial calculations for Finance sub-tab
   const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);

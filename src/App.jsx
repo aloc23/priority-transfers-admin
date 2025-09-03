@@ -42,7 +42,7 @@ function AuthenticatedShell() {
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
             <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
             <Route path="/finance" element={<RequireRole roles={["Admin"]}><FinanceTracker /></RequireRole>} />
-            <Route path="/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+            <Route path="/reports" element={<Navigate to="/?tab=accounting&subtab=reports" replace />} />
             <Route path="/history" element={<Navigate to="/reports" replace />} />
             <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
             <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />
