@@ -30,8 +30,8 @@ const navigationItems = [
   },
   {
     path: "/finance",
-    label: "Finance",
-    icon: TrendUpIcon,
+    label: "Estimates",
+    icon: EstimationIcon,
     roles: ["Admin"]
   },
   {
