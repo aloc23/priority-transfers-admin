@@ -199,7 +199,23 @@ export default function Dashboard() {
       )}
     </div>
   );
+}
 
+// OverviewTab Component
+function OverviewTab({ 
+  enhancedStats, 
+  operationalStats, 
+  totalRevenue, 
+  totalExpenses, 
+  netProfit, 
+  profitMargin, 
+  internalRevenue, 
+  outsourcedRevenue, 
+  recentBookings, 
+  recentActivity 
+}) {
+  return (
+    <div className="space-y-6">
       {/* Enhanced Financial KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {enhancedStats.map((stat, index) => {
@@ -408,6 +424,30 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// FinanceTab Component (placeholder for now)
+function FinanceTab() {
+  return (
+    <div className="space-y-6">
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-slate-900 mb-4">Finance Management</h2>
+        <p className="text-slate-600">Finance management features will be implemented here.</p>
+      </div>
+    </div>
+  );
+}
+
+// ReportsTab Component (placeholder for now)
+function ReportsTab() {
+  return (
+    <div className="space-y-6">
+      <div className="card p-6">
+        <h2 className="text-xl font-semibold text-slate-900 mb-4">Reports & Analytics</h2>
+        <p className="text-slate-600">Reports and analytics features will be implemented here.</p>
       </div>
     </div>
   );
