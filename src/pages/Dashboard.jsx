@@ -1304,9 +1304,57 @@ function OverviewTab({
 
 // AccountingTab Component (combines Finance and Reports)
 function AccountingTab() {
-  const { bookings, customers, drivers, vehicles, invoices, expenses, income } = useAppStore();
+  const { 
+    bookings, 
+    customers, 
+    drivers, 
+    vehicles, 
+    invoices, 
+    expenses, 
+    income,
+    addIncome,
+    updateIncome,
+    deleteIncome,
+    addExpense,
+    updateExpense,
+    deleteExpense
+  } = useAppStore();
   const [searchParams] = useSearchParams();
   const [activeSubTab, setActiveSubTab] = useState('finance');
+
+  // Modal states for income and expense management
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
+
+  // Form states
+  const [incomeForm, setIncomeForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    category: 'priority_transfer',
+    amount: '',
+    type: 'internal',
+    customer: '',
+    partner: '',
+    bookingId: '',
+    paymentMethod: 'credit_card',
+    status: 'received'
+  });
+
+  const [expenseForm, setExpenseForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    category: 'fuel',
+    amount: '',
+    type: 'internal',
+    partner: '',
+    vehicle: '',
+    driver: '',
+    vendor: '',
+    receipt: '',
+    status: 'pending'
+  });
 
   // Handle URL parameters for subtab navigation
   useEffect(() => {
@@ -1315,6 +1363,138 @@ function AccountingTab() {
       setActiveSubTab(subtab);
     }
   }, [searchParams]);
+
+  // Form handlers for income
+  const handleIncomeSubmit = (e) => {
+    e.preventDefault();
+    
+    if (editingIncome) {
+      const result = updateIncome(editingIncome.id, {...incomeForm, amount: Number(incomeForm.amount)});
+      if (result.success) {
+        setShowIncomeModal(false);
+        setEditingIncome(null);
+        resetIncomeForm();
+      }
+    } else {
+      const result = addIncome({...incomeForm, amount: Number(incomeForm.amount)});
+      if (result.success) {
+        setShowIncomeModal(false);
+        resetIncomeForm();
+      }
+    }
+  };
+
+  const handleExpenseSubmit = (e) => {
+    e.preventDefault();
+    
+    if (editingExpense) {
+      const result = updateExpense(editingExpense.id, {...expenseForm, amount: Number(expenseForm.amount)});
+      if (result.success) {
+        setShowExpenseModal(false);
+        setEditingExpense(null);
+        resetExpenseForm();
+      }
+    } else {
+      const result = addExpense({...expenseForm, amount: Number(expenseForm.amount)});
+      if (result.success) {
+        setShowExpenseModal(false);
+        resetExpenseForm();
+      }
+    }
+  };
+
+  const resetIncomeForm = () => {
+    setIncomeForm({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      category: 'priority_transfer',
+      amount: '',
+      type: 'internal',
+      customer: '',
+      partner: '',
+      bookingId: '',
+      paymentMethod: 'credit_card',
+      status: 'received'
+    });
+  };
+
+  const resetExpenseForm = () => {
+    setExpenseForm({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      category: 'fuel',
+      amount: '',
+      type: 'internal',
+      partner: '',
+      vehicle: '',
+      driver: '',
+      vendor: '',
+      receipt: '',
+      status: 'pending'
+    });
+  };
+
+  // Quick action handlers
+  const handleAddIncome = () => {
+    setEditingIncome(null);
+    resetIncomeForm();
+    setShowIncomeModal(true);
+  };
+
+  const handleAddExpense = () => {
+    setEditingExpense(null);
+    resetExpenseForm();
+    setShowExpenseModal(true);
+  };
+
+  // Income handlers
+  const handleEditIncome = (income) => {
+    setEditingIncome(income);
+    setIncomeForm({
+      date: income.date,
+      description: income.description,
+      category: income.category,
+      amount: income.amount.toString(),
+      type: income.type,
+      customer: income.customer || '',
+      partner: income.partner || '',
+      bookingId: income.bookingId || '',
+      paymentMethod: income.paymentMethod,
+      status: income.status
+    });
+    setShowIncomeModal(true);
+  };
+
+  const handleDeleteIncome = (incomeId) => {
+    if (window.confirm('Are you sure you want to delete this income record?')) {
+      deleteIncome(incomeId);
+    }
+  };
+
+  // Expense handlers
+  const handleEditExpense = (expense) => {
+    setEditingExpense(expense);
+    setExpenseForm({
+      date: expense.date,
+      description: expense.description,
+      category: expense.category,
+      amount: expense.amount.toString(),
+      type: expense.type,
+      partner: expense.partner || '',
+      vehicle: expense.vehicle || '',
+      driver: expense.driver || '',
+      vendor: expense.vendor || '',
+      receipt: expense.receipt || '',
+      status: expense.status
+    });
+    setShowExpenseModal(true);
+  };
+
+  const handleDeleteExpense = (expenseId) => {
+    if (window.confirm('Are you sure you want to delete this expense record?')) {
+      deleteExpense(expenseId);
+    }
+  };
 
   // Financial calculations for Finance sub-tab
   const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);
@@ -1731,6 +1911,208 @@ function AccountingTab() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Income Modal */}
+      {showIncomeModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingIncome ? 'Edit Income' : 'Add New Income'}
+            </h3>
+            <form onSubmit={handleIncomeSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={incomeForm.date}
+                    onChange={(e) => setIncomeForm({...incomeForm, date: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={incomeForm.amount}
+                    onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={incomeForm.description}
+                  onChange={(e) => setIncomeForm({...incomeForm, description: e.target.value})}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={incomeForm.category}
+                    onChange={(e) => setIncomeForm({...incomeForm, category: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="priority_transfer">Priority Transfer</option>
+                    <option value="standard_transfer">Standard Transfer</option>
+                    <option value="partner_revenue">Partner Revenue</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={incomeForm.type}
+                    onChange={(e) => setIncomeForm({...incomeForm, type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="internal">Internal</option>
+                    <option value="outsourced">Outsourced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                >
+                  {editingIncome ? 'Update Income' : 'Add Income'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncomeModal(false);
+                    setEditingIncome(null);
+                    resetIncomeForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Expense Modal */}
+      {showExpenseModal && (
+        <div className="modal-backdrop">
+          <div className="modal max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingExpense ? 'Edit Expense' : 'Add New Expense'}
+            </h3>
+            <form onSubmit={handleExpenseSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={expenseForm.date}
+                    onChange={(e) => setExpenseForm({...expenseForm, date: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({...expenseForm, category: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="fuel">Fuel</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="licenses">Licenses</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="office">Office Supplies</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={expenseForm.type}
+                    onChange={(e) => setExpenseForm({...expenseForm, type: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="internal">Internal</option>
+                    <option value="outsourced">Outsourced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+                <input
+                  type="text"
+                  value={expenseForm.vendor}
+                  onChange={(e) => setExpenseForm({...expenseForm, vendor: e.target.value})}
+                  className="form-input"
+                  placeholder="Expense vendor"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                >
+                  {editingExpense ? 'Update Expense' : 'Add Expense'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseModal(false);
+                    setEditingExpense(null);
+                    resetExpenseForm();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
