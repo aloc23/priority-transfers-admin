@@ -288,7 +288,7 @@ export function AppStoreProvider({ children }) {
         status: "pending",
         type: "outsourced",
         items: [{ description: "Outsourced Transfer Service", quantity: 1, rate: 32.25, amount: 32.25 }],
-        editable: true
+        editable: false
       },
       {
         id: 1003,
