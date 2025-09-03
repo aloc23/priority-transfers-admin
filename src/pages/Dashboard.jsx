@@ -100,7 +100,7 @@ export default function Dashboard() {
   // Handle URL parameters for tab navigation
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'finance', 'reports'].includes(tab)) {
+    if (tab && ['overview', 'accounting'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -357,24 +357,14 @@ export default function Dashboard() {
             Overview
           </button>
           <button
-            onClick={() => handleTabChange('finance')}
+            onClick={() => handleTabChange('accounting')}
             className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-              activeTab === 'finance'
+              activeTab === 'accounting'
                 ? 'border-purple-500 text-purple-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Finance
-          </button>
-          <button
-            onClick={() => handleTabChange('reports')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-              activeTab === 'reports'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            Reports
+            Accounting
           </button>
         </nav>
       </div>
@@ -398,12 +388,8 @@ export default function Dashboard() {
         />
       )}
       
-      {activeTab === 'finance' && (
-        <FinanceTab />
-      )}
-      
-      {activeTab === 'reports' && (
-        <ReportsTab />
+      {activeTab === 'accounting' && (
+        <AccountingTab />
       )}
 
       {/* Income Modal */}
@@ -1056,26 +1042,254 @@ function OverviewTab({
   );
 }
 
-// FinanceTab Component (placeholder for now)
-function FinanceTab() {
-  return (
-    <div className="space-y-6">
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">Finance Management</h2>
-        <p className="text-slate-600">Finance management features will be implemented here.</p>
-      </div>
-    </div>
-  );
-}
+// AccountingTab Component (combines Finance and Reports)
+function AccountingTab() {
+  const { bookings, customers, drivers, vehicles, invoices, expenses, income } = useAppStore();
+  const [activeSubTab, setActiveSubTab] = useState('finance');
 
-// ReportsTab Component (placeholder for now)
-function ReportsTab() {
+  // Financial calculations for Finance sub-tab
+  const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);
+  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const internalIncome = income.filter(inc => inc.type === 'internal').reduce((sum, inc) => sum + inc.amount, 0);
+  const outsourcedIncome = income.filter(inc => inc.type === 'outsourced').reduce((sum, inc) => sum + inc.amount, 0);
+  const internalExpenses = expenses.filter(exp => exp.type === 'internal').reduce((sum, exp) => sum + exp.amount, 0);
+  const outsourcedExpenses = expenses.filter(exp => exp.type === 'outsourced').reduce((sum, exp) => sum + exp.amount, 0);
+
+  // Filter bookings for Reports sub-tab
+  const filteredBookings = bookings;
+  
+  // Monthly stats for Reports
+  const monthlyStats = {
+    totalBookings: filteredBookings.length,
+    completedBookings: filteredBookings.filter(b => b.status === "completed").length,
+    revenue: totalRevenue,
+    averageBookingValue: filteredBookings.length > 0 ? totalRevenue / filteredBookings.length : 0,
+    priorityBookings: filteredBookings.filter(b => b.type === "priority").length,
+    outsourcedBookings: filteredBookings.filter(b => b.type === "outsourced").length,
+    averageRating: 4.7
+  };
+
+  const invoiceStats = {
+    totalInvoices: invoices.length,
+    paidInvoices: invoices.filter(inv => inv.status === 'paid').length,
+    pendingInvoices: invoices.filter(inv => inv.status === 'pending' || inv.status === 'sent').length,
+    totalInvoiceValue: invoices.reduce((sum, inv) => sum + inv.amount, 0)
+  };
+
   return (
     <div className="space-y-6">
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">Reports & Analytics</h2>
-        <p className="text-slate-600">Reports and analytics features will be implemented here.</p>
+      {/* Sub-tabs Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveSubTab('finance')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeSubTab === 'finance'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Financial Overview
+          </button>
+          <button
+            onClick={() => setActiveSubTab('reports')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeSubTab === 'reports'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Reports & Analytics
+          </button>
+        </nav>
       </div>
+
+      {/* Finance Sub-tab Content */}
+      {activeSubTab === 'finance' && (
+        <div className="space-y-6">
+          {/* Financial KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-sm text-slate-600">Total Revenue</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-red-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <span className="text-lg font-bold">€</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                  <p className="text-sm text-slate-600">Total Expenses</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className={`${netProfit >= 0 ? 'bg-emerald-500' : 'bg-orange-500'} rounded-lg p-3 text-white flex items-center justify-center mr-4`}>
+                  <span className="text-lg font-bold">€</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(netProfit)}
+                  </p>
+                  <p className="text-sm text-slate-600">Net Profit</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className={`${profitMargin >= 0 ? 'bg-blue-500' : 'bg-gray-500'} rounded-lg p-3 text-white flex items-center justify-center mr-4`}>
+                  <span className="text-lg font-bold">%</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                    {profitMargin.toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-slate-600">Profit Margin</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown by Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Income Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Internal Revenue</span>
+                  <span className="font-semibold text-green-600">{formatCurrency(internalIncome)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Revenue</span>
+                  <span className="font-semibold text-blue-600">{formatCurrency(outsourcedIncome)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Internal Costs</span>
+                  <span className="font-semibold text-red-600">{formatCurrency(internalExpenses)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Costs</span>
+                  <span className="font-semibold text-orange-600">{formatCurrency(outsourcedExpenses)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reports Sub-tab Content */}
+      {activeSubTab === 'reports' && (
+        <div className="space-y-6">
+          {/* Monthly Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-blue-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <BookingIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{monthlyStats.totalBookings}</p>
+                  <p className="text-sm text-slate-600">Total Bookings</p>
+                  <p className="text-xs text-slate-500">{monthlyStats.completedBookings} completed</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(monthlyStats.revenue)}</p>
+                  <p className="text-sm text-slate-600">Monthly Revenue</p>
+                  <p className="text-xs text-slate-500">Avg: {formatCurrency(monthlyStats.averageBookingValue)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-purple-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <CustomerIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{customers.length}</p>
+                  <p className="text-sm text-slate-600">Active Customers</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-yellow-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <InvoiceIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{invoiceStats.totalInvoices}</p>
+                  <p className="text-sm text-slate-600">Total Invoices</p>
+                  <p className="text-xs text-slate-500">{invoiceStats.pendingInvoices} pending</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Service Type Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Priority Transfers</span>
+                  <span className="font-semibold text-purple-600">{monthlyStats.priorityBookings}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Outsourced Services</span>
+                  <span className="font-semibold text-blue-600">{monthlyStats.outsourcedBookings}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Status</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Paid Invoices</span>
+                  <span className="font-semibold text-green-600">{invoiceStats.paidInvoices}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Pending Invoices</span>
+                  <span className="font-semibold text-yellow-600">{invoiceStats.pendingInvoices}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Value</span>
+                  <span className="font-semibold text-slate-900">{formatCurrency(invoiceStats.totalInvoiceValue)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
