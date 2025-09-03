@@ -17,13 +17,15 @@ import {
 export default function Billing() {
   const { 
     bookings, 
+    customers,
     invoices, 
     updateInvoice, 
     cancelInvoice, 
     sendInvoice, 
     generateInvoiceFromBooking,
     addInvoice,
-    markInvoiceAsPaid
+    markInvoiceAsPaid,
+    addActivityLog
   } = useAppStore();
   
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +39,9 @@ export default function Billing() {
     customer: '',
     customerEmail: '',
     amount: EURO_PRICE_PER_BOOKING,
-    items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+    items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }],
+    bookingId: null, // For manual booking association
+    type: 'priority' // Default type
   });
 
   const completedBookings = bookings.filter(booking => booking.status === "completed");
@@ -83,7 +87,9 @@ export default function Billing() {
       customer: invoice.customer,
       customerEmail: invoice.customerEmail,
       amount: invoice.amount,
-      items: invoice.items || [{ description: '', quantity: 1, rate: invoice.amount, amount: invoice.amount }]
+      items: invoice.items || [{ description: '', quantity: 1, rate: invoice.amount, amount: invoice.amount }],
+      bookingId: invoice.bookingId || null,
+      type: invoice.type || 'priority'
     });
     setShowModal(true);
   };
@@ -94,25 +100,57 @@ export default function Billing() {
     
     if (editingInvoice) {
       // Update existing invoice
-      updateInvoice(editingInvoice.id, {
+      const updates = {
         ...formData,
         amount: totalAmount
-      });
+      };
+      
+      // Track changes for audit trail
+      const changes = [];
+      if (editingInvoice.customer !== formData.customer) changes.push(`Customer: ${editingInvoice.customer} → ${formData.customer}`);
+      if (editingInvoice.customerEmail !== formData.customerEmail) changes.push(`Email: ${editingInvoice.customerEmail} → ${formData.customerEmail}`);
+      if (editingInvoice.amount !== totalAmount) changes.push(`Amount: ${formatCurrency(editingInvoice.amount)} → ${formatCurrency(totalAmount)}`);
+      if (editingInvoice.type !== formData.type) changes.push(`Type: ${editingInvoice.type} → ${formData.type}`);
+      if (editingInvoice.bookingId !== formData.bookingId) {
+        const oldBooking = editingInvoice.bookingId ? `Booking #${editingInvoice.bookingId}` : 'No booking';
+        const newBooking = formData.bookingId ? `Booking #${formData.bookingId}` : 'No booking';
+        changes.push(`Booking Association: ${oldBooking} → ${newBooking}`);
+      }
+      
+      updateInvoice(editingInvoice.id, updates);
+      
+      // Add audit trail entry for updates
+      if (changes.length > 0) {
+        addActivityLog({
+          type: 'invoice_updated',
+          description: `Invoice ${editingInvoice.id} updated: ${changes.join(', ')}`,
+          relatedId: editingInvoice.id
+        });
+      }
     } else {
-      // Create new independent invoice
+      // Create new invoice
       const result = addInvoice({
         customer: formData.customer,
         customerEmail: formData.customerEmail,
         amount: totalAmount,
         items: formData.items,
         description: formData.items[0]?.description || 'Service provided',
-        type: 'priority' // Default to priority
+        type: formData.type,
+        bookingId: formData.bookingId
       });
       
       if (!result.success) {
         alert('Failed to create invoice: ' + result.error);
         return;
       }
+      
+      // Add audit trail entry for new invoice
+      const bookingText = formData.bookingId ? ` linked to Booking #${formData.bookingId}` : ' (ad hoc)';
+      addActivityLog({
+        type: 'invoice_created',
+        description: `Invoice created for ${formData.customer} (${formatCurrency(totalAmount)})${bookingText}`,
+        relatedId: result.invoice?.id
+      });
     }
     
     setShowModal(false);
@@ -125,7 +163,9 @@ export default function Billing() {
       customer: '',
       customerEmail: '',
       amount: EURO_PRICE_PER_BOOKING,
-      items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
+      items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }],
+      bookingId: null,
+      type: 'priority'
     });
   };
 
@@ -580,87 +620,163 @@ export default function Billing() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Customer</label>
-                  <input
-                    type="text"
-                    value={formData.customer}
-                    onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Invoice Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Invoice Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                    <input
+                      type="text"
+                      value={formData.customer}
+                      onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Email *</label>
+                    <input
+                      type="email"
+                      value={formData.customerEmail}
+                      onChange={(e) => setFormData({...formData, customerEmail: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block mb-1">Customer Email</label>
-                  <input
-                    type="email"
-                    value={formData.customerEmail}
-                    onChange={(e) => setFormData({...formData, customerEmail: e.target.value})}
-                    required
-                  />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Type</label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="priority">Priority (Internal)</option>
+                      <option value="outsourced">Outsourced</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Link to Booking (Optional)</label>
+                    <select
+                      value={formData.bookingId || ''}
+                      onChange={(e) => {
+                        const bookingId = e.target.value ? parseInt(e.target.value) : null;
+                        const selectedBooking = bookings.find(b => b.id === bookingId);
+                        if (selectedBooking) {
+                          setFormData({
+                            ...formData, 
+                            bookingId,
+                            customer: selectedBooking.customer,
+                            customerEmail: customers.find(c => c.name === selectedBooking.customer)?.email || formData.customerEmail
+                          });
+                        } else {
+                          setFormData({...formData, bookingId: null});
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">No booking association (Ad hoc)</option>
+                      {bookings.map(booking => (
+                        <option key={booking.id} value={booking.id}>
+                          Booking #{booking.id} - {booking.customer} ({booking.status})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block mb-2 font-semibold">Invoice Items</label>
+              {/* Invoice Items */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Invoice Items</h3>
                 {formData.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-6 gap-2 mb-2 p-3 bg-gray-50 rounded">
-                    <div className="col-span-2">
+                  <div key={index} className="grid grid-cols-12 gap-3 mb-3 p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="col-span-5">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
                       <input
                         type="text"
-                        placeholder="Description"
+                        placeholder="Service description"
                         value={item.description}
                         onChange={(e) => updateItemAmount(index, 'description', e.target.value)}
-                        className="text-sm"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
                       <input
                         type="number"
-                        placeholder="Qty"
+                        placeholder="1"
                         value={item.quantity}
-                        onChange={(e) => updateItemAmount(index, 'quantity', parseInt(e.target.value))}
-                        className="text-sm"
+                        onChange={(e) => updateItemAmount(index, 'quantity', parseInt(e.target.value) || 1)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         min="1"
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Rate (€)</label>
                       <input
                         type="number"
-                        placeholder="Rate"
+                        placeholder="45.00"
                         value={item.rate}
-                        onChange={(e) => updateItemAmount(index, 'rate', parseFloat(e.target.value))}
-                        className="text-sm"
+                        onChange={(e) => updateItemAmount(index, 'rate', parseFloat(e.target.value) || 0)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         step="0.01"
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Amount</label>
                       <input
-                        type="number"
-                        value={item.amount}
+                        type="text"
+                        value={formatCurrency(item.amount)}
                         readOnly
-                        className="text-sm bg-gray-100"
+                        className="w-full px-2 py-1 text-sm bg-gray-100 border border-gray-300 rounded font-medium text-gray-900"
                       />
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium">
-                        {formatCurrency(item.amount)}
-                      </span>
+                    <div className="col-span-1 flex items-end">
+                      {formData.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = formData.items.filter((_, i) => i !== index);
+                            setFormData({...formData, items: newItems});
+                          }}
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                          title="Remove item"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
-                <div className="text-right mt-2">
-                  <span className="text-lg font-bold">
-                    Total: {formatCurrency(formData.items.reduce((sum, item) => sum + item.amount, 0))}
-                  </span>
+                
+                <div className="flex items-center justify-between mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newItems = [...formData.items, { description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }];
+                      setFormData({...formData, items: newItems});
+                    }}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-1" />
+                    Add Line Item
+                  </button>
+                  
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">
+                      Total: {formatCurrency(formData.items.reduce((sum, item) => sum + item.amount, 0))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary">
-                  {editingInvoice ? 'Update Invoice' : 'Create Invoice'}
-                </button>
+              {/* Form Actions */}
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -668,9 +784,15 @@ export default function Billing() {
                     setEditingInvoice(null);
                     resetForm();
                   }}
-                  className="btn btn-outline"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {editingInvoice ? 'Update Invoice' : 'Create Invoice'}
                 </button>
               </div>
             </form>
