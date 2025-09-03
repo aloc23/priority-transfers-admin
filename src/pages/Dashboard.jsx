@@ -254,6 +254,30 @@ export default function Dashboard() {
     setShowEstimationModal(true);
   };
 
+  // Income handlers
+  const handleEditIncome = (income) => {
+    setEditingIncome(income);
+    setIncomeForm({
+      date: income.date,
+      description: income.description,
+      category: income.category,
+      amount: income.amount.toString(),
+      type: income.type,
+      customer: income.customer || '',
+      partner: income.partner || '',
+      bookingId: income.bookingId || '',
+      paymentMethod: income.paymentMethod,
+      status: income.status
+    });
+    setShowIncomeModal(true);
+  };
+
+  const handleDeleteIncome = (incomeId) => {
+    if (window.confirm('Are you sure you want to delete this income record?')) {
+      deleteIncome(incomeId);
+    }
+  };
+
   // Calculate enhanced financial metrics
   const totalRevenue = income.reduce((sum, inc) => sum + inc.amount, 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -1094,6 +1118,16 @@ function AccountingTab() {
             Financial Overview
           </button>
           <button
+            onClick={() => setActiveSubTab('income-expenses')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeSubTab === 'income-expenses'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Income & Expenses
+          </button>
+          <button
             onClick={() => setActiveSubTab('reports')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeSubTab === 'reports'
@@ -1190,6 +1224,165 @@ function AccountingTab() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Outsourced Costs</span>
                   <span className="font-semibold text-orange-600">{formatCurrency(outsourcedExpenses)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Income & Expenses Sub-tab Content */}
+      {activeSubTab === 'income-expenses' && (
+        <div className="space-y-6">
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setShowIncomeModal(true)}
+              className="btn btn-primary"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Income
+            </button>
+            <button 
+              onClick={() => console.log('Add Expense functionality')}
+              className="btn btn-secondary"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Expense
+            </button>
+          </div>
+
+          {/* Financial Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-green-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <TrendUpIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-sm text-gray-600">Total Income</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-red-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <TrendDownIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalExpenses)}</p>
+                  <p className="text-sm text-gray-600">Total Expenses</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center">
+                <div className="bg-blue-500 rounded-lg p-3 text-white flex items-center justify-center mr-4">
+                  <RevenueIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(netProfit)}</p>
+                  <p className="text-sm text-gray-600">Net Profit</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Income & Expenses Tables */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Income Table */}
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-slate-900">Recent Income</h3>
+              </div>
+              <div className="card-body p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {income.slice(0, 5).map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(item.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button 
+                              onClick={() => handleEditIncome(item)}
+                              className="text-blue-600 hover:text-blue-900 mr-3"
+                            >
+                              <EditIcon className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteIncome(item.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Expenses Table */}
+            <div className="card">
+              <div className="card-header">
+                <h3 className="text-lg font-semibold text-slate-900">Recent Expenses</h3>
+              </div>
+              <div className="card-body p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {expenses.slice(0, 5).map((item) => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(item.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button className="text-blue-600 hover:text-blue-900 mr-3">
+                              <EditIcon className="w-4 h-4" />
+                            </button>
+                            <button className="text-red-600 hover:text-red-900">
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
