@@ -31,7 +31,7 @@ const navigationItems = [
   {
     path: "/finance",
     label: "Estimates",
-    icon: EstimationIcon,
+    icon: TrendUpIcon,
     roles: ["Admin"]
   },
   {
