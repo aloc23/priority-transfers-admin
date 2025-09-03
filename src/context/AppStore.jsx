@@ -264,8 +264,45 @@ export function AppStoreProvider({ children }) {
   };
 
   const initializeInvoices = () => {
-    // Initialize with some sample invoices based on completed bookings
-    const sampleInvoices = [];
+    // Initialize with some sample invoices for testing the payment flow
+    const sampleInvoices = [
+      {
+        id: 1001,
+        customer: "John Doe",
+        customerEmail: "john@example.com",
+        amount: 45,
+        date: "2024-01-15",
+        dueDate: "2024-02-14",
+        status: "sent",
+        type: "priority",
+        items: [{ description: "Priority Transfer Service", quantity: 1, rate: 45, amount: 45 }],
+        editable: false
+      },
+      {
+        id: 1002,
+        customer: "Jane Smith",
+        customerEmail: "jane@example.com",
+        amount: 32.25,
+        date: "2024-01-16",
+        dueDate: "2024-02-15",
+        status: "pending",
+        type: "outsourced",
+        items: [{ description: "Outsourced Transfer Service", quantity: 1, rate: 32.25, amount: 32.25 }],
+        editable: true
+      },
+      {
+        id: 1003,
+        customer: "Business Corp",
+        customerEmail: "billing@businesscorp.com",
+        amount: 90,
+        date: "2024-01-10",
+        dueDate: "2024-02-09",
+        status: "sent",
+        type: "priority",
+        items: [{ description: "Corporate Transfer Service", quantity: 2, rate: 45, amount: 90 }],
+        editable: false
+      }
+    ];
     setInvoices(sampleInvoices);
     safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
   };

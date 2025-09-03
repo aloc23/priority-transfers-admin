@@ -29,6 +29,7 @@ export default function Billing() {
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [selectedInvoices, setSelectedInvoices] = useState(new Set());
   const [formData, setFormData] = useState({
     customer: '',
     customerEmail: '',
@@ -99,6 +100,76 @@ export default function Billing() {
       items: [{ description: '', quantity: 1, rate: EURO_PRICE_PER_BOOKING, amount: EURO_PRICE_PER_BOOKING }]
     });
   };
+
+  // Enhanced payment handling functions
+  const handleSinglePayment = (invoiceId) => {
+    const result = markInvoiceAsPaid(invoiceId);
+    if (result.success) {
+      // Remove from selection if it was selected
+      const newSelection = new Set(selectedInvoices);
+      newSelection.delete(invoiceId);
+      setSelectedInvoices(newSelection);
+    } else {
+      alert('Failed to mark invoice as paid: ' + result.error);
+    }
+  };
+
+  const handleBulkPayment = () => {
+    if (selectedInvoices.size === 0) {
+      alert('Please select invoices to mark as paid');
+      return;
+    }
+
+    const confirmPayment = confirm(`Mark ${selectedInvoices.size} invoice(s) as paid?`);
+    if (!confirmPayment) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    selectedInvoices.forEach(invoiceId => {
+      const result = markInvoiceAsPaid(invoiceId);
+      if (result.success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+    });
+
+    if (successCount > 0) {
+      alert(`${successCount} invoice(s) marked as paid successfully!`);
+      setSelectedInvoices(new Set()); // Clear selection
+    }
+
+    if (errorCount > 0) {
+      alert(`${errorCount} invoice(s) failed to process`);
+    }
+  };
+
+  const handleSelectInvoice = (invoiceId, checked) => {
+    const newSelection = new Set(selectedInvoices);
+    if (checked) {
+      newSelection.add(invoiceId);
+    } else {
+      newSelection.delete(invoiceId);
+    }
+    setSelectedInvoices(newSelection);
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      const payableInvoices = filteredInvoices
+        .filter(inv => inv.status === 'sent' || inv.status === 'pending')
+        .map(inv => inv.id);
+      setSelectedInvoices(new Set(payableInvoices));
+    } else {
+      setSelectedInvoices(new Set());
+    }
+  };
+
+  // Get payable invoices for bulk operations
+  const payableInvoices = filteredInvoices.filter(inv => 
+    inv.status === 'sent' || inv.status === 'pending'
+  );
 
   const handleSendInvoice = (invoice) => {
     if (invoice.customerEmail) {
@@ -244,15 +315,44 @@ export default function Billing() {
           <h2 className="text-xl font-semibold text-gray-900">
             Invoices ({filteredInvoices.length})
           </h2>
+          
+          {/* Bulk Payment Actions */}
+          {payableInvoices.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {selectedInvoices.size} of {payableInvoices.length} selected
+              </span>
+              {selectedInvoices.size > 0 && (
+                <button 
+                  onClick={handleBulkPayment}
+                  className="btn bg-green-600 text-white hover:bg-green-700 px-4 py-2 text-sm font-medium shadow-sm hover:shadow-md transition-all"
+                  title={`Mark ${selectedInvoices.size} invoice(s) as paid`}
+                >
+                  ✓ Mark {selectedInvoices.size} as Paid
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
+                {payableInvoices.length > 0 && (
+                  <th className="w-12">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      checked={payableInvoices.length > 0 && selectedInvoices.size === payableInvoices.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      title="Select all payable invoices"
+                    />
+                  </th>
+                )}
                 <th>Invoice ID</th>
                 <th>Customer</th>
-                <th>Service Date</th>
+                <th>Date</th>
                 <th>Amount</th>
                 <th>Type</th>
                 <th>Status</th>
@@ -260,83 +360,102 @@ export default function Billing() {
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td className="font-mono text-sm">{invoice.id}</td>
-                  <td className="font-medium">{invoice.customer}</td>
-                  <td className="text-sm">{invoice.serviceDate}</td>
-                  <td className="font-bold">{formatCurrency(invoice.amount)}</td>
-                  <td>
-                    <span className={`badge ${
-                      invoice.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-                    }`}>
-                      {invoice.type === 'priority' ? 'Priority' : 'Outsourced'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${
-                      invoice.status === 'paid' ? 'badge-green' :
-                      invoice.status === 'sent' ? 'badge-blue' :
-                      invoice.status === 'cancelled' ? 'badge-red' :
-                      'badge-yellow'
-                    }`}>
-                      {invoice.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex gap-1">
-                      <button 
-                        className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                        title="View Invoice"
-                      >
-                        <ViewIcon className="w-3 h-3" />
-                      </button>
-                      {invoice.editable && (
+              {filteredInvoices.map((invoice) => {
+                const isPayable = invoice.status === 'sent' || invoice.status === 'pending';
+                const isSelected = selectedInvoices.has(invoice.id);
+                
+                return (
+                  <tr key={invoice.id} className={isSelected ? 'bg-green-50' : ''}>
+                    {payableInvoices.length > 0 && (
+                      <td>
+                        {isPayable && (
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                            checked={isSelected}
+                            onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                            title="Select for bulk payment"
+                          />
+                        )}
+                      </td>
+                    )}
+                    <td className="font-mono text-sm">{invoice.id}</td>
+                    <td className="font-medium">{invoice.customer}</td>
+                    <td className="text-sm">{invoice.date}</td>
+                    <td className="font-bold">{formatCurrency(invoice.amount)}</td>
+                    <td>
+                      <span className={`badge ${
+                        invoice.type === 'priority' ? 'badge-blue' : 'badge-yellow'
+                      }`}>
+                        {invoice.type === 'priority' ? 'Priority' : 'Outsourced'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${
+                        invoice.status === 'paid' ? 'badge-green' :
+                        invoice.status === 'sent' ? 'badge-blue' :
+                        invoice.status === 'cancelled' ? 'badge-red' :
+                        'badge-yellow'
+                      }`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex gap-1">
                         <button 
-                          onClick={() => handleEdit(invoice)}
                           className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                          title="Edit Invoice"
+                          title="View Invoice"
                         >
-                          <EditIcon className="w-3 h-3" />
+                          <ViewIcon className="w-3 h-3" />
                         </button>
-                      )}
-                      {(invoice.status === 'pending' || invoice.status === 'sent') && (
+                        {invoice.editable && (
+                          <button 
+                            onClick={() => handleEdit(invoice)}
+                            className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
+                            title="Edit Invoice"
+                          >
+                            <EditIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                        {(invoice.status === 'pending' || invoice.status === 'sent') && (
+                          <button 
+                            onClick={() => handleSendInvoice(invoice)}
+                            className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
+                            title="Send Invoice"
+                          >
+                            <SendIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                        {(invoice.status === 'sent' || invoice.status === 'pending') && (
+                          <button 
+                            onClick={() => handleSinglePayment(invoice.id)}
+                            className="btn bg-green-600 text-white hover:bg-green-700 px-3 py-1 text-xs font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1"
+                            title="Mark as Paid"
+                          >
+                            <span className="font-bold">€</span>
+                            <span className="hidden sm:inline">Paid</span>
+                          </button>
+                        )}
                         <button 
-                          onClick={() => handleSendInvoice(invoice)}
                           className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                          title="Send Invoice"
+                          title="Download Invoice"
                         >
-                          <SendIcon className="w-3 h-3" />
+                          <DownloadIcon className="w-3 h-3" />
                         </button>
-                      )}
-                      {(invoice.status === 'sent' || invoice.status === 'pending') && (
-                        <button 
-                          onClick={() => markInvoiceAsPaid(invoice.id)}
-                          className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                          title="Mark as Paid"
-                        >
-                          €
-                        </button>
-                      )}
-                      <button 
-                        className="btn btn-outline px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                        title="Download Invoice"
-                      >
-                        <DownloadIcon className="w-3 h-3" />
-                      </button>
-                      {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                        <button 
-                          onClick={() => cancelInvoice(invoice.id)}
-                          className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs hover:shadow-sm transition-shadow"
-                          title="Cancel Invoice"
-                        >
-                          <XIcon className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                          <button 
+                            onClick={() => cancelInvoice(invoice.id)}
+                            className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs hover:shadow-sm transition-shadow"
+                            title="Cancel Invoice"
+                          >
+                            <XIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           
