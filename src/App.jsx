@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import FinanceTracker from "./pages/FinanceTracker";
 import Billing from "./pages/Billing";
+import Reports from "./pages/Reports";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
@@ -43,8 +44,8 @@ function AuthenticatedShell() {
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
             <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
             <Route path="/finance" element={<RequireRole roles={["Admin"]}><FinanceTracker /></RequireRole>} />
-            <Route path="/reports" element={<Navigate to="/?tab=accounting&subtab=reports" replace />} />
-            <Route path="/history" element={<Navigate to="/?tab=accounting&subtab=reports" replace />} />
+            <Route path="/reports" element={<RequireRole roles={["Admin","Dispatcher"]}><Reports /></RequireRole>} />
+            <Route path="/history" element={<Navigate to="/reports" replace />} />
             <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
             <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />
             <Route path="*" element={<Navigate to="/" />} />

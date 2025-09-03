@@ -36,6 +36,12 @@ const navigationItems = [
     roles: ["Admin", "Dispatcher"]
   },
   {
+    path: "/reports",
+    label: "Reports",
+    icon: ReportsIcon,
+    roles: ["Admin", "Dispatcher"]
+  },
+  {
     path: "/finance",
     label: "Estimates & Quotes",
     icon: EstimationIcon,
