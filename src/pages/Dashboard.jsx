@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
@@ -10,7 +11,8 @@ import ExpenseModal from "../components/ExpenseModal";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, vehicles, partners, estimations, activityHistory, refreshAllData } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData } = useAppStore();
+  const { fleet } = useFleet();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
   const [accountingSubTab, setAccountingSubTab] = useState('overview');
@@ -36,7 +38,7 @@ export default function Dashboard() {
   const operationalStats = [
     { name: "Active Customers", value: customers.length, icon: CustomerIcon, color: "bg-gradient-to-r from-cyan-600 to-blue-500" },
     { name: "Available Drivers", value: drivers.filter(d => d.status === "available").length, icon: DriverIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
-    { name: "Active Vehicles", value: vehicles.filter(v => v.status === "active").length, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
+    { name: "Active Vehicles", value: fleet?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
   ];
   const recentActivity = activityHistory.slice(0, 5);
 
