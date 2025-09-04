@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -18,7 +19,8 @@ const TableIcon = ({ className = "w-4 h-4", ...props }) => (
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, sendBookingReminder, currentUser } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, sendBookingReminder, currentUser } = useAppStore();
+  const { fleet } = useFleet();
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
@@ -359,9 +361,9 @@ export default function Schedule() {
                     required
                   >
                     <option value="">Select Vehicle</option>
-                    {vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={`${vehicle.make} ${vehicle.model}`}>
-                        {vehicle.make} {vehicle.model} ({vehicle.license})
+                    {fleet && fleet.map(vehicle => (
+                      <option key={vehicle.id} value={vehicle.name}>
+                        {vehicle.name} ({vehicle.type})
                       </option>
                     ))}
                   </select>

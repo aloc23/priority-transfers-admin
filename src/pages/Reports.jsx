@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { calculateKPIs } from '../utils/kpi';
 import { 
@@ -23,7 +24,8 @@ import AdvancedFilters from "../components/AdvancedFilters";
 import { exportToCSV, exportReportData } from "../utils/export";
 
 export default function Reports() {
-  const { income, expenses, invoices, bookings, customers, drivers, vehicles, refreshAllData } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, refreshAllData } = useAppStore();
+  const { fleet } = useFleet();
   const [showOutsourced, setShowOutsourced] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -184,13 +186,16 @@ export default function Reports() {
           break;
           
         case 'fleet':
-          exportData = vehicles.map(vehicle => ({
-            Make: vehicle.make,
-            Model: vehicle.model,
-            LicensePlate: vehicle.licensePlate,
-            Status: vehicle.status,
-            LastMaintenance: vehicle.lastMaintenance || 'N/A'
-          }));
+          exportData = fleet?.map(vehicle => ({
+            ID: vehicle.id,
+            Name: vehicle.name,
+            Type: vehicle.type,
+            Capacity: vehicle.capacity,
+            DriverRate: vehicle.driverRate,
+            FuelRate: vehicle.fuelRate,
+            RunningCost: vehicle.runningCost,
+            InsuranceRate: vehicle.insuranceRate
+          })) || [];
           break;
           
         case 'financial':
@@ -841,7 +846,7 @@ export default function Reports() {
             invoiceStats,
             customers,
             drivers,
-            vehicles,
+            vehicles: fleet,
             bookings: filteredBookings
           }}
         />
