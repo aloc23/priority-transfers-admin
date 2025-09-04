@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { calculateKPIs } from '../utils/kpi';
 import { 
   RevenueIcon, 
   StarIcon, 
@@ -14,14 +15,15 @@ import {
   OutsourceIcon,
   SuccessIcon,
   TrendUpIcon,
-  TrendDownIcon
+  TrendDownIcon,
+  CloseIcon
 } from "../components/Icons";
 import ReportDetailsModal from "../components/ReportDetailsModal";
 import AdvancedFilters from "../components/AdvancedFilters";
 import { exportToCSV, exportReportData } from "../utils/export";
 
 export default function Reports() {
-  const { bookings, customers, drivers, vehicles, invoices } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, vehicles, refreshAllData } = useAppStore();
   const [showOutsourced, setShowOutsourced] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -40,6 +42,9 @@ export default function Reports() {
     sortBy: 'date',
     sortOrder: 'desc'
   });
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportError, setExportError] = useState(false);
 
   // Load saved views on component mount
   useEffect(() => {
@@ -138,6 +143,10 @@ export default function Reports() {
   };
 
   const handleExportReport = async (reportType, format) => {
+    setIsExporting(true);
+    setExportSuccess(false);
+    setExportError(false);
+    
     try {
       let exportData = [];
       
@@ -223,10 +232,14 @@ export default function Reports() {
         await exportReportData(reportType, exportData, format);
       }
       
+      setExportSuccess(true);
       alert(`${reportType} report exported successfully as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Export failed:', error);
+      setExportError(true);
       alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -340,36 +353,26 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Reports & Analytics</h1>
-        
+        <button className="btn btn-primary" onClick={refreshAllData}>
+          Refresh Data
+        </button>
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2">
           <button 
             onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === "overview" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
-            }`}
+            className={`btn ${activeTab === "overview" ? "btn-primary" : "btn-outline"}`}
           >
             Overview
           </button>
           <button 
             onClick={() => setActiveTab("consolidated")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === "consolidated" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
-            }`}
+            className={`btn ${activeTab === "consolidated" ? "btn-primary" : "btn-outline"}`}
           >
             History & Outsourcing
           </button>
           <button 
             onClick={() => setActiveTab("export")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === "export" 
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
-                : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
-            }`}
+            className={`btn ${activeTab === "export" ? "btn-primary" : "btn-outline"}`}
           >
             <DownloadIcon className="w-4 h-4 inline mr-1" />
             Export
@@ -601,6 +604,22 @@ export default function Reports() {
                   <span className="text-sm font-medium text-slate-700">Outsourced</span>
                 </label>
               </div>
+              <button
+                className="btn btn-outline text-xs ml-auto"
+                onClick={() => setFilters({
+                  dateRange: { start: '', end: '' },
+                  status: 'all',
+                  type: 'all',
+                  customer: '',
+                  driver: '',
+                  minAmount: '',
+                  maxAmount: '',
+                  sortBy: 'date',
+                  sortOrder: 'desc'
+                })}
+              >
+                Clear Filters
+              </button>
             </div>
 
             {/* History Table */}
@@ -651,7 +670,9 @@ export default function Reports() {
               
               {filteredBookings.length === 0 && (
                 <div className="text-center py-8 text-slate-500">
-                  No bookings found matching the current filters.
+                  <ReportsIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No bookings found matching the current filters.</p>
+                  <p className="text-sm">Try clearing filters or refreshing data.</p>
                 </div>
               )}
             </div>
@@ -824,6 +845,50 @@ export default function Reports() {
             bookings: filteredBookings
           }}
         />
+      )}
+
+      {/* Add export UI improvements */}
+      {showReportModal && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-end justify-end">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xs relative animate-fade-in">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 transition"
+              onClick={closeReportModal}
+            >
+              <CloseIcon className="w-5 h-5 drop-shadow-sm hover:drop-shadow-lg" />
+            </button>
+            <h3 className="text-lg font-bold mb-4 text-blue-700 flex items-center gap-2">
+              <DownloadIcon className="w-5 h-5 drop-shadow-sm hover:drop-shadow-lg" /> Export Report
+            </h3>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-outline"
+                  disabled={isExporting}
+                  onClick={() => handleExportReport(selectedReport.id, 'csv')}
+                >
+                  Export CSV
+                </button>
+                <button
+                  className="btn btn-outline"
+                  disabled={isExporting}
+                  onClick={() => handleExportReport(selectedReport.id, 'pdf')}
+                >
+                  Export PDF
+                </button>
+              </div>
+              {isExporting && (
+                <div className="mt-2 text-sm text-blue-600">Exporting... Please wait.</div>
+              )}
+              {exportSuccess && (
+                <div className="mt-2 text-sm text-green-600">Export successful!</div>
+              )}
+              {exportError && (
+                <div className="mt-2 text-sm text-red-600">Export failed. Please try again.</div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -77,32 +77,34 @@ export default function MobileFAB() {
   };
 
   return (
-    <div className={`fab-container ${isSmallMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'}`}>
+    <div className={`fixed z-50 ${isSmallMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'}`} aria-label="Mobile quick actions">
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fab-backdrop" 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm" 
           onClick={() => setIsOpen(false)}
+          aria-label="Close quick actions backdrop"
         />
       )}
 
       {/* Action buttons */}
       {isOpen && (
-        <div className="fab-actions">
+        <div className="flex flex-col items-end space-y-2 mb-2">
           {visibleActions.map((action, index) => (
             <button
               key={action.label}
               onClick={() => handleActionClick(action.href)}
-              className={`fab-action ${action.color} ${isSmallMobile ? 'w-10 h-10' : 'w-12 h-12'}`}
+              className={`flex items-center gap-2 ${action.color} shadow-lg rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${isSmallMobile ? 'w-10 h-10' : 'w-12 h-12'} transition-transform duration-200`}
               style={{
                 transform: `translateY(${-(isSmallMobile ? 50 : 60) * (index + 1)}px)`,
                 transitionDelay: `${index * 50}ms`
               }}
               title={action.label}
               aria-label={action.label}
+              tabIndex={0}
             >
               <action.icon />
-              <span className="fab-action-label">{action.label}</span>
+              <span className="sr-only">{action.label}</span>
             </button>
           ))}
         </div>
@@ -111,10 +113,11 @@ export default function MobileFAB() {
       {/* Main FAB button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fab-main ${isOpen ? 'fab-open' : ''} ${isSmallMobile ? 'w-12 h-12' : 'w-14 h-14'}`}
+        className={`flex items-center justify-center bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-xl rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${isOpen ? 'scale-110' : ''} ${isSmallMobile ? 'w-12 h-12' : 'w-14 h-14'} transition-transform duration-200`}
         title="Quick Actions"
         aria-label="Quick Actions"
         aria-expanded={isOpen}
+        tabIndex={0}
       >
         <FABIcon />
       </button>

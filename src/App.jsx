@@ -10,9 +10,11 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import FinanceTracker from "./pages/FinanceTracker";
+import Estimations from "./pages/Estimations";
 import Billing from "./pages/Billing";
 import Reports from "./pages/Reports";
 import { AppStoreProvider, useAppStore } from "./context/AppStore";
+import { FleetProvider } from "./context/FleetContext";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
 import { useResponsive } from "./hooks/useResponsive";
@@ -43,7 +45,7 @@ function AuthenticatedShell() {
             <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
             <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
-            <Route path="/finance" element={<RequireRole roles={["Admin"]}><FinanceTracker /></RequireRole>} />
+            <Route path="/finance" element={<RequireRole roles={["Admin"]}><Estimations /></RequireRole>} />
             <Route path="/reports" element={<RequireRole roles={["Admin","Dispatcher"]}><Reports /></RequireRole>} />
             <Route path="/history" element={<Navigate to="/reports" replace />} />
             <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
@@ -90,10 +92,12 @@ function RequireRole({children, roles}){
 
 export default function App(){
   return (
-    <AppStoreProvider>
-      <Router>
-        <AppShell />
-      </Router>
-    </AppStoreProvider>
+    <FleetProvider>
+      <AppStoreProvider>
+        <Router>
+          <AppShell />
+        </Router>
+      </AppStoreProvider>
+    </FleetProvider>
   );
 }

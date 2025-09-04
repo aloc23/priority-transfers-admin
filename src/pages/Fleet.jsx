@@ -1,29 +1,44 @@
 import { useState } from "react";
-import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 
 export default function Fleet() {
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle, drivers } = useAppStore();
+  const { fleet, addVehicle, editVehicle, deleteVehicle } = useFleet();
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formData, setFormData] = useState({
-    make: "",
-    model: "",
-    year: "",
-    license: "",
-    status: "active",
-    driver: ""
+    id: "",
+    name: "",
+    type: "Luxury Sedan",
+    driverRate: 15,
+    fuelRate: 0.45,
+    runningCost: 0.25,
+    insuranceRate: 25,
+    capacity: 4
   });
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [showRunningCostModal, setShowRunningCostModal] = useState(false);
+  const [runningCostForm, setRunningCostForm] = useState({
+    maintenance: 0,
+    depreciation: 0,
+    insurance: 0,
+    roadTax: 0,
+    mot: 0,
+    cleaning: 0,
+    other: 0,
+    mileage: 30000
+  });
+  const [runningCostResult, setRunningCostResult] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (editingVehicle) {
-      updateVehicle(editingVehicle.id, formData);
+      editVehicle(editingVehicle.id, formData);
     } else {
-      addVehicle(formData);
+      addVehicle({ ...formData, id: formData.id || `NEW-${Date.now()}` });
     }
     setShowModal(false);
     setEditingVehicle(null);
-    setFormData({ make: "", model: "", year: "", license: "", status: "active", driver: "" });
+    setFormData({ id: "", name: "", type: "Luxury Sedan", driverRate: 15, fuelRate: 0.45, runningCost: 0.25, insuranceRate: 25, capacity: 4 });
   };
 
   const handleEdit = (vehicle) => {
@@ -38,162 +53,165 @@ export default function Fleet() {
     }
   };
 
+  function openRunningCostModal() {
+    setShowRunningCostModal(true);
+    setRunningCostForm({
+      maintenance: 0,
+      depreciation: 0,
+      insurance: 0,
+      roadTax: 0,
+      mot: 0,
+      cleaning: 0,
+      other: 0,
+      mileage: 30000
+    });
+    setRunningCostResult(null);
+  }
+
+  function calculateRunningCost() {
+    const { maintenance, depreciation, insurance, roadTax, mot, cleaning, other, mileage } = runningCostForm;
+    const totalAnnualCost = maintenance + depreciation + insurance + roadTax + mot + cleaning + other;
+    const costPerMile = mileage > 0 ? totalAnnualCost / mileage : 0;
+    setRunningCostResult({ totalAnnualCost, costPerMile });
+  }
+
+  function applyRunningCostToVehicle() {
+    if (selectedVehicle && runningCostResult) {
+      setSelectedVehicle(v => ({ ...v, runningCost: parseFloat(runningCostResult.costPerMile.toFixed(3)) }));
+      setShowRunningCostModal(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Fleet Management</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-        >
-          Add Vehicle
-        </button>
-      </div>
-
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Vehicle</th>
-                <th>Year</th>
-                <th>License Plate</th>
-                <th>Assigned Driver</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vehicles.map((vehicle) => (
-                <tr key={vehicle.id}>
-                  <td className="font-medium">{vehicle.make} {vehicle.model}</td>
-                  <td>{vehicle.year}</td>
-                  <td className="font-mono">{vehicle.license}</td>
-                  <td>{vehicle.driver || "Unassigned"}</td>
-                  <td>
-                    <span className={`badge ${
-                      vehicle.status === 'active' ? 'badge-green' :
-                      vehicle.status === 'maintenance' ? 'badge-yellow' :
-                      'badge-red'
-                    }`}>
-                      {vehicle.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(vehicle)}
-                        className="btn btn-outline px-2 py-1 text-xs"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vehicle.id)}
-                        className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Fleet vehicle list */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">Fleet Vehicles</h2>
+          <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">+ Add Vehicle</button>
+        </div>
+        <div className="space-y-3">
+          {fleet.map(vehicle => (
+            <div key={vehicle.id} className={`border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer ${selectedVehicle?.id === vehicle.id ? 'bg-blue-50' : ''}`} onClick={() => setSelectedVehicle(vehicle)}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium text-gray-800">{vehicle.name}</h4>
+                  <p className="text-sm text-gray-600">{vehicle.type} • {vehicle.capacity} seats</p>
+                  <div className="text-xs text-gray-500 mt-1">Running: €{vehicle.runningCost}/mile • Driver: €{vehicle.driverRate}/hr</div>
+                </div>
+                <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
+      {/* Vehicle configurator */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">Vehicle Configuration</h2>
+        {selectedVehicle ? (
+          <form className="space-y-4" onSubmit={e => { e.preventDefault(); editVehicle(selectedVehicle.id, selectedVehicle); }}>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-1">Vehicle ID</label>
+                <input type="text" value={selectedVehicle.id} onChange={e => setSelectedVehicle(v => ({ ...v, id: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block mb-1">Vehicle Name</label>
+                <input type="text" value={selectedVehicle.name} onChange={e => setSelectedVehicle(v => ({ ...v, name: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block mb-1">Vehicle Type</label>
+                <select value={selectedVehicle.type} onChange={e => setSelectedVehicle(v => ({ ...v, type: e.target.value }))}>
+                  <option value="Luxury Sedan">Luxury Sedan</option>
+                  <option value="Executive SUV">Executive SUV</option>
+                  <option value="Limousine">Limousine</option>
+                  <option value="Minibus">Minibus</option>
+                  <option value="Coach">Coach</option>
+                  <option value="Luxury Coach">Luxury Coach</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1">Driver Rate (€/hr)</label>
+                <input type="number" value={selectedVehicle.driverRate} onChange={e => setSelectedVehicle(v => ({ ...v, driverRate: parseFloat(e.target.value) }))} step="0.50" />
+              </div>
+              <div>
+                <label className="block mb-1">Fuel Rate (€/mile)</label>
+                <input type="number" value={selectedVehicle.fuelRate} onChange={e => setSelectedVehicle(v => ({ ...v, fuelRate: parseFloat(e.target.value) }))} step="0.01" />
+              </div>
+              <div>
+                <label className="block mb-1">Running Cost (€/mile)</label>
+                <input type="number" value={selectedVehicle.runningCost} onChange={e => setSelectedVehicle(v => ({ ...v, runningCost: parseFloat(e.target.value) }))} step="0.01" />
+                <button type="button" className="ml-2 px-2 py-1 bg-gray-100 rounded border" onClick={openRunningCostModal}>Calculate</button>
+              </div>
+              <div>
+                <label className="block mb-1">Business Insurance/Day (€)</label>
+                <input type="number" value={selectedVehicle.insuranceRate} onChange={e => setSelectedVehicle(v => ({ ...v, insuranceRate: parseFloat(e.target.value) }))} />
+              </div>
+              <div>
+                <label className="block mb-1">Capacity</label>
+                <input type="number" value={selectedVehicle.capacity} onChange={e => setSelectedVehicle(v => ({ ...v, capacity: parseInt(e.target.value) }))} min="1" />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-success mt-4">Save Vehicle</button>
+          </form>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">Select a vehicle from the list or add a new one to configure</p>
+          </div>
+        )}
+      </div>
+
+      {/* Running cost calculator modal (separate) */}
+      {showRunningCostModal && (
         <div className="modal-backdrop">
           <div className="modal">
-            <h2 className="text-xl font-bold mb-4">
-              {editingVehicle ? "Edit Vehicle" : "Add Vehicle"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <h2 className="text-xl font-bold mb-4">Running Cost Formula Calculator</h2>
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); calculateRunningCost(); }}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1">Make</label>
-                  <input
-                    type="text"
-                    value={formData.make}
-                    onChange={(e) => setFormData({...formData, make: e.target.value})}
-                    required
-                  />
+                  <label>Maintenance</label>
+                  <input type="number" value={runningCostForm.maintenance} onChange={e => setRunningCostForm(f => ({ ...f, maintenance: parseFloat(e.target.value) }))} />
                 </div>
                 <div>
-                  <label className="block mb-1">Model</label>
-                  <input
-                    type="text"
-                    value={formData.model}
-                    onChange={(e) => setFormData({...formData, model: e.target.value})}
-                    required
-                  />
+                  <label>Depreciation</label>
+                  <input type="number" value={runningCostForm.depreciation} onChange={e => setRunningCostForm(f => ({ ...f, depreciation: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>Insurance</label>
+                  <input type="number" value={runningCostForm.insurance} onChange={e => setRunningCostForm(f => ({ ...f, insurance: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>Road Tax</label>
+                  <input type="number" value={runningCostForm.roadTax} onChange={e => setRunningCostForm(f => ({ ...f, roadTax: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>MOT/Inspections</label>
+                  <input type="number" value={runningCostForm.mot} onChange={e => setRunningCostForm(f => ({ ...f, mot: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>Cleaning</label>
+                  <input type="number" value={runningCostForm.cleaning} onChange={e => setRunningCostForm(f => ({ ...f, cleaning: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>Other</label>
+                  <input type="number" value={runningCostForm.other} onChange={e => setRunningCostForm(f => ({ ...f, other: parseFloat(e.target.value) }))} />
+                </div>
+                <div>
+                  <label>Expected Annual Mileage</label>
+                  <input type="number" value={runningCostForm.mileage} onChange={e => setRunningCostForm(f => ({ ...f, mileage: parseInt(e.target.value) }))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Year</label>
-                  <input
-                    type="number"
-                    value={formData.year}
-                    onChange={(e) => setFormData({...formData, year: e.target.value})}
-                    min="1990"
-                    max="2030"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1">License Plate</label>
-                  <input
-                    type="text"
-                    value={formData.license}
-                    onChange={(e) => setFormData({...formData, license: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  >
-                    <option value="active">Active</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1">Assigned Driver</label>
-                  <select
-                    value={formData.driver}
-                    onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                  >
-                    <option value="">Unassigned</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.name}>{driver.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary">
-                  {editingVehicle ? "Update" : "Add"} Vehicle
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingVehicle(null);
-                    setFormData({ make: "", model: "", year: "", license: "", status: "active", driver: "" });
-                  }}
-                  className="btn btn-outline"
-                >
-                  Cancel
-                </button>
-              </div>
+              <button type="submit" className="btn btn-primary mt-4">Calculate</button>
             </form>
+            {runningCostResult && (
+              <div className="mt-4 p-4 bg-gray-50 rounded">
+                <div>Total Annual Cost: €{runningCostResult.totalAnnualCost.toFixed(2)}</div>
+                <div>Cost Per Mile: <span className="font-bold text-green-600">€{runningCostResult.costPerMile.toFixed(3)}</span></div>
+                <button className="btn btn-success mt-4" onClick={applyRunningCostToVehicle}>Apply to Vehicle</button>
+              </div>
+            )}
+            <button className="btn btn-outline mt-4" onClick={() => setShowRunningCostModal(false)}>Cancel</button>
           </div>
         </div>
       )}

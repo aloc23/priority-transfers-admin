@@ -275,7 +275,7 @@ export default function Billing() {
         <div className="flex gap-2">
           <button 
             onClick={handleGenerateInvoice}
-            className="btn btn-outline hover:shadow-md transition-shadow"
+            className="btn btn-outline"
           >
             <PlusIcon className="w-4 h-4 mr-2" />
             Generate from Booking
@@ -285,7 +285,7 @@ export default function Billing() {
               setEditingInvoice(null);
               setShowModal(true);
             }}
-            className="btn btn-primary hover:shadow-md transition-shadow"
+            className="btn btn-primary"
           >
             <PlusIcon className="w-4 h-4 mr-2" />
             New Invoice

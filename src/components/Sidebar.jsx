@@ -62,6 +62,10 @@ const navigationItems = [
 ];
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
+  // Helper to check if nav item should be shown for current user role
+  const shouldShowNavItem = (item) => {
+    return item.roles.includes(currentUser?.role);
+  };
   const { currentUser, logout } = useAppStore();
   const { isMobile, isSmallMobile } = useResponsive();
 
@@ -72,17 +76,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   };
 
   const getNavLinkClasses = (isActive) => `
-    block px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium
+    block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
     ${isActive 
       ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105" 
       : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"
     }
-    ${isMobile ? 'min-h-[44px] flex items-center' : ''} // Better touch targets on mobile
+    ${isMobile ? 'min-h-[48px] flex items-center' : ''}
   `;
-
-  const shouldShowNavItem = (item) => {
-    return item.roles.includes(currentUser?.role);
-  };
 
   return (
     <>
@@ -91,18 +91,21 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close sidebar backdrop"
         />
       )}
-      
-      <aside className={`
-        ${sidebarOpen ? "w-64" : "w-16"} 
-        ${isMobile && !sidebarOpen ? 'hidden' : ''}
-        ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'}
-        bg-white transition-all duration-300 ease-in-out
-        ${isMobile ? '' : 'shadow-lg'}
-        border-r border-slate-200
-        ${isSmallMobile && sidebarOpen ? 'w-full' : ''} // Full width on very small screens
-      `}>
+      <aside
+        className={`
+          ${sidebarOpen ? "w-64" : "w-16"} 
+          ${isMobile && !sidebarOpen ? 'hidden' : ''}
+          ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'}
+          bg-white transition-all duration-300 ease-in-out
+          ${isMobile ? '' : 'shadow-lg'}
+          border-r border-slate-200
+          ${isSmallMobile && sidebarOpen ? 'w-full' : ''}
+        `}
+        aria-label="Sidebar navigation"
+      >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200">
@@ -113,39 +116,38 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)} 
               className={`
-                px-2 py-1 text-slate-600 hover:text-slate-800 transition-colors
-                rounded-md hover:bg-slate-100
-                ${isMobile ? 'min-h-[44px] min-w-[44px] flex items-center justify-center' : 'btn btn-outline'}
+                px-3 py-2 text-slate-600 hover:text-slate-800 transition-colors
+                rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                ${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : 'btn btn-outline'}
               `}
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              ≡
+              &#9776;
             </button>
           </div>
-          
           {/* Navigation */}
-          <nav className="flex-1 p-4 overflow-y-auto">
-            <ul className="space-y-1">
+          <nav className="flex-1 p-4 overflow-y-auto" aria-label="Main navigation">
+            <ul className="space-y-2">
               {navigationItems.map((item) => {
                 if (!shouldShowNavItem(item)) return null;
-                
                 const IconComponent = item.icon;
-                
                 return (
                   <li key={item.path}>
                     <NavLink 
                       to={item.path}
                       className={({isActive}) => getNavLinkClasses(isActive)}
                       onClick={closeSidebarOnMobile}
+                      tabIndex={0}
+                      aria-label={item.label}
                     >
                       {!sidebarOpen && (
                         <div className="flex justify-center">
-                          <IconComponent className="w-5 h-5" />
+                          <IconComponent className="w-6 h-6" aria-hidden="true" />
                         </div>
                       )}
                       {sidebarOpen && (
                         <div className="flex items-center gap-3">
-                          <IconComponent className="w-5 h-5 flex-shrink-0" />
+                          <IconComponent className="w-6 h-6 flex-shrink-0" aria-hidden="true" />
                           <span>{item.label}</span>
                         </div>
                       )}
@@ -153,7 +155,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   </li>
                 );
               })}
-              
               {/* Management Section - Grouped Navigation */}
               <ManagementNav 
                 currentUser={currentUser} 
@@ -162,7 +163,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               />
             </ul>
           </nav>
-          
           {/* User info */}
           <div className={`
             p-4 border-t border-slate-200 bg-slate-50 
@@ -178,9 +178,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 <button 
                   onClick={logout} 
                   className={`
-                    text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors
-                    ${isMobile ? 'min-h-[44px] w-full text-left flex items-center' : ''}
+                    text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                    ${isMobile ? 'min-h-[48px] w-full text-left flex items-center' : ''}
                   `}
+                  aria-label="Logout"
                 >
                   Logout
                 </button>
@@ -189,13 +190,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               <button 
                 onClick={logout} 
                 className={`
-                  text-lg hover:text-purple-600 transition-colors
-                  ${isMobile ? 'min-h-[44px] min-w-[44px] flex items-center justify-center' : ''}
+                  text-lg hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                  ${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}
                 `}
                 title="Logout"
                 aria-label="Logout"
               >
-                🚪
+                &#128274;
               </button>
             )}
           </div>
