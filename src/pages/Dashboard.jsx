@@ -11,7 +11,7 @@ import ExpenseModal from "../components/ExpenseModal";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense } = useAppStore();
   const { fleet } = useFleet();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
