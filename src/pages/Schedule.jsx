@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { CalendarIcon, PlusIcon, InvoiceIcon } from "../components/Icons";
+import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon } from "../components/Icons";
 
 // Add TableIcon here since it's not in Icons.jsx yet  
 const TableIcon = ({ className = "w-4 h-4", ...props }) => (
@@ -243,7 +243,7 @@ export default function Schedule() {
                           className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs"
                           title="Send Confirmation"
                         >
-                          ✅
+                          <CheckIcon className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleDelete(booking.id)}

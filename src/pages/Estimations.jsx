@@ -177,14 +177,42 @@ export default function Estimations() {
   }
 
   return (
-    <div className="space-y-6 p-8">
-      <div className="flex justify-end mb-4">
-        <button className="btn btn-outline" onClick={refreshAllData}>Refresh Data</button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-8">
+      {/* Header Section */}
+      <div className="bg-white rounded-2xl shadow-lg mb-8 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Estimates & Quotes</h1>
+            <p className="text-gray-600">Calculate accurate pricing for your transfer services</p>
+          </div>
+          <div className="flex gap-3">
+            <button className="btn btn-outline hover:scale-105 transition-transform" onClick={refreshAllData}>
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh Data
+            </button>
+            <button className="btn btn-primary hover:scale-105 transition-transform" onClick={exportEstimations}>
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              Export All
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 card p-6">
-          <h2 className="text-xl font-bold mb-4">Job Details & Costs</h2>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-2">
+          {/* Job Details Card */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <div className="flex items-center mb-6">
+              <div className="bg-purple-100 p-3 rounded-full mr-4">
+                <EstimationIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
+                <p className="text-gray-600">Enter service parameters for accurate pricing</p>
+              </div>
+            </div>
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-1">Service Type</label>
               <select value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
@@ -362,6 +390,7 @@ export default function Estimations() {
             <p className="text-sm">Try clearing filters or adding a new estimation.</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
