@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFleet } from "../context/FleetContext";
+import { EditIcon, TrashIcon } from "../components/Icons";
 
 export default function Fleet() {
   const { fleet, addVehicle, editVehicle, deleteVehicle } = useFleet();
@@ -99,7 +100,10 @@ export default function Fleet() {
                   <p className="text-sm text-gray-600">{vehicle.type} • {vehicle.capacity} seats</p>
                   <div className="text-xs text-gray-500 mt-1">Running: €{vehicle.runningCost}/mile • Driver: €{vehicle.driverRate}/hr</div>
                 </div>
-                <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                <div className="flex gap-2">
+                  <button onClick={e => { e.stopPropagation(); handleEdit(vehicle); }} className="text-blue-500 hover:text-blue-700 text-sm" title="Edit Vehicle"><EditIcon /></button>
+                  <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm" title="Delete Vehicle"><TrashIcon /></button>
+                </div>
               </div>
             </div>
           ))}
@@ -161,6 +165,124 @@ export default function Fleet() {
           </div>
         )}
       </div>
+
+      {/* Add/Edit Vehicle Modal */}
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h2 className="text-xl font-bold mb-4">
+              {editingVehicle ? "Edit Vehicle" : "Add Vehicle"}
+            </h2>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1">Vehicle ID</label>
+                  <input 
+                    type="text" 
+                    value={formData.id} 
+                    onChange={e => setFormData({ ...formData, id: e.target.value })}
+                    placeholder="e.g., BMW-002"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Vehicle Name</label>
+                  <input 
+                    type="text" 
+                    value={formData.name} 
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., BMW 7 Series - BMW-002"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Vehicle Type</label>
+                  <select 
+                    value={formData.type} 
+                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                  >
+                    <option value="Luxury Sedan">Luxury Sedan</option>
+                    <option value="Executive SUV">Executive SUV</option>
+                    <option value="Limousine">Limousine</option>
+                    <option value="Minibus">Minibus</option>
+                    <option value="Coach">Coach</option>
+                    <option value="Luxury Coach">Luxury Coach</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1">Driver Rate (€/hr)</label>
+                  <input 
+                    type="number" 
+                    value={formData.driverRate} 
+                    onChange={e => setFormData({ ...formData, driverRate: parseFloat(e.target.value) || 0 })}
+                    step="0.50"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Fuel Rate (€/mile)</label>
+                  <input 
+                    type="number" 
+                    value={formData.fuelRate} 
+                    onChange={e => setFormData({ ...formData, fuelRate: parseFloat(e.target.value) || 0 })}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Running Cost (€/mile)</label>
+                  <input 
+                    type="number" 
+                    value={formData.runningCost} 
+                    onChange={e => setFormData({ ...formData, runningCost: parseFloat(e.target.value) || 0 })}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Business Insurance/Day (€)</label>
+                  <input 
+                    type="number" 
+                    value={formData.insuranceRate} 
+                    onChange={e => setFormData({ ...formData, insuranceRate: parseFloat(e.target.value) || 0 })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Capacity</label>
+                  <input 
+                    type="number" 
+                    value={formData.capacity} 
+                    onChange={e => setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4 justify-end">
+                <button type="submit" className="btn btn-primary">
+                  {editingVehicle ? "Update Vehicle" : "Add Vehicle"}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingVehicle(null);
+                    setFormData({ id: "", name: "", type: "Luxury Sedan", driverRate: 15, fuelRate: 0.45, runningCost: 0.25, insuranceRate: 25, capacity: 4 });
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Running cost calculator modal (separate) */}
       {showRunningCostModal && (
