@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFleet } from "../context/FleetContext";
+import { EditIcon, TrashIcon } from "../components/Icons";
 
 export default function Fleet() {
   const { fleet, addVehicle, editVehicle, deleteVehicle } = useFleet();
@@ -100,8 +101,8 @@ export default function Fleet() {
                   <div className="text-xs text-gray-500 mt-1">Running: €{vehicle.runningCost}/mile • Driver: €{vehicle.driverRate}/hr</div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={e => { e.stopPropagation(); handleEdit(vehicle); }} className="text-blue-500 hover:text-blue-700 text-sm" title="Edit Vehicle">✏️</button>
-                  <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm" title="Delete Vehicle">🗑️</button>
+                  <button onClick={e => { e.stopPropagation(); handleEdit(vehicle); }} className="text-blue-500 hover:text-blue-700 text-sm" title="Edit Vehicle"><EditIcon /></button>
+                  <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm" title="Delete Vehicle"><TrashIcon /></button>
                 </div>
               </div>
             </div>
