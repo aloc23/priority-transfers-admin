@@ -21,7 +21,7 @@ import {
 } from "../components/Icons";
 import ReportDetailsModal from "../components/ReportDetailsModal";
 import AdvancedFilters from "../components/AdvancedFilters";
-import { exportToCSV, exportReportData } from "../utils/export";
+import { exportToCSV, exportToExcel, exportToPDF, exportReportData } from "../utils/export";
 
 export default function Reports() {
   const { income, expenses, invoices, bookings, customers, drivers, refreshAllData } = useAppStore();
@@ -135,8 +135,10 @@ export default function Reports() {
 
       if (format === 'CSV') {
         await exportToCSV(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`);
-      } else if (format === 'PDF' || format === 'Excel') {
-        await exportReportData('booking', exportData);
+      } else if (format === 'PDF') {
+        await exportToPDF(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`, 'Bookings Report');
+      } else if (format === 'Excel') {
+        await exportToExcel(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -233,8 +235,10 @@ export default function Reports() {
       
       if (format === 'csv') {
         await exportToCSV(exportData, filename);
-      } else {
-        await exportReportData(reportType, exportData, format);
+      } else if (format === 'pdf') {
+        await exportToPDF(exportData, filename, `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`);
+      } else if (format === 'excel') {
+        await exportToExcel(exportData, filename);
       }
       
       setExportSuccess(true);

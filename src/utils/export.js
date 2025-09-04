@@ -1,3 +1,114 @@
+// Export utilities for CSV, Excel, and PDF generation with progress tracking
+
+export const exportToExcel = async (data, filename, progressCallback = null) => {
+  if (!data || data.length === 0) {
+    alert('No data to export');
+    return { success: false, error: 'No data to export' };
+  }
+
+  try {
+    if (progressCallback) progressCallback(10, 'Starting Excel export...');
+
+    const headers = Object.keys(data[0]);
+    if (progressCallback) progressCallback(25, 'Processing headers...');
+
+    // Create Excel-like format using HTML table with Excel-specific styles
+    const chunkSize = 1000;
+    let tableRows = '';
+    
+    for (let i = 0; i < data.length; i += chunkSize) {
+      const chunk = data.slice(i, i + chunkSize);
+      const chunkRows = chunk.map(row => 
+        `<tr>${headers.map(header => {
+          const value = row[header] || '';
+          // Handle numbers and dates properly for Excel
+          const cellStyle = typeof value === 'number' ? 'mso-number-format:"0.00"' : '';
+          return `<td style="border: 1px solid #ccc; padding: 4px; ${cellStyle}">${value}</td>`;
+        }).join('')}</tr>`
+      ).join('');
+      tableRows += chunkRows;
+      
+      const progress = 25 + (60 * (i + chunkSize)) / data.length;
+      if (progressCallback) progressCallback(Math.min(progress, 85), `Processing row ${Math.min(i + chunkSize, data.length)} of ${data.length}...`);
+      
+      // Allow UI to update for large datasets
+      if (data.length > 1000) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+
+    if (progressCallback) progressCallback(85, 'Creating Excel file...');
+
+    // Create Excel-compatible HTML
+    const excelContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="ProgId" content="Excel.Sheet">
+        <meta name="Generator" content="Priority Transfers Admin">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Report</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th { background-color: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-weight: bold; }
+          td { border: 1px solid #ccc; padding: 4px; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    if (progressCallback) progressCallback(95, 'Creating download file...');
+
+    const blob = new Blob([excelContent], { 
+      type: 'application/vnd.ms-excel;charset=utf-8;' 
+    });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}.xls`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    if (progressCallback) progressCallback(100, 'Excel export completed!');
+    
+    return { success: true, filename: `${filename}.xls`, rowCount: data.length };
+  } catch (error) {
+    console.error('Excel export failed:', error);
+    if (progressCallback) progressCallback(0, 'Excel export failed');
+    return { success: false, error: error.message };
+  }
+};
+
 // Export utilities for CSV and PDF generation with progress tracking
 export const exportToCSV = async (data, filename, progressCallback = null) => {
   if (!data || data.length === 0) {

@@ -61,7 +61,7 @@ export default function Dashboard() {
   }
   function handleDeleteIncome(idx) {
     const item = income[idx];
-    deleteIncome(item);
+    deleteIncome(item.id);
   }
   function handleSaveExpense(newExpense) {
     if (editingExpense) {
@@ -78,7 +78,7 @@ export default function Dashboard() {
   }
   function handleDeleteExpense(idx) {
     const item = expenses[idx];
-    deleteExpense(item);
+    deleteExpense(item.id);
   }
 
   return (
