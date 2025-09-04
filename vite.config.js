@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [react()],
   base: '/priority-transfers-admin/',
   build: {
-    outDir: 'dist'
+    outDir: 'docs'
   }
 })
