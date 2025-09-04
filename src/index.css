@@ -54,6 +54,7 @@ body { @apply bg-slate-50 text-slate-900; }
 
 .btn { 
   @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2; 
+  min-height: 2.75rem; /* Better touch targets */
 }
 
 .btn-primary { 
@@ -64,6 +65,18 @@ body { @apply bg-slate-50 text-slate-900; }
 .btn-primary:hover {
   background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%);
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-secondary {
+  @apply text-white border-0;
+  background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
 }
 
 .btn-outline { 
@@ -72,8 +85,61 @@ body { @apply bg-slate-50 text-slate-900; }
 }
 .btn-outline:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
+
+.btn-danger {
+  @apply text-white border-0;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
+}
+/* Badge Styles */
 .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold; }
+.badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
+.badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
+.badge-yellow { @apply bg-amber-100 text-amber-800 border border-amber-200; }
+.badge-blue { @apply bg-blue-100 text-blue-800 border border-blue-200; }
+.badge-purple { @apply bg-purple-100 text-purple-800 border border-purple-200; }
+.badge-cyan { @apply bg-cyan-100 text-cyan-800 border border-cyan-200; }
+
+/* Tab Navigation Improvements */
+.tab-nav {
+  @apply border-b border-slate-200 bg-white sticky top-0 z-10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.tab-button {
+  @apply py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center;
+}
+
+.tab-button.active {
+  @apply border-purple-500 text-purple-600 bg-purple-50;
+}
+
+.tab-button.inactive {
+  @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+}
+
+/* Mobile-specific tab improvements */
+@media (max-width: 768px) {
+  .tab-nav {
+    @apply px-2 overflow-x-auto;
+  }
+  
+  .tab-nav nav {
+    @apply min-w-max;
+  }
+  
+  .tab-button {
+    @apply px-6 flex-shrink-0;
+    min-width: 120px;
+  }
+}
 .badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
 .badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
 .badge-yellow { @apply bg-amber-100 text-amber-800 border border-amber-200; }
@@ -91,16 +157,40 @@ body { @apply bg-slate-50 text-slate-900; }
 .table tbody tr:hover { @apply bg-slate-50; }
 .table tbody tr:last-child td { @apply border-b-0; }
 
-input, select { 
+input, select, textarea { 
   @apply border border-slate-300 rounded-lg px-4 py-2.5 w-full transition-all duration-200 focus:ring-2 focus:border-purple-500 focus:outline-none hover:border-slate-400; 
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  min-height: 2.75rem; /* Better touch targets */
 }
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   --tw-ring-color: var(--neon-purple);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-label { @apply text-sm font-semibold text-slate-700; }
+/* Consistent form labels */
+label { 
+  @apply text-sm font-semibold text-slate-700 mb-2 block; 
+}
+
+/* Form group spacing */
+.form-group {
+  @apply mb-4;
+}
+
+.form-row {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+/* Status badges with better contrast */
+.status-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider;
+}
+
+.status-pending { @apply bg-amber-100 text-amber-700 border border-amber-200; }
+.status-paid { @apply bg-emerald-100 text-emerald-700 border border-emerald-200; }
+.status-sent { @apply bg-blue-100 text-blue-700 border border-blue-200; }
+.status-cancelled { @apply bg-red-100 text-red-700 border border-red-200; }
+.status-draft { @apply bg-slate-100 text-slate-700 border border-slate-200; }
 .modal-backdrop { @apply fixed inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50; }
 .modal { 
   @apply bg-white rounded-2xl w-full max-w-2xl p-6 border border-slate-200 max-h-[90vh] overflow-y-auto;
