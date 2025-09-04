@@ -6,13 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "gh-pages -d dist"
   },
-  "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "deploy": "gh-pages -d dist"
-}
   "dependencies": {
     "date-fns": "^3.0.0",
     "moment": "^2.30.1",
