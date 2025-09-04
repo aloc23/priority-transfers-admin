@@ -8,6 +8,11 @@
     "build": "vite build",
     "preview": "vite preview"
   },
+  "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "deploy": "gh-pages -d dist"
+}
   "dependencies": {
     "date-fns": "^3.0.0",
     "moment": "^2.30.1",
