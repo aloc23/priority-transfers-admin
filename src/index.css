@@ -216,12 +216,13 @@ label { @apply text-sm font-semibold text-slate-700; }
 
 .fab-main {
   @apply w-14 h-14 text-white rounded-full transition-all duration-300 hover:scale-110 focus:outline-none flex items-center justify-center;
-  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab-main:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
 }
 
 .fab-main:focus {
@@ -231,8 +232,8 @@ label { @apply text-sm font-semibold text-slate-700; }
 
 .fab-main.fab-open {
   @apply rotate-45;
-  background: linear-gradient(135deg, var(--neon-pink) 0%, #dc2626 100%);
-  box-shadow: 0 0 25px rgba(236, 72, 153, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #ec4899 0%, #dc2626 100%);
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab-actions {
@@ -240,18 +241,18 @@ label { @apply text-sm font-semibold text-slate-700; }
 }
 
 .fab-action {
-  @apply w-12 h-12 rounded-full text-white transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0;
+  @apply w-12 h-12 rounded-full text-white transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0 relative;
   animation: fabSlideIn 0.3s ease-out forwards;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .fab-action:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .fab-action-label {
   @apply absolute right-14 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .fab-action:hover .fab-action-label {
