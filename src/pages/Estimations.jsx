@@ -61,12 +61,64 @@ export default function Estimations() {
 
   // Recalculate cost analysis when form changes
   useEffect(() => {
-    // Only recalculate if required fields are present
-    if (form.baseFee || form.additionalCosts || form.runningCost || form.fuelRate || form.driverRate) {
-      const totalPrice = Number(form.baseFee || 0) + Number(form.additionalCosts || 0) + Number(form.runningCost || 0) + Number(form.fuelRate || 0) + Number(form.driverRate || 0);
-      setResults({ finalPrice: totalPrice });
-    }
-  }, [form.baseFee, form.additionalCosts, form.runningCost, form.fuelRate, form.driverRate]);
+    // Calculate detailed breakdown
+    const distance = parseFloat(form.distance) || 0;
+    const duration = parseFloat(form.duration) || 0;
+    const passengers = parseInt(form.passengers) || 1;
+    const driverRate = parseFloat(form.driverRate) || 0;
+    const fuelRate = parseFloat(form.fuelRate) || 0;
+    const runningCost = parseFloat(form.runningCost) || 0;
+    const insuranceRate = parseFloat(form.insuranceRate) || 0;
+    const baseFee = parseFloat(form.baseFee) || 0;
+    const additionalCosts = parseFloat(form.additionalCosts) || 0;
+    const markupPercent = parseFloat(form.markupPercent) || 0;
+    const minimumCharge = parseFloat(form.minimumCharge) || 0;
+
+    // Additional services
+    const waitingHours = form.waitingTime ? parseFloat(form.waitingHours) || 0 : 0;
+    const meetGreetPrice = form.meetGreet ? parseFloat(form.meetGreetPrice) || 0 : 0;
+    const refreshmentsPrice = form.refreshments ? parseFloat(form.refreshmentsPrice) || 0 : 0;
+    const childSeatsTotal = form.childSeats ? (parseFloat(form.childSeatCount) || 0) * (parseFloat(form.childSeatPrice) || 0) : 0;
+
+    // Calculate base costs
+    const driverCost = duration * driverRate;
+    const fuelCost = distance * fuelRate;
+    const vehicleRunningCost = distance * runningCost;
+    const insuranceCost = insuranceRate; // Daily rate
+    const waitingCost = waitingHours * driverRate;
+
+    // Total variable costs
+    const totalVariableCosts = driverCost + fuelCost + vehicleRunningCost + insuranceCost + waitingCost + additionalCosts;
+    
+    // Additional services total
+    const totalAdditionalServices = meetGreetPrice + refreshmentsPrice + childSeatsTotal;
+    
+    // Apply markup
+    const markupAmount = (totalVariableCosts * markupPercent) / 100;
+    
+    // Calculate final price
+    const calculatedPrice = baseFee + totalVariableCosts + totalAdditionalServices + markupAmount;
+    const finalPrice = Math.max(calculatedPrice, minimumCharge);
+
+    setResults({
+      distance,
+      duration,
+      passengers,
+      driverCost: driverCost.toFixed(2),
+      fuelCost: fuelCost.toFixed(2),
+      vehicleRunningCost: vehicleRunningCost.toFixed(2),
+      insuranceCost: insuranceCost.toFixed(2),
+      waitingCost: waitingCost.toFixed(2),
+      totalVariableCosts: totalVariableCosts.toFixed(2),
+      baseFee: baseFee.toFixed(2),
+      totalAdditionalServices: totalAdditionalServices.toFixed(2),
+      markupAmount: markupAmount.toFixed(2),
+      calculatedPrice: calculatedPrice.toFixed(2),
+      minimumCharge: minimumCharge.toFixed(2),
+      finalPrice: finalPrice.toFixed(2),
+      isMinimumApplied: finalPrice === minimumCharge && minimumCharge > 0
+    });
+  }, [form.distance, form.duration, form.passengers, form.baseFee, form.additionalCosts, form.runningCost, form.fuelRate, form.driverRate, form.insuranceRate, form.markupPercent, form.minimumCharge, form.waitingTime, form.waitingHours, form.meetGreet, form.meetGreetPrice, form.refreshments, form.refreshmentsPrice, form.childSeats, form.childSeatCount, form.childSeatPrice]);
 
   function handleVehicleSelect(e) {
     const vehicleId = e.target.value;
@@ -87,8 +139,8 @@ export default function Estimations() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    // Calculate price (replace with your real logic)
-    const totalPrice = Number(form.baseFee || 0) + Number(form.additionalCosts || 0);
+    // Use calculated price from results or fallback calculation
+    const totalPrice = results?.finalPrice ? parseFloat(results.finalPrice) : (Number(form.baseFee || 0) + Number(form.additionalCosts || 0));
     const newEstimation = {
       id: editingId || Date.now(),
       date: new Date().toLocaleDateString(),
@@ -130,10 +182,57 @@ export default function Estimations() {
       childSeatCount: '',
       childSeatPrice: '',
     });
-    setResults({ finalPrice: totalPrice });
+    setResults(null);
   }
   function exportEstimations() {
-    alert('Exporting estimations...');
+    try {
+      if (filteredEstimations.length === 0) {
+        alert('No estimations to export. Please create some estimations first.');
+        return;
+      }
+
+      // Define CSV headers
+      const headers = [
+        'Date', 'Customer', 'Route', 'Service Type', 'Distance (miles)', 
+        'Duration (hours)', 'Passengers', 'Total Price (€)', 'Valid Until', 'Status'
+      ];
+
+      // Convert estimations to CSV format
+      const csvContent = [
+        headers.join(','),
+        ...filteredEstimations.map(est => [
+          est.date || '',
+          `"${est.customer || 'Demo Customer'}"`,
+          `"${est.route || 'Demo Route'}"`,
+          est.serviceType || '',
+          est.distance || '',
+          est.duration || '',
+          est.passengers || '',
+          est.totalPrice || results?.finalPrice || '',
+          est.validUntil || '',
+          est.status || ''
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `estimations-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Success feedback
+      setTimeout(() => {
+        alert(`Successfully exported ${filteredEstimations.length} estimations to CSV file.`);
+      }, 100);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Export failed. Please try again.');
+    }
   }
   function handleEdit(estimation) {
     setForm({ ...estimation });
@@ -212,7 +311,7 @@ export default function Estimations() {
                 <p className="text-gray-600">Enter service parameters for accurate pricing</p>
               </div>
             </div>
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={handleSubmit}>
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-1">Service Type</label>
               <select value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
@@ -309,10 +408,105 @@ export default function Estimations() {
           </form>
         </div>
         <div className="card p-6">
-          <h3 className="font-semibold mb-4">Cost Analysis</h3>
-          {results && (
-            <div>
-              <div className="font-bold text-lg">Final Quote Price <span className="float-right text-green-600">€{results.finalPrice}</span></div>
+          <h3 className="font-semibold mb-4 text-lg text-gray-800">Live Cost Analysis</h3>
+          {results ? (
+            <div className="space-y-4 cost-analysis-mobile">
+              {/* Service Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Service Summary</h4>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>Distance:</span>
+                    <span className="font-medium">{results.distance} miles</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Duration:</span>
+                    <span className="font-medium">{results.duration} hours</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Passengers:</span>
+                    <span className="font-medium">{results.passengers}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost Breakdown */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">Cost Breakdown</h4>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>Driver Cost:</span>
+                    <span className="font-medium">€{results.driverCost}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Fuel Cost:</span>
+                    <span className="font-medium">€{results.fuelCost}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Vehicle Running:</span>
+                    <span className="font-medium">€{results.vehicleRunningCost}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Insurance/Day:</span>
+                    <span className="font-medium">€{results.insuranceCost}</span>
+                  </div>
+                  {parseFloat(results.waitingCost) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Waiting Time:</span>
+                      <span className="font-medium">€{results.waitingCost}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-1 mt-2">
+                    <div className="flex justify-between font-medium">
+                      <span>Variable Costs:</span>
+                      <span>€{results.totalVariableCosts}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Summary */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-2">Pricing Summary</h4>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>Base Fee:</span>
+                    <span className="font-medium">€{results.baseFee}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Variable Costs:</span>
+                    <span className="font-medium">€{results.totalVariableCosts}</span>
+                  </div>
+                  {parseFloat(results.totalAdditionalServices) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Additional Services:</span>
+                      <span className="font-medium">€{results.totalAdditionalServices}</span>
+                    </div>
+                  )}
+                  {parseFloat(results.markupAmount) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Markup:</span>
+                      <span className="font-medium">€{results.markupAmount}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between text-lg font-bold text-green-700">
+                    <span>Final Quote Price:</span>
+                    <span>€{results.finalPrice}</span>
+                  </div>
+                  {results.isMinimumApplied && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      * Minimum charge applied (€{results.minimumCharge})
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Fill in the form to see live cost analysis</p>
             </div>
           )}
         </div>

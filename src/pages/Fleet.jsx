@@ -166,6 +166,116 @@ export default function Fleet() {
         )}
       </div>
 
+      {/* Calculation Results Section */}
+      {selectedVehicle && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Vehicle Calculation Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fleet-results-mobile">
+            
+            {/* Cost Overview */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-3">Cost Overview</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Driver Rate:</span>
+                  <span className="font-medium">€{selectedVehicle.driverRate}/hr</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fuel Cost:</span>
+                  <span className="font-medium">€{selectedVehicle.fuelRate}/mile</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Running Cost:</span>
+                  <span className="font-medium">€{selectedVehicle.runningCost}/mile</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insurance/Day:</span>
+                  <span className="font-medium">€{selectedVehicle.insuranceRate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sample Journey Calculations */}
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-green-800 mb-3">Sample Journey (50 miles, 2 hrs)</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Driver Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.driverRate * 2).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fuel Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.fuelRate * 50).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Running Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.runningCost * 50).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insurance:</span>
+                  <span className="font-medium">€{selectedVehicle.insuranceRate}</span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between font-medium text-green-700">
+                    <span>Total Cost:</span>
+                    <span>€{((selectedVehicle.driverRate * 2) + (selectedVehicle.fuelRate * 50) + (selectedVehicle.runningCost * 50) + selectedVehicle.insuranceRate).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vehicle Metrics */}
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-purple-800 mb-3">Vehicle Metrics</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Type:</span>
+                  <span className="font-medium">{selectedVehicle.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Capacity:</span>
+                  <span className="font-medium">{selectedVehicle.capacity} passengers</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cost per Mile:</span>
+                  <span className="font-medium">€{(selectedVehicle.fuelRate + selectedVehicle.runningCost).toFixed(3)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Break-even (per mile):</span>
+                  <span className="font-medium">€{((selectedVehicle.fuelRate + selectedVehicle.runningCost) * 1.3).toFixed(3)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-6 flex gap-3">
+            <button 
+              className="btn btn-outline"
+              onClick={() => window.print()}
+            >
+              Print Results
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Vehicle: ${selectedVehicle.name}\n` +
+                  `Type: ${selectedVehicle.type}\n` +
+                  `Driver Rate: €${selectedVehicle.driverRate}/hr\n` +
+                  `Fuel Cost: €${selectedVehicle.fuelRate}/mile\n` +
+                  `Running Cost: €${selectedVehicle.runningCost}/mile\n` +
+                  `Insurance: €${selectedVehicle.insuranceRate}/day`
+                );
+                alert('Vehicle details copied to clipboard!');
+              }}
+            >
+              Copy Details
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit Vehicle Modal */}
       {showModal && (
         <div className="modal-backdrop">
