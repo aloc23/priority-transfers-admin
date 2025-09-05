@@ -358,9 +358,9 @@ export default function Billing() {
           <nav className="-mb-px flex space-x-8" aria-label="Invoice Status Tabs">
             <button 
               onClick={() => setFilterStatus('all')} 
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 filterStatus === 'all' 
-                  ? 'border-purple-500 text-purple-600' 
+                  ? 'border-purple-500 text-purple-600 active' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               aria-selected={filterStatus === 'all'}
@@ -372,9 +372,9 @@ export default function Billing() {
             </button>
             <button 
               onClick={() => setFilterStatus('pending')} 
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 filterStatus === 'pending' 
-                  ? 'border-amber-500 text-amber-600' 
+                  ? 'border-amber-500 text-amber-600 active' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               aria-selected={filterStatus === 'pending'}
@@ -386,9 +386,9 @@ export default function Billing() {
             </button>
             <button 
               onClick={() => setFilterStatus('sent')} 
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 filterStatus === 'sent' 
-                  ? 'border-blue-500 text-blue-600' 
+                  ? 'border-blue-500 text-blue-600 active' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               aria-selected={filterStatus === 'sent'}
@@ -400,9 +400,9 @@ export default function Billing() {
             </button>
             <button 
               onClick={() => setFilterStatus('paid')} 
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 filterStatus === 'paid' 
-                  ? 'border-green-500 text-green-600' 
+                  ? 'border-green-500 text-green-600 active' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               aria-selected={filterStatus === 'paid'}
@@ -414,9 +414,9 @@ export default function Billing() {
             </button>
             <button 
               onClick={() => setFilterStatus('cancelled')} 
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                 filterStatus === 'cancelled' 
-                  ? 'border-red-500 text-red-600' 
+                  ? 'border-red-500 text-red-600 active' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
               aria-selected={filterStatus === 'cancelled'}

@@ -40,6 +40,14 @@ export default function Dashboard() {
     { name: "Available Drivers", value: drivers.filter(d => d.status === "available").length, icon: DriverIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
     { name: "Active Vehicles", value: fleet?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
   ];
+
+  // Booking summary statistics
+  const bookingStats = [
+    { name: "Pending Bookings", value: bookings.filter(b => b.status === "pending").length, icon: BookingIcon, color: "bg-gradient-to-r from-amber-600 to-yellow-500" },
+    { name: "Confirmed Bookings", value: bookings.filter(b => b.status === "confirmed").length, icon: BookingIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
+    { name: "Completed Bookings", value: bookings.filter(b => b.status === "completed").length, icon: BookingIcon, color: "bg-gradient-to-r from-blue-600 to-indigo-500" },
+    { name: "Total Bookings", value: bookings.length, icon: BookingIcon, color: "bg-gradient-to-r from-purple-600 to-pink-500" }
+  ];
   const recentActivity = activityHistory.slice(0, 5);
 
   // Helper for recent income/expenses
@@ -132,6 +140,17 @@ export default function Dashboard() {
               <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
             ))}
           </div>
+          
+          {/* Booking Summary Section */}
+          <div className="card fade-in-animation">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking Summary</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {bookingStats.map((stat) => (
+                <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
+              ))}
+            </div>
+          </div>
+          
           <ActivityList activities={recentActivity} />
         </section>
       )}
