@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 
 const localizer = momentLocalizer(moment);
@@ -25,7 +26,8 @@ export default function Schedule() {
     driver: "",
     vehicle: "",
     status: "pending",
-    type: "priority" // New field for Priority vs Outsourced
+    type: "priority", // New field for Priority vs Outsourced
+    price: 45 // Default price field
   });
 
   const handleSubmit = (e) => {
@@ -46,7 +48,8 @@ export default function Schedule() {
       driver: "",
       vehicle: "",
       status: "pending",
-      type: "priority"
+      type: "priority",
+      price: 45
     });
   };
 
@@ -182,6 +185,7 @@ export default function Schedule() {
                   <th>Date & Time</th>
                   <th>Driver</th>
                   <th>Vehicle</th>
+                  <th>Price</th>
                   <th>Type</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -196,6 +200,9 @@ export default function Schedule() {
                     <td className="text-sm">{booking.date} {booking.time}</td>
                     <td className="text-sm">{booking.driver}</td>
                     <td className="text-sm">{booking.vehicle}</td>
+                    <td className="text-sm font-semibold text-green-600">
+                      {formatCurrency(booking.price || 45)}
+                    </td>
                     <td>
                       <span className={`badge ${
                         booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
@@ -369,6 +376,18 @@ export default function Schedule() {
                     <option value="outsourced">Outsourced</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block mb-1">Price (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                    className="transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
+                    placeholder="Enter price..."
+                  />
+                </div>
               </div>
               <div>
                 <label className="block mb-1">Status</label>
@@ -400,7 +419,8 @@ export default function Schedule() {
                       driver: "",
                       vehicle: "",
                       status: "pending",
-                      type: "priority"
+                      type: "priority",
+                      price: 45
                     });
                   }}
                   className="btn btn-outline"
