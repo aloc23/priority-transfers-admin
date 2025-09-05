@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
@@ -11,7 +11,7 @@ import ExpenseModal from "../components/ExpenseModal";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
   const { fleet } = useFleet();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,13 +41,42 @@ export default function Dashboard() {
     { name: "Active Vehicles", value: fleet?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
   ];
 
-  // Booking summary statistics
-  const bookingStats = [
-    { name: "Pending Bookings", value: bookings.filter(b => b.status === "pending").length, icon: BookingIcon, color: "bg-gradient-to-r from-amber-600 to-yellow-500" },
-    { name: "Confirmed Bookings", value: bookings.filter(b => b.status === "confirmed").length, icon: BookingIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
-    { name: "Completed Bookings", value: bookings.filter(b => b.status === "completed").length, icon: BookingIcon, color: "bg-gradient-to-r from-blue-600 to-indigo-500" },
-    { name: "Total Bookings", value: bookings.length, icon: BookingIcon, color: "bg-gradient-to-r from-purple-600 to-pink-500" }
-  ];
+  // Combined booking/invoice status logic
+  const getCombinedStatus = (booking) => {
+    const inv = invoices.find(inv => inv.bookingId === booking.id);
+    if (booking.status === 'pending') return 'Pending';
+    if (booking.status === 'confirmed') return 'Confirmed';
+    if (booking.status === 'completed' && !inv) return 'Completed';
+    if (inv && (inv.status === 'pending' || inv.status === 'sent')) return 'Invoiced';
+    if (inv && inv.status === 'paid') return 'Paid';
+    if (inv && inv.status === 'overdue') return 'Overdue';
+    if (booking.status === 'cancelled') return 'Cancelled';
+    return 'Other';
+  };
+
+  const combinedStatusList = ['Pending', 'Confirmed', 'Completed', 'Invoiced', 'Paid', 'Overdue', 'Cancelled'];
+  const combinedStatusColors = {
+    Pending: 'bg-gradient-to-r from-amber-600 to-yellow-500',
+    Confirmed: 'bg-gradient-to-r from-green-600 to-emerald-500',
+    Completed: 'bg-gradient-to-r from-blue-600 to-indigo-500',
+    Invoiced: 'bg-gradient-to-r from-orange-500 to-yellow-400',
+    Paid: 'bg-gradient-to-r from-blue-700 to-green-500',
+    Overdue: 'bg-gradient-to-r from-red-600 to-pink-500',
+    Cancelled: 'bg-gradient-to-r from-slate-400 to-slate-600',
+    Other: 'bg-gradient-to-r from-slate-300 to-slate-400'
+  };
+  const bookingsByCombinedStatus = useMemo(() => {
+    const map = {};
+    combinedStatusList.forEach(status => { map[status] = []; });
+    bookings.forEach(b => {
+      const status = getCombinedStatus(b);
+      if (!map[status]) map[status] = [];
+      map[status].push(b);
+    });
+    return map;
+  }, [bookings, invoices]);
+
+  const [selectedCombinedStatus, setSelectedCombinedStatus] = useState(null);
   const recentActivity = activityHistory.slice(0, 5);
 
   // Helper for recent income/expenses
@@ -141,14 +170,89 @@ export default function Dashboard() {
             ))}
           </div>
           
-          {/* Booking Summary Section */}
+          {/* Combined Booking/Invoice Status Summary */}
           <div className="card fade-in-animation">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking Summary</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {bookingStats.map((stat) => (
-                <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking & Invoice Status</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {combinedStatusList.map(status => (
+                <button
+                  key={status}
+                  className={`rounded-lg p-4 text-left shadow transition-all duration-150 focus:outline-none ${combinedStatusColors[status]} ${selectedCombinedStatus === status ? 'ring-2 ring-purple-400' : ''}`}
+                  onClick={() => setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status)}
+                >
+                  <div className="font-bold text-lg mb-1">{status}</div>
+                  <div className="text-2xl font-extrabold">{bookingsByCombinedStatus[status]?.length || 0}</div>
+                </button>
               ))}
             </div>
+            {selectedCombinedStatus && (
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">{selectedCombinedStatus} Bookings</h4>
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Driver</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
+                        const inv = invoices.find(inv => inv.bookingId === booking.id);
+                        // Determine available actions
+                        const actions = [];
+                        // Helper to refresh dashboard after action
+                        const refresh = () => {
+                          if (typeof refreshAllData === 'function') refreshAllData();
+                          setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
+                        };
+                        if (booking.status === 'pending') {
+                          actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
+                        }
+                        if (booking.status === 'confirmed') {
+                          actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
+                        }
+                        if (booking.status === 'completed' && !inv) {
+                          actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
+                        }
+                        if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                          actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
+                        }
+                        return (
+                          <tr key={booking.id}>
+                            <td>{booking.customer}</td>
+                            <td>{booking.date} {booking.time}</td>
+                            <td>{booking.driver}</td>
+                            <td>{getCombinedStatus(booking)}</td>
+                            <td>
+                              <div className="inline-block">
+                                {actions.length === 0 && <span className="text-xs text-slate-400">No actions</span>}
+                                {actions.length > 0 && (
+                                  <div className="flex flex-col gap-1">
+                                    {actions.map((action, idx) => (
+                                      <button
+                                        key={idx}
+                                        className="btn btn-xs btn-outline mb-1"
+                                        onClick={action.onClick}
+                                      >
+                                        {action.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
           
           <ActivityList activities={recentActivity} />

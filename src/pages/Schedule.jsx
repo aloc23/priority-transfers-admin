@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { Link } from "react-router-dom";
@@ -11,12 +11,23 @@ import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } f
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, sendBookingReminder, currentUser } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser } = useAppStore();
   const { fleet } = useFleet();
   const [showModal, setShowModal] = useState(false);
+  const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
   const [filterDriver, setFilterDriver] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  // Booking status counts for tabs
+  const statusCounts = useMemo(() => {
+    const counts = { all: bookings.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    bookings.forEach(b => {
+      if (counts[b.status] !== undefined) counts[b.status] += 1;
+    });
+    return counts;
+  }, [bookings]);
   const [formData, setFormData] = useState({
     customer: "",
     pickup: "",
@@ -67,10 +78,15 @@ export default function Schedule() {
 
   // Memoize filtered bookings for performance
   const filteredBookings = useMemo(() => {
-    return filterDriver 
-      ? bookings.filter(booking => booking.driver === filterDriver)
-      : bookings;
-  }, [bookings, filterDriver]);
+    let result = bookings;
+    if (filterDriver) {
+      result = result.filter(booking => booking.driver === filterDriver);
+    }
+    if (filterStatus !== 'all') {
+      result = result.filter(booking => booking.status === filterStatus);
+    }
+    return result;
+  }, [bookings, filterDriver, filterStatus]);
 
   // Memoize calendar events for performance
   const calendarEvents = useMemo(() => {
@@ -131,7 +147,7 @@ export default function Schedule() {
               className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
             >
               <InvoiceIcon className="w-4 h-4" />
-              Create Invoice
+              Create Estimate
             </Link>
           )}
           <button
@@ -144,9 +160,47 @@ export default function Schedule() {
         </div>
       </div>
 
+      {/* Status Tabs */}
+      <div className="card mb-2">
+        <div className="flex gap-2 md:gap-4 items-center border-b border-slate-200 pb-2 mb-2 overflow-x-auto">
+          {[
+            { key: 'all', label: 'All', color: 'text-slate-700' },
+            { key: 'pending', label: 'Pending', color: 'text-yellow-600' },
+            { key: 'confirmed', label: 'Confirmed', color: 'text-green-600' },
+            { key: 'completed', label: 'Completed', color: 'text-blue-600' },
+            { key: 'cancelled', label: 'Cancelled', color: 'text-red-600' }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setFilterStatus(tab.key);
+                if (viewMode !== 'table') setViewMode('table');
+                setTimeout(() => {
+                  if (tableRef.current) {
+                    tableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
+              className={`px-3 py-1 rounded-t font-medium border-b-2 transition-all duration-150 flex items-center gap-1 ${
+                filterStatus === tab.key
+                  ? `${tab.color} border-b-2 border-current bg-slate-50 shadow-sm`
+                  : 'text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${
+                filterStatus === tab.key ? 'bg-slate-200' : 'bg-slate-100'
+              }`}>
+                {statusCounts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Filters */}
-      <div className="card">
-        <div className="flex gap-4 items-center">
+      <div className="card mb-4">
+        <div className="flex flex-wrap gap-4 items-center">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Driver</label>
             <select
@@ -174,7 +228,7 @@ export default function Schedule() {
       </div>
 
       {viewMode === 'table' ? (
-        <div className="card">
+        <div className="card" ref={tableRef}>
           <div className="overflow-x-auto">
             <table className="table schedule-table-mobile">
               <thead>
@@ -192,75 +246,102 @@ export default function Schedule() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBookings.map((booking) => (
-                  <tr key={booking.id} className="table-row-animated">
-                    <td className="font-medium">{booking.customer}</td>
-                    <td className="text-sm">{booking.pickup}</td>
-                    <td className="text-sm">{booking.destination}</td>
-                    <td className="text-sm">{booking.date} {booking.time}</td>
-                    <td className="text-sm">{booking.driver}</td>
-                    <td className="text-sm">{booking.vehicle}</td>
-                    <td className="text-sm font-semibold text-green-600">
-                      {formatCurrency(booking.price || 45)}
-                    </td>
-                    <td>
-                      <span className={`badge badge-animated ${
-                        booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-                      }`}>
-                        {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge badge-animated ${
-                        booking.status === 'confirmed' ? 'badge-green' :
-                        booking.status === 'pending' ? 'badge-yellow' :
-                        booking.status === 'completed' ? 'badge-blue' :
-                        'badge-red'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleEdit(booking)}
-                          className="btn btn-outline btn-action px-2 py-1 text-xs"
-                          title="Edit Booking"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => sendBookingReminder(booking.id, 'booking_reminder')}
-                          className="btn bg-blue-600 text-white hover:bg-blue-700 btn-action px-2 py-1 text-xs"
-                          title="Send Reminder"
-                        >
-                          <SendIcon className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => sendBookingReminder(booking.id, 'booking_confirmation')}
-                          className="btn bg-green-600 text-white hover:bg-green-700 btn-action px-2 py-1 text-xs"
-                          title="Send Confirmation"
-                        >
-                          <CheckIcon className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(booking.id)}
-                          className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-2 py-1 text-xs"
-                          title="Delete Booking"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredBookings.map((booking) => {
+                  // Find related invoice if exists
+                  const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
+                  let nextAction = null;
+                  let actionHandler = null;
+                  let actionLabel = '';
+                  let actionColor = '';
+                  // Determine next action (best practice workflow)
+                  if (booking.status === 'pending') {
+                    nextAction = 'confirm';
+                    actionLabel = 'Confirm';
+                    actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
+                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                  } else if (booking.status === 'confirmed') {
+                    nextAction = 'complete';
+                    actionLabel = 'Mark as Complete';
+                    actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
+                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+                  } else if (booking.status === 'completed' && !relatedInvoice) {
+                    nextAction = 'invoice';
+                    actionLabel = 'Generate Invoice';
+                    actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
+                    actionHandler = () => generateInvoiceFromBooking(booking);
+                  } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
+                    nextAction = 'paid';
+                    actionLabel = 'Mark as Paid';
+                    actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
+                    actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
+                  } else if (relatedInvoice && relatedInvoice.status === 'paid') {
+                    nextAction = 'none';
+                  }
+                  return (
+                    <tr key={booking.id} className="table-row-animated">
+                      <td className="font-medium">{booking.customer}</td>
+                      <td className="text-sm">{booking.pickup}</td>
+                      <td className="text-sm">{booking.destination}</td>
+                      <td className="text-sm">{booking.date} {booking.time}</td>
+                      <td className="text-sm">{booking.driver}</td>
+                      <td className="text-sm">{booking.vehicle}</td>
+                      <td className="text-sm font-semibold text-green-600">
+                        {formatCurrency(booking.price || 45)}
+                      </td>
+                      <td>
+                        <span className={`badge badge-animated ${
+                          booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
+                        }`}>
+                          {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge badge-animated ${
+                          booking.status === 'confirmed' ? 'badge-green' :
+                          booking.status === 'pending' ? 'badge-yellow' :
+                          booking.status === 'completed' ? 'badge-blue' :
+                          'badge-red'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEdit(booking)}
+                            className="btn btn-outline btn-action px-2 py-1 text-xs"
+                            title="Edit Booking"
+                          >
+                            Edit
+                          </button>
+                          {nextAction !== 'none' && (
+                            <button
+                              onClick={actionHandler}
+                              className={`${actionColor} btn-action px-2 py-1 text-xs`}
+                              title={actionLabel}
+                            >
+                              {actionLabel}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(booking.id)}
+                            className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-2 py-1 text-xs"
+                            title="Delete Booking"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       ) : (
         <div className="card">
-          <div style={{ height: '600px' }} className="calendar-mobile">>
+          <div style={{ height: '600px' }} className="calendar-mobile">
             <Calendar
               localizer={localizer}
               events={calendarEvents}
