@@ -54,6 +54,7 @@ body { @apply bg-slate-50 text-slate-900; }
 
 .btn { 
   @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2; 
+  min-height: 2.75rem; /* Better touch targets */
 }
 
 .btn-primary { 
@@ -64,6 +65,18 @@ body { @apply bg-slate-50 text-slate-900; }
 .btn-primary:hover {
   background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%);
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-secondary {
+  @apply text-white border-0;
+  background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
 }
 
 .btn-outline { 
@@ -72,8 +85,252 @@ body { @apply bg-slate-50 text-slate-900; }
 }
 .btn-outline:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  @apply text-white border-0;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px) scale(1.02);
+}
+/* Enhanced Action Button Animations */
+.btn-action {
+  @apply transition-all duration-300 ease-out;
+  transform-origin: center;
+}
+
+.btn-action:hover {
+  animation: pulseGlow 0.6s ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.6), 0 0 25px rgba(139, 92, 246, 0.3);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+    transform: scale(1.02);
+  }
+}
+
+/* Floating Action Button Animations */
+.btn-floating {
+  @apply transition-all duration-300 ease-out;
+  animation: floatBounce 3s ease-in-out infinite;
+}
+
+@keyframes floatBounce {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.btn-floating:hover {
+  animation: none;
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+/* Success Animation */
+.btn-success-animation {
+  animation: successPulse 0.8s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: scale(1);
+  }
+  50% {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+  100% {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: scale(1);
+  }
+}
+
+/* Status Badge Animations */
+.badge-animated {
+  @apply transition-all duration-300 ease-out;
+}
+
+.badge-animated:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Table Row Hover Animation */
+.table-row-animated {
+  @apply transition-all duration-200 ease-out;
+}
+
+.table-row-animated:hover {
+  transform: translateX(2px);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: -4px 0 0 rgba(139, 92, 246, 0.3);
+}
+
+/* Form Input Focus Animation */
+.input-animated:focus {
+  animation: inputGlow 0.3s ease-out;
+}
+
+@keyframes inputGlow {
+  from {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Loading Spinner Animation */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Slide In Animation */
+.slide-in-animation {
+  animation: slideInFromRight 0.5s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fade In Animation */
+.fade-in-animation {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab Click Animation */
+.tab-button-animated {
+  @apply transition-all duration-300 ease-out;
+  position: relative;
+}
+
+.tab-button-animated:active {
+  transform: scale(0.98);
+}
+
+.tab-button-animated.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
+  animation: tabUnderline 0.3s ease-out;
+}
+
+@keyframes tabUnderline {
+  from {
+    width: 0%;
+    left: 50%;
+  }
+  to {
+    width: 100%;
+    left: 0%;
+  }
 }
 .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold; }
+.badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
+.badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
+.badge-yellow { @apply bg-amber-100 text-amber-800 border border-amber-200; }
+.badge-blue { @apply bg-blue-100 text-blue-800 border border-blue-200; }
+.badge-purple { @apply bg-purple-100 text-purple-800 border border-purple-200; }
+.badge-cyan { @apply bg-cyan-100 text-cyan-800 border border-cyan-200; }
+
+/* Tab Navigation Improvements */
+.tab-nav {
+  @apply border-b border-slate-200 bg-white sticky top-0 z-10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.tab-button {
+  @apply py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center;
+}
+
+.tab-button.active {
+  @apply border-purple-500 text-purple-600 bg-purple-50;
+}
+
+.tab-button.inactive {
+  @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+}
+
+/* Mobile-specific tab improvements */
+@media (max-width: 768px) {
+  .tab-nav {
+    @apply px-2 overflow-x-auto;
+  }
+  
+  .tab-nav nav {
+    @apply min-w-max;
+  }
+  
+  .tab-button {
+    @apply px-6 flex-shrink-0;
+    min-width: 120px;
+  }
+}
 .badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
 .badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
 .badge-yellow { @apply bg-amber-100 text-amber-800 border border-amber-200; }
@@ -91,16 +348,40 @@ body { @apply bg-slate-50 text-slate-900; }
 .table tbody tr:hover { @apply bg-slate-50; }
 .table tbody tr:last-child td { @apply border-b-0; }
 
-input, select { 
+input, select, textarea { 
   @apply border border-slate-300 rounded-lg px-4 py-2.5 w-full transition-all duration-200 focus:ring-2 focus:border-purple-500 focus:outline-none hover:border-slate-400; 
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  min-height: 2.75rem; /* Better touch targets */
 }
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   --tw-ring-color: var(--neon-purple);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-label { @apply text-sm font-semibold text-slate-700; }
+/* Consistent form labels */
+label { 
+  @apply text-sm font-semibold text-slate-700 mb-2 block; 
+}
+
+/* Form group spacing */
+.form-group {
+  @apply mb-4;
+}
+
+.form-row {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+/* Status badges with better contrast */
+.status-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider;
+}
+
+.status-pending { @apply bg-amber-100 text-amber-700 border border-amber-200; }
+.status-paid { @apply bg-emerald-100 text-emerald-700 border border-emerald-200; }
+.status-sent { @apply bg-blue-100 text-blue-700 border border-blue-200; }
+.status-cancelled { @apply bg-red-100 text-red-700 border border-red-200; }
+.status-draft { @apply bg-slate-100 text-slate-700 border border-slate-200; }
 .modal-backdrop { @apply fixed inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50; }
 .modal { 
   @apply bg-white rounded-2xl w-full max-w-2xl p-6 border border-slate-200 max-h-[90vh] overflow-y-auto;
@@ -216,12 +497,13 @@ label { @apply text-sm font-semibold text-slate-700; }
 
 .fab-main {
   @apply w-14 h-14 text-white rounded-full transition-all duration-300 hover:scale-110 focus:outline-none flex items-center justify-center;
-  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab-main:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 8px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
 }
 
 .fab-main:focus {
@@ -231,8 +513,8 @@ label { @apply text-sm font-semibold text-slate-700; }
 
 .fab-main.fab-open {
   @apply rotate-45;
-  background: linear-gradient(135deg, var(--neon-pink) 0%, #dc2626 100%);
-  box-shadow: 0 0 25px rgba(236, 72, 153, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #ec4899 0%, #dc2626 100%);
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab-actions {
@@ -240,18 +522,18 @@ label { @apply text-sm font-semibold text-slate-700; }
 }
 
 .fab-action {
-  @apply w-12 h-12 rounded-full text-white transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0;
+  @apply w-12 h-12 rounded-full text-white transition-all duration-300 hover:scale-110 flex items-center justify-center text-sm font-medium transform translate-y-2 opacity-0 relative;
   animation: fabSlideIn 0.3s ease-out forwards;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .fab-action:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .fab-action-label {
   @apply absolute right-14 bg-slate-800 text-white px-3 py-1 rounded-lg text-xs whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .fab-action:hover .fab-action-label {
@@ -420,13 +702,44 @@ label { @apply text-sm font-semibold text-slate-700; }
   .flex\.flex-wrap\.items-center\.gap-4 {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
+    gap: 1rem;
   }
   
-  .flex\.flex-wrap\.items-center\.gap-4 > div {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  /* Estimation form mobile improvements */
+  .estimation-form-mobile {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  /* Schedule table mobile improvements */
+  .schedule-table-mobile {
+    @apply text-xs;
+  }
+  
+  .schedule-table-mobile th,
+  .schedule-table-mobile td {
+    @apply p-1;
+    min-width: 80px;
+  }
+  
+  /* Mobile calendar improvements */
+  .calendar-mobile {
+    height: 400px !important;
+  }
+  
+  /* Cost analysis mobile */
+  .cost-analysis-mobile {
+    @apply space-y-3;
+  }
+  
+  .cost-analysis-mobile .bg-gray-50,
+  .cost-analysis-mobile .bg-blue-50,
+  .cost-analysis-mobile .bg-green-50 {
+    @apply p-3;
+  }
+  
+  /* Fleet calculation results mobile */
+  .fleet-results-mobile {
+    @apply grid-cols-1 gap-4;
   }
 }
 

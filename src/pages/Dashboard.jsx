@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
@@ -10,7 +11,8 @@ import ExpenseModal from "../components/ExpenseModal";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, vehicles, partners, estimations, activityHistory, refreshAllData } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
+  const { fleet } = useFleet();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
   const [accountingSubTab, setAccountingSubTab] = useState('overview');
@@ -36,8 +38,45 @@ export default function Dashboard() {
   const operationalStats = [
     { name: "Active Customers", value: customers.length, icon: CustomerIcon, color: "bg-gradient-to-r from-cyan-600 to-blue-500" },
     { name: "Available Drivers", value: drivers.filter(d => d.status === "available").length, icon: DriverIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
-    { name: "Active Vehicles", value: vehicles.filter(v => v.status === "active").length, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
+    { name: "Active Vehicles", value: fleet?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
   ];
+
+  // Combined booking/invoice status logic
+  const getCombinedStatus = (booking) => {
+    const inv = invoices.find(inv => inv.bookingId === booking.id);
+    if (booking.status === 'pending') return 'Pending';
+    if (booking.status === 'confirmed') return 'Confirmed';
+    if (booking.status === 'completed' && !inv) return 'Completed';
+    if (inv && (inv.status === 'pending' || inv.status === 'sent')) return 'Invoiced';
+    if (inv && inv.status === 'paid') return 'Paid';
+    if (inv && inv.status === 'overdue') return 'Overdue';
+    if (booking.status === 'cancelled') return 'Cancelled';
+    return 'Other';
+  };
+
+  const combinedStatusList = ['Pending', 'Confirmed', 'Completed', 'Invoiced', 'Paid', 'Overdue', 'Cancelled'];
+  const combinedStatusColors = {
+    Pending: 'bg-gradient-to-r from-amber-600 to-yellow-500',
+    Confirmed: 'bg-gradient-to-r from-green-600 to-emerald-500',
+    Completed: 'bg-gradient-to-r from-blue-600 to-indigo-500',
+    Invoiced: 'bg-gradient-to-r from-orange-500 to-yellow-400',
+    Paid: 'bg-gradient-to-r from-blue-700 to-green-500',
+    Overdue: 'bg-gradient-to-r from-red-600 to-pink-500',
+    Cancelled: 'bg-gradient-to-r from-slate-400 to-slate-600',
+    Other: 'bg-gradient-to-r from-slate-300 to-slate-400'
+  };
+  const bookingsByCombinedStatus = useMemo(() => {
+    const map = {};
+    combinedStatusList.forEach(status => { map[status] = []; });
+    bookings.forEach(b => {
+      const status = getCombinedStatus(b);
+      if (!map[status]) map[status] = [];
+      map[status].push(b);
+    });
+    return map;
+  }, [bookings, invoices]);
+
+  const [selectedCombinedStatus, setSelectedCombinedStatus] = useState(null);
   const recentActivity = activityHistory.slice(0, 5);
 
   // Helper for recent income/expenses
@@ -59,7 +98,7 @@ export default function Dashboard() {
   }
   function handleDeleteIncome(idx) {
     const item = income[idx];
-    deleteIncome(item);
+    deleteIncome(item.id);
   }
   function handleSaveExpense(newExpense) {
     if (editingExpense) {
@@ -76,7 +115,7 @@ export default function Dashboard() {
   }
   function handleDeleteExpense(idx) {
     const item = expenses[idx];
-    deleteExpense(item);
+    deleteExpense(item.id);
   }
 
   return (
@@ -89,9 +128,31 @@ export default function Dashboard() {
 
       {/* Tab Navigation */}
       <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button onClick={() => setActiveTab('overview')} className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'overview' ? 'border-purple-500 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>Overview</button>
-          <button onClick={() => setActiveTab('accounting')} className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'accounting' ? 'border-purple-500 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>Accounting</button>
+        <nav className="-mb-px flex space-x-2 md:space-x-8 px-2 md:px-0" aria-label="Tabs">
+          <button 
+            onClick={() => setActiveTab('overview')} 
+            className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto ${
+              activeTab === 'overview' 
+                ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+            }`}
+            aria-selected={activeTab === 'overview'}
+            role="tab"
+          >
+            Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab('accounting')} 
+            className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto ${
+              activeTab === 'accounting' 
+                ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+            }`}
+            aria-selected={activeTab === 'accounting'}
+            role="tab"
+          >
+            Accounting
+          </button>
         </nav>
       </div>
 
@@ -108,6 +169,92 @@ export default function Dashboard() {
               <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
             ))}
           </div>
+          
+          {/* Combined Booking/Invoice Status Summary */}
+          <div className="card fade-in-animation">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking & Invoice Status</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {combinedStatusList.map(status => (
+                <button
+                  key={status}
+                  className={`rounded-lg p-4 text-left shadow transition-all duration-150 focus:outline-none ${combinedStatusColors[status]} ${selectedCombinedStatus === status ? 'ring-2 ring-purple-400' : ''}`}
+                  onClick={() => setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status)}
+                >
+                  <div className="font-bold text-lg mb-1">{status}</div>
+                  <div className="text-2xl font-extrabold">{bookingsByCombinedStatus[status]?.length || 0}</div>
+                </button>
+              ))}
+            </div>
+            {selectedCombinedStatus && (
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">{selectedCombinedStatus} Bookings</h4>
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Driver</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
+                        const inv = invoices.find(inv => inv.bookingId === booking.id);
+                        // Determine available actions
+                        const actions = [];
+                        // Helper to refresh dashboard after action
+                        const refresh = () => {
+                          if (typeof refreshAllData === 'function') refreshAllData();
+                          setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
+                        };
+                        if (booking.status === 'pending') {
+                          actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
+                        }
+                        if (booking.status === 'confirmed') {
+                          actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
+                        }
+                        if (booking.status === 'completed' && !inv) {
+                          actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
+                        }
+                        if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                          actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
+                        }
+                        return (
+                          <tr key={booking.id}>
+                            <td>{booking.customer}</td>
+                            <td>{booking.date} {booking.time}</td>
+                            <td>{booking.driver}</td>
+                            <td>{getCombinedStatus(booking)}</td>
+                            <td>
+                              <div className="inline-block">
+                                {actions.length === 0 && <span className="text-xs text-slate-400">No actions</span>}
+                                {actions.length > 0 && (
+                                  <div className="flex flex-col gap-1">
+                                    {actions.map((action, idx) => (
+                                      <button
+                                        key={idx}
+                                        className="btn btn-xs btn-outline mb-1"
+                                        onClick={action.onClick}
+                                      >
+                                        {action.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <ActivityList activities={recentActivity} />
         </section>
       )}
@@ -115,10 +262,45 @@ export default function Dashboard() {
         <section className="space-y-8">
           {/* Inner Accounting Tabs */}
           <div className="border-b border-slate-200 mb-4">
-            <nav className="flex space-x-8" aria-label="Accounting Subtabs">
-              <button onClick={() => setAccountingSubTab('overview')} className={`py-2 px-1 border-b-2 font-medium text-sm ${accountingSubTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>Financial Overview</button>
-              <button onClick={() => setAccountingSubTab('income-expenses')} className={`py-2 px-1 border-b-2 font-medium text-sm ${accountingSubTab === 'income-expenses' ? 'border-purple-500 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>Income & Expenses</button>
-              <button onClick={() => setAccountingSubTab('reports')} className={`py-2 px-1 border-b-2 font-medium text-sm ${accountingSubTab === 'reports' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>Go to Reports →</button>
+            <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Accounting Subtabs">
+              <button 
+                onClick={() => setAccountingSubTab('overview')} 
+                className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                  accountingSubTab === 'overview' 
+                    ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+                }`}
+                aria-selected={accountingSubTab === 'overview'}
+                role="tab"
+              >
+                Financial Overview
+              </button>
+              <button 
+                onClick={() => setAccountingSubTab('income-expenses')} 
+                className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                  accountingSubTab === 'income-expenses' 
+                    ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+                }`}
+                aria-selected={accountingSubTab === 'income-expenses'}
+                role="tab"
+              >
+                <span className="hidden sm:inline">Income & Expenses</span>
+                <span className="sm:hidden">Income/Expenses</span>
+              </button>
+              <button 
+                onClick={() => setAccountingSubTab('reports')} 
+                className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                  accountingSubTab === 'reports' 
+                    ? 'border-indigo-500 text-indigo-600 bg-indigo-50 md:bg-transparent shadow-sm md:shadow-none' 
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+                }`}
+                aria-selected={accountingSubTab === 'reports'}
+                role="tab"
+              >
+                <span className="hidden sm:inline">Go to Reports →</span>
+                <span className="sm:hidden">Reports</span>
+              </button>
             </nav>
           </div>
           {/* Subtab Content */}

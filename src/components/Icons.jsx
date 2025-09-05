@@ -292,3 +292,11 @@ export const SettingsListIcon = ({ className = "w-5 h-5", ...props }) => (
     <line x1="3" y1="18" x2="3.01" y2="18"/>
   </svg>
 );
+
+export const TableIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 3h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+    <line x1="3" y1="9" x2="21" y2="9"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+  </svg>
+);

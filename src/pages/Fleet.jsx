@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFleet } from "../context/FleetContext";
+import { EditIcon, TrashIcon } from "../components/Icons";
 
 export default function Fleet() {
   const { fleet, addVehicle, editVehicle, deleteVehicle } = useFleet();
@@ -99,7 +100,10 @@ export default function Fleet() {
                   <p className="text-sm text-gray-600">{vehicle.type} • {vehicle.capacity} seats</p>
                   <div className="text-xs text-gray-500 mt-1">Running: €{vehicle.runningCost}/mile • Driver: €{vehicle.driverRate}/hr</div>
                 </div>
-                <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                <div className="flex gap-2">
+                  <button onClick={e => { e.stopPropagation(); handleEdit(vehicle); }} className="text-blue-500 hover:text-blue-700 text-sm" title="Edit Vehicle"><EditIcon /></button>
+                  <button onClick={e => { e.stopPropagation(); handleDelete(vehicle.id); }} className="text-red-500 hover:text-red-700 text-sm" title="Delete Vehicle"><TrashIcon /></button>
+                </div>
               </div>
             </div>
           ))}
@@ -161,6 +165,234 @@ export default function Fleet() {
           </div>
         )}
       </div>
+
+      {/* Calculation Results Section */}
+      {selectedVehicle && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Vehicle Calculation Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fleet-results-mobile">
+            
+            {/* Cost Overview */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-3">Cost Overview</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Driver Rate:</span>
+                  <span className="font-medium">€{selectedVehicle.driverRate}/hr</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fuel Cost:</span>
+                  <span className="font-medium">€{selectedVehicle.fuelRate}/mile</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Running Cost:</span>
+                  <span className="font-medium">€{selectedVehicle.runningCost}/mile</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insurance/Day:</span>
+                  <span className="font-medium">€{selectedVehicle.insuranceRate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sample Journey Calculations */}
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-green-800 mb-3">Sample Journey (50 miles, 2 hrs)</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Driver Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.driverRate * 2).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fuel Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.fuelRate * 50).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Running Cost:</span>
+                  <span className="font-medium">€{(selectedVehicle.runningCost * 50).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insurance:</span>
+                  <span className="font-medium">€{selectedVehicle.insuranceRate}</span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between font-medium text-green-700">
+                    <span>Total Cost:</span>
+                    <span>€{((selectedVehicle.driverRate * 2) + (selectedVehicle.fuelRate * 50) + (selectedVehicle.runningCost * 50) + selectedVehicle.insuranceRate).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vehicle Metrics */}
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-purple-800 mb-3">Vehicle Metrics</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Type:</span>
+                  <span className="font-medium">{selectedVehicle.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Capacity:</span>
+                  <span className="font-medium">{selectedVehicle.capacity} passengers</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cost per Mile:</span>
+                  <span className="font-medium">€{(selectedVehicle.fuelRate + selectedVehicle.runningCost).toFixed(3)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Break-even (per mile):</span>
+                  <span className="font-medium">€{((selectedVehicle.fuelRate + selectedVehicle.runningCost) * 1.3).toFixed(3)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-6 flex gap-3">
+            <button 
+              className="btn btn-outline"
+              onClick={() => window.print()}
+            >
+              Print Results
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Vehicle: ${selectedVehicle.name}\n` +
+                  `Type: ${selectedVehicle.type}\n` +
+                  `Driver Rate: €${selectedVehicle.driverRate}/hr\n` +
+                  `Fuel Cost: €${selectedVehicle.fuelRate}/mile\n` +
+                  `Running Cost: €${selectedVehicle.runningCost}/mile\n` +
+                  `Insurance: €${selectedVehicle.insuranceRate}/day`
+                );
+                alert('Vehicle details copied to clipboard!');
+              }}
+            >
+              Copy Details
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Vehicle Modal */}
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h2 className="text-xl font-bold mb-4">
+              {editingVehicle ? "Edit Vehicle" : "Add Vehicle"}
+            </h2>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1">Vehicle ID</label>
+                  <input 
+                    type="text" 
+                    value={formData.id} 
+                    onChange={e => setFormData({ ...formData, id: e.target.value })}
+                    placeholder="e.g., BMW-002"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Vehicle Name</label>
+                  <input 
+                    type="text" 
+                    value={formData.name} 
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., BMW 7 Series - BMW-002"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Vehicle Type</label>
+                  <select 
+                    value={formData.type} 
+                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                  >
+                    <option value="Luxury Sedan">Luxury Sedan</option>
+                    <option value="Executive SUV">Executive SUV</option>
+                    <option value="Limousine">Limousine</option>
+                    <option value="Minibus">Minibus</option>
+                    <option value="Coach">Coach</option>
+                    <option value="Luxury Coach">Luxury Coach</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1">Driver Rate (€/hr)</label>
+                  <input 
+                    type="number" 
+                    value={formData.driverRate} 
+                    onChange={e => setFormData({ ...formData, driverRate: parseFloat(e.target.value) || 0 })}
+                    step="0.50"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Fuel Rate (€/mile)</label>
+                  <input 
+                    type="number" 
+                    value={formData.fuelRate} 
+                    onChange={e => setFormData({ ...formData, fuelRate: parseFloat(e.target.value) || 0 })}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Running Cost (€/mile)</label>
+                  <input 
+                    type="number" 
+                    value={formData.runningCost} 
+                    onChange={e => setFormData({ ...formData, runningCost: parseFloat(e.target.value) || 0 })}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Business Insurance/Day (€)</label>
+                  <input 
+                    type="number" 
+                    value={formData.insuranceRate} 
+                    onChange={e => setFormData({ ...formData, insuranceRate: parseFloat(e.target.value) || 0 })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Capacity</label>
+                  <input 
+                    type="number" 
+                    value={formData.capacity} 
+                    onChange={e => setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4 justify-end">
+                <button type="submit" className="btn btn-primary">
+                  {editingVehicle ? "Update Vehicle" : "Add Vehicle"}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingVehicle(null);
+                    setFormData({ id: "", name: "", type: "Luxury Sedan", driverRate: 15, fuelRate: 0.45, runningCost: 0.25, insuranceRate: 25, capacity: 4 });
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Running cost calculator modal (separate) */}
       {showRunningCostModal && (

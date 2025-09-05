@@ -1,28 +1,33 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { CalendarIcon, PlusIcon, InvoiceIcon } from "../components/Icons";
-
-// Add TableIcon here since it's not in Icons.jsx yet  
-const TableIcon = ({ className = "w-4 h-4", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M3 3h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-    <line x1="3" y1="9" x2="21" y2="9"/>
-    <line x1="9" y1="3" x2="9" y2="21"/>
-  </svg>
-);
+import { formatCurrency } from "../utils/currency";
+import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 
 const localizer = momentLocalizer(moment);
 
 export default function Schedule() {
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, sendBookingReminder, currentUser } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser } = useAppStore();
+  const { fleet } = useFleet();
   const [showModal, setShowModal] = useState(false);
+  const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
+  const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
   const [filterDriver, setFilterDriver] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  // Booking status counts for tabs
+  const statusCounts = useMemo(() => {
+    const counts = { all: bookings.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    bookings.forEach(b => {
+      if (counts[b.status] !== undefined) counts[b.status] += 1;
+    });
+    return counts;
+  }, [bookings]);
   const [formData, setFormData] = useState({
     customer: "",
     pickup: "",
@@ -32,7 +37,8 @@ export default function Schedule() {
     driver: "",
     vehicle: "",
     status: "pending",
-    type: "priority" // New field for Priority vs Outsourced
+    type: "priority", // New field for Priority vs Outsourced
+    price: 45 // Default price field
   });
 
   const handleSubmit = (e) => {
@@ -53,7 +59,8 @@ export default function Schedule() {
       driver: "",
       vehicle: "",
       status: "pending",
-      type: "priority"
+      type: "priority",
+      price: 45
     });
   };
 
@@ -71,10 +78,15 @@ export default function Schedule() {
 
   // Memoize filtered bookings for performance
   const filteredBookings = useMemo(() => {
-    return filterDriver 
-      ? bookings.filter(booking => booking.driver === filterDriver)
-      : bookings;
-  }, [bookings, filterDriver]);
+    let result = bookings;
+    if (filterDriver) {
+      result = result.filter(booking => booking.driver === filterDriver);
+    }
+    if (filterStatus !== 'all') {
+      result = result.filter(booking => booking.status === filterStatus);
+    }
+    return result;
+  }, [bookings, filterDriver, filterStatus]);
 
   // Memoize calendar events for performance
   const calendarEvents = useMemo(() => {
@@ -135,12 +147,12 @@ export default function Schedule() {
               className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
             >
               <InvoiceIcon className="w-4 h-4" />
-              Create Invoice
+              Create Estimate
             </Link>
           )}
           <button
             onClick={() => setShowModal(true)}
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-primary btn-floating flex items-center gap-2"
           >
             <PlusIcon className="w-4 h-4" />
             New Booking
@@ -148,9 +160,47 @@ export default function Schedule() {
         </div>
       </div>
 
+      {/* Status Tabs */}
+      <div className="card mb-2">
+        <div className="flex gap-2 md:gap-4 items-center border-b border-slate-200 pb-2 mb-2 overflow-x-auto">
+          {[
+            { key: 'all', label: 'All', color: 'text-slate-700' },
+            { key: 'pending', label: 'Pending', color: 'text-yellow-600' },
+            { key: 'confirmed', label: 'Confirmed', color: 'text-green-600' },
+            { key: 'completed', label: 'Completed', color: 'text-blue-600' },
+            { key: 'cancelled', label: 'Cancelled', color: 'text-red-600' }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setFilterStatus(tab.key);
+                if (viewMode !== 'table') setViewMode('table');
+                setTimeout(() => {
+                  if (tableRef.current) {
+                    tableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
+              className={`px-3 py-1 rounded-t font-medium border-b-2 transition-all duration-150 flex items-center gap-1 ${
+                filterStatus === tab.key
+                  ? `${tab.color} border-b-2 border-current bg-slate-50 shadow-sm`
+                  : 'text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${
+                filterStatus === tab.key ? 'bg-slate-200' : 'bg-slate-100'
+              }`}>
+                {statusCounts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Filters */}
-      <div className="card">
-        <div className="flex gap-4 items-center">
+      <div className="card mb-4">
+        <div className="flex flex-wrap gap-4 items-center">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Driver</label>
             <select
@@ -178,9 +228,9 @@ export default function Schedule() {
       </div>
 
       {viewMode === 'table' ? (
-        <div className="card">
+        <div className="card" ref={tableRef}>
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table schedule-table-mobile">
               <thead>
                 <tr>
                   <th>Customer</th>
@@ -189,78 +239,109 @@ export default function Schedule() {
                   <th>Date & Time</th>
                   <th>Driver</th>
                   <th>Vehicle</th>
+                  <th>Price</th>
                   <th>Type</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredBookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td className="font-medium">{booking.customer}</td>
-                    <td className="text-sm">{booking.pickup}</td>
-                    <td className="text-sm">{booking.destination}</td>
-                    <td className="text-sm">{booking.date} {booking.time}</td>
-                    <td className="text-sm">{booking.driver}</td>
-                    <td className="text-sm">{booking.vehicle}</td>
-                    <td>
-                      <span className={`badge ${
-                        booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-                      }`}>
-                        {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${
-                        booking.status === 'confirmed' ? 'badge-green' :
-                        booking.status === 'pending' ? 'badge-yellow' :
-                        booking.status === 'completed' ? 'badge-blue' :
-                        'badge-red'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleEdit(booking)}
-                          className="btn btn-outline px-2 py-1 text-xs"
-                          title="Edit Booking"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => sendBookingReminder(booking.id, 'booking_reminder')}
-                          className="btn bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-xs"
-                          title="Send Reminder"
-                        >
-                          📧
-                        </button>
-                        <button
-                          onClick={() => sendBookingReminder(booking.id, 'booking_confirmation')}
-                          className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs"
-                          title="Send Confirmation"
-                        >
-                          ✅
-                        </button>
-                        <button
-                          onClick={() => handleDelete(booking.id)}
-                          className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs"
-                          title="Delete Booking"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredBookings.map((booking) => {
+                  // Find related invoice if exists
+                  const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
+                  let nextAction = null;
+                  let actionHandler = null;
+                  let actionLabel = '';
+                  let actionColor = '';
+                  // Determine next action (best practice workflow)
+                  if (booking.status === 'pending') {
+                    nextAction = 'confirm';
+                    actionLabel = 'Confirm';
+                    actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
+                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                  } else if (booking.status === 'confirmed') {
+                    nextAction = 'complete';
+                    actionLabel = 'Mark as Complete';
+                    actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
+                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+                  } else if (booking.status === 'completed' && !relatedInvoice) {
+                    nextAction = 'invoice';
+                    actionLabel = 'Generate Invoice';
+                    actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
+                    actionHandler = () => generateInvoiceFromBooking(booking);
+                  } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
+                    nextAction = 'paid';
+                    actionLabel = 'Mark as Paid';
+                    actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
+                    actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
+                  } else if (relatedInvoice && relatedInvoice.status === 'paid') {
+                    nextAction = 'none';
+                  }
+                  return (
+                    <tr key={booking.id} className="table-row-animated">
+                      <td className="font-medium">{booking.customer}</td>
+                      <td className="text-sm">{booking.pickup}</td>
+                      <td className="text-sm">{booking.destination}</td>
+                      <td className="text-sm">{booking.date} {booking.time}</td>
+                      <td className="text-sm">{booking.driver}</td>
+                      <td className="text-sm">{booking.vehicle}</td>
+                      <td className="text-sm font-semibold text-green-600">
+                        {formatCurrency(booking.price || 45)}
+                      </td>
+                      <td>
+                        <span className={`badge badge-animated ${
+                          booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
+                        }`}>
+                          {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge badge-animated ${
+                          booking.status === 'confirmed' ? 'badge-green' :
+                          booking.status === 'pending' ? 'badge-yellow' :
+                          booking.status === 'completed' ? 'badge-blue' :
+                          'badge-red'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEdit(booking)}
+                            className="btn btn-outline btn-action px-2 py-1 text-xs"
+                            title="Edit Booking"
+                          >
+                            Edit
+                          </button>
+                          {nextAction !== 'none' && (
+                            <button
+                              onClick={actionHandler}
+                              className={`${actionColor} btn-action px-2 py-1 text-xs`}
+                              title={actionLabel}
+                            >
+                              {actionLabel}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(booking.id)}
+                            className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-2 py-1 text-xs"
+                            title="Delete Booking"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       ) : (
         <div className="card">
-          <div style={{ height: '600px' }}>
+          <div style={{ height: '600px' }} className="calendar-mobile">
             <Calendar
               localizer={localizer}
               events={calendarEvents}
@@ -295,6 +376,7 @@ export default function Schedule() {
                     type="text"
                     value={formData.customer}
                     onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                    className="input-animated"
                     required
                   />
                 </div>
@@ -318,6 +400,7 @@ export default function Schedule() {
                   type="text"
                   value={formData.pickup}
                   onChange={(e) => setFormData({...formData, pickup: e.target.value})}
+                  className="input-animated"
                   required
                 />
               </div>
@@ -327,6 +410,7 @@ export default function Schedule() {
                   type="text"
                   value={formData.destination}
                   onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                  className="input-animated"
                   required
                 />
               </div>
@@ -359,9 +443,9 @@ export default function Schedule() {
                     required
                   >
                     <option value="">Select Vehicle</option>
-                    {vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={`${vehicle.make} ${vehicle.model}`}>
-                        {vehicle.make} {vehicle.model} ({vehicle.license})
+                    {fleet && fleet.map(vehicle => (
+                      <option key={vehicle.id} value={vehicle.name}>
+                        {vehicle.name} ({vehicle.type})
                       </option>
                     ))}
                   </select>
@@ -375,6 +459,18 @@ export default function Schedule() {
                     <option value="priority">Priority Transfers</option>
                     <option value="outsourced">Outsourced</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block mb-1">Price (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                    className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
+                    placeholder="Enter price..."
+                  />
                 </div>
               </div>
               <div>
@@ -390,7 +486,7 @@ export default function Schedule() {
                 </select>
               </div>
               <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary btn-action">
                   {editingBooking ? "Update" : "Create"} Booking
                 </button>
                 <button
@@ -407,10 +503,11 @@ export default function Schedule() {
                       driver: "",
                       vehicle: "",
                       status: "pending",
-                      type: "priority"
+                      type: "priority",
+                      price: 45
                     });
                   }}
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-action"
                 >
                   Cancel
                 </button>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { calculateKPIs } from '../utils/kpi';
 import { 
@@ -20,10 +21,18 @@ import {
 } from "../components/Icons";
 import ReportDetailsModal from "../components/ReportDetailsModal";
 import AdvancedFilters from "../components/AdvancedFilters";
-import { exportToCSV, exportReportData } from "../utils/export";
+import { exportToCSV, exportToExcel, exportToPDF, exportReportData } from "../utils/export";
+
+// Helper to format numbers to 1 decimal, but remove trailing .0
+function removeTrailingZero(val) {
+  if (typeof val !== 'number') return val;
+  const fixed = val.toFixed(1);
+  return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
+}
 
 export default function Reports() {
-  const { income, expenses, invoices, bookings, customers, drivers, vehicles, refreshAllData } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, refreshAllData } = useAppStore();
+  const { fleet } = useFleet();
   const [showOutsourced, setShowOutsourced] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -133,8 +142,10 @@ export default function Reports() {
 
       if (format === 'CSV') {
         await exportToCSV(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`);
-      } else if (format === 'PDF' || format === 'Excel') {
-        await exportReportData('booking', exportData);
+      } else if (format === 'PDF') {
+        await exportToPDF(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`, 'Bookings Report');
+      } else if (format === 'Excel') {
+        await exportToExcel(exportData, `bookings-report-${new Date().toISOString().split('T')[0]}`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -184,13 +195,16 @@ export default function Reports() {
           break;
           
         case 'fleet':
-          exportData = vehicles.map(vehicle => ({
-            Make: vehicle.make,
-            Model: vehicle.model,
-            LicensePlate: vehicle.licensePlate,
-            Status: vehicle.status,
-            LastMaintenance: vehicle.lastMaintenance || 'N/A'
-          }));
+          exportData = fleet?.map(vehicle => ({
+            ID: vehicle.id,
+            Name: vehicle.name,
+            Type: vehicle.type,
+            Capacity: vehicle.capacity,
+            DriverRate: vehicle.driverRate,
+            FuelRate: vehicle.fuelRate,
+            RunningCost: vehicle.runningCost,
+            InsuranceRate: vehicle.insuranceRate
+          })) || [];
           break;
           
         case 'financial':
@@ -228,8 +242,10 @@ export default function Reports() {
       
       if (format === 'csv') {
         await exportToCSV(exportData, filename);
-      } else {
-        await exportReportData(reportType, exportData, format);
+      } else if (format === 'pdf') {
+        await exportToPDF(exportData, filename, `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`);
+      } else if (format === 'excel') {
+        await exportToExcel(exportData, filename);
       }
       
       setExportSuccess(true);
@@ -272,16 +288,30 @@ export default function Reports() {
     totalInvoiceValue: invoices.reduce((sum, inv) => sum + inv.amount, 0)
   };
 
-  // Enhanced KPIs with trend analysis
+  // Live KPIs using real data and shared logic
+  const kpis = calculateKPIs({ income, invoices, expenses });
+
+  // Calculate additional KPIs for Reports page
+  const totalBookings = bookings.length;
+  const completedBookings = bookings.filter(b => b.status === "completed").length;
+  const repeatCustomers = customers.filter(c => c.totalBookings > 1).length;
+  const customerRetention = customers.length > 0 ? (repeatCustomers / customers.length) * 100 : 0;
+  const averageBookingValue = totalBookings > 0 ? bookings.reduce((sum, b) => sum + (b.amount || 0), 0) / totalBookings : 0;
+  // Placeholder for growthRate, operationalEfficiency, profitMargin, customerSatisfaction (can be improved with more data)
+  const growthRate = 0; // TODO: implement MoM growth calculation
+  const operationalEfficiency = completedBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
+  const profitMargin = kpis.totalIncome > 0 ? ((kpis.netProfit / kpis.totalIncome) * 100) : 0;
+  const customerSatisfaction = bookings.length > 0 && bookings.some(b => b.rating) ? (bookings.filter(b => b.rating).reduce((sum, b) => sum + b.rating, 0) / bookings.filter(b => b.rating).length) : 0;
+
   const enhancedKPIs = {
-    customerRetention: 85.4, // percentage
-    averageBookingValue: monthlyStats.revenue / (monthlyStats.totalBookings || 1),
-    growthRate: 12.3, // percentage month-over-month
-    customerSatisfaction: 4.7,
-    operationalEfficiency: 92.1, // percentage
-    profitMargin: 23.8, // percentage
-    repeatCustomers: customers.filter(c => c.totalBookings > 1).length,
-    peakHours: "9:00-11:00 AM, 5:00-7:00 PM"
+    customerRetention,
+    averageBookingValue,
+    growthRate,
+    customerSatisfaction,
+    operationalEfficiency,
+    profitMargin,
+    repeatCustomers,
+    peakHours: "9:00-11:00 AM, 5:00-7:00 PM" // TODO: make dynamic if needed
   };
 
   // Outsourcing partners data
@@ -383,78 +413,75 @@ export default function Reports() {
       {activeTab === "overview" && (
         <>
           {/* Enhanced KPI Dashboard */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">{enhancedKPIs.customerRetention}%</div>
-                <div className="text-xs text-slate-600">Customer Retention</div>
-                <div className="flex items-center justify-center mt-1">
-                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-                  <span className="text-xs text-emerald-500">+2.3%</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* KPI Card Helper */}
+            {[
+              {
+                value: typeof enhancedKPIs.customerRetention === 'number' ? removeTrailingZero(enhancedKPIs.customerRetention) + '%' : '—',
+                label: 'Customer Retention',
+                color: 'text-emerald-600',
+                trend: '+2.3%',
+                trendColor: 'text-emerald-500',
+                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+              },
+              {
+                value: typeof enhancedKPIs.averageBookingValue === 'number' ? formatCurrency(enhancedKPIs.averageBookingValue, 1) : '—',
+                label: 'Avg Booking Value',
+                color: 'text-purple-600',
+                trend: '+5.1%',
+                trendColor: 'text-emerald-500',
+                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+              },
+              {
+                value: typeof enhancedKPIs.growthRate === 'number' ? removeTrailingZero(enhancedKPIs.growthRate) + '%' : '—',
+                label: 'Growth Rate',
+                color: 'text-blue-600',
+                trend: 'MoM',
+                trendColor: 'text-emerald-500',
+                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+              },
+              {
+                value: typeof enhancedKPIs.customerSatisfaction === 'number' ? removeTrailingZero(enhancedKPIs.customerSatisfaction) : '—',
+                label: 'Satisfaction',
+                color: 'text-amber-600',
+                trend: 'Rating',
+                trendColor: 'text-slate-500',
+                icon: <StarIcon className="w-3 h-3 text-amber-500 mr-1" />
+              },
+              {
+                value: typeof enhancedKPIs.operationalEfficiency === 'number' ? removeTrailingZero(enhancedKPIs.operationalEfficiency) + '%' : '—',
+                label: 'Efficiency',
+                color: 'text-cyan-600',
+                trend: '+1.2%',
+                trendColor: 'text-emerald-500',
+                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+              },
+              {
+                value: typeof enhancedKPIs.profitMargin === 'number' ? removeTrailingZero(enhancedKPIs.profitMargin) + '%' : '—',
+                label: 'Profit Margin',
+                color: 'text-green-600',
+                trend: '+3.4%',
+                trendColor: 'text-emerald-500',
+                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
+              }
+            ].map((kpi, idx) => (
+              <div key={kpi.label} className="card p-4 flex flex-col justify-between min-h-[110px]">
+                <div className="text-center">
+                  <div className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</div>
+                  <div className="text-xs text-slate-600">{kpi.label}</div>
+                  <div className="flex items-center justify-center mt-1">
+                    {kpi.icon}
+                    <span className={`text-xs ${kpi.trendColor}`}>{kpi.trend}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{formatCurrency(enhancedKPIs.averageBookingValue)}</div>
-                <div className="text-xs text-slate-600">Avg Booking Value</div>
-                <div className="flex items-center justify-center mt-1">
-                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-                  <span className="text-xs text-emerald-500">+5.1%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{enhancedKPIs.growthRate}%</div>
-                <div className="text-xs text-slate-600">Growth Rate</div>
-                <div className="flex items-center justify-center mt-1">
-                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-                  <span className="text-xs text-emerald-500">MoM</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-600">{enhancedKPIs.customerSatisfaction}</div>
-                <div className="text-xs text-slate-600">Satisfaction</div>
-                <div className="flex items-center justify-center mt-1">
-                  <StarIcon className="w-3 h-3 text-amber-500 mr-1" />
-                  <span className="text-xs text-slate-500">Rating</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-cyan-600">{enhancedKPIs.operationalEfficiency}%</div>
-                <div className="text-xs text-slate-600">Efficiency</div>
-                <div className="flex items-center justify-center mt-1">
-                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-                  <span className="text-xs text-emerald-500">+1.2%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{enhancedKPIs.profitMargin}%</div>
-                <div className="text-xs text-slate-600">Profit Margin</div>
-                <div className="flex items-center justify-center mt-1">
-                  <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-                  <span className="text-xs text-emerald-500">+3.4%</span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Monthly Overview */}
           <div className="card">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Monthly Overview</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{monthlyStats.totalBookings}</div>
                 <div className="text-sm text-slate-600">Total Bookings</div>
@@ -466,18 +493,18 @@ export default function Reports() {
                 <div className="text-3xl font-bold text-green-600">{monthlyStats.completedBookings}</div>
                 <div className="text-sm text-slate-600">Completed</div>
                 <div className="text-xs text-slate-500 mt-1">
-                  {monthlyStats.totalBookings > 0 ? Math.round((monthlyStats.completedBookings / monthlyStats.totalBookings) * 100) : 0}% completion rate
+                  {monthlyStats.totalBookings > 0 ? removeTrailingZero((monthlyStats.completedBookings / monthlyStats.totalBookings) * 100) : '0'}% completion rate
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">{formatCurrency(monthlyStats.revenue)}</div>
+                <div className="text-3xl font-bold text-purple-600">{typeof monthlyStats.revenue === 'number' ? formatCurrency(monthlyStats.revenue, 1) : '—'}</div>
                 <div className="text-sm text-slate-600">Revenue</div>
                 <div className="text-xs text-slate-500 mt-1">
                   From completed bookings
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-600">{monthlyStats.averageRating}</div>
+                <div className="text-3xl font-bold text-yellow-600">{typeof monthlyStats.averageRating === 'number' ? removeTrailingZero(monthlyStats.averageRating) : '—'}</div>
                 <div className="text-sm text-slate-600">Avg Rating</div>
                 <div className="text-xs text-slate-500 mt-1">
                   Based on customer feedback
@@ -487,11 +514,11 @@ export default function Reports() {
           </div>
 
           {/* Report Types Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {reportTypes.map((report) => {
               const IconComponent = report.icon;
               return (
-                <div key={report.id} className="card hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer"
+                <div key={report.id} className="card hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer p-4 flex flex-col justify-between"
                      onClick={() => viewReport(report.title)}>
                   <div className="flex items-center mb-4">
                     <div className={`p-3 rounded-lg ${report.color} bg-opacity-10 mr-4`}>
@@ -502,7 +529,7 @@ export default function Reports() {
                       <p className="text-sm text-slate-600">{report.description}</p>
                     </div>
                   </div>
-                  <button className="btn btn-outline w-full">
+                  <button className="btn btn-outline w-full mt-auto">
                     <ViewIcon className="w-4 h-4 mr-2" />
                     View Report
                   </button>
@@ -841,7 +868,7 @@ export default function Reports() {
             invoiceStats,
             customers,
             drivers,
-            vehicles,
+            vehicles: fleet,
             bookings: filteredBookings
           }}
         />

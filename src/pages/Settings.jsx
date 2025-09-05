@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { 
   CustomerIcon, 
@@ -36,8 +36,59 @@ export default function Settings() {
     }
   });
 
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const settingsKey = 'priority-transfers-settings';
+    const savedSettings = localStorage.getItem(settingsKey);
+    
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(prevSettings => ({
+          ...prevSettings,
+          ...parsedSettings,
+          // Ensure email is updated from current user
+          email: currentUser?.email || parsedSettings.email || ""
+        }));
+      } catch (error) {
+        console.error('Failed to load settings from localStorage:', error);
+      }
+    }
+  }, [currentUser]);
+
   const handleSave = (section) => {
-    alert(`${section} settings saved successfully!`);
+    try {
+      // Save settings to localStorage based on section
+      const settingsKey = 'priority-transfers-settings';
+      const existingSettings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+      
+      const updatedSettings = {
+        ...existingSettings,
+        ...settings,
+        lastUpdated: new Date().toISOString(),
+        updatedSection: section
+      };
+      
+      localStorage.setItem(settingsKey, JSON.stringify(updatedSettings));
+      
+      setMessage({ 
+        type: 'success', 
+        text: `${section} settings saved successfully!` 
+      });
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+      
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setMessage({ 
+        type: 'error', 
+        text: `Failed to save ${section} settings. Please try again.` 
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setMessage(""), 5000);
+    }
   };
 
   const handleDataOperation = async (operation, operationName) => {

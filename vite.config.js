@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/priority-transfers-admin/',
   build: {
+<<<<<<< HEAD
     // ...existing code...
     "scripts": {
       "build": "vite build",
@@ -26,5 +27,8 @@ export default defineConfig({
       "deploy": "gh-pages -d dist"
     }
     // ...existing code...    outDir: 'dist'
+=======
+    outDir: 'docs'
+>>>>>>> 32d62698d7a281151fe3963836fe718f2539da53
   }
 })
