@@ -1,4 +1,3 @@
-// Sidebar Navigation Component - Modern, clean, and robust
 import { NavLink } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useResponsive } from "../hooks/useResponsive";
@@ -96,6 +95,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           onClick={() => setSidebarOpen(false)}
           aria-label="Close sidebar backdrop"
         />
+      )}
+      {/* Mobile floating hamburger to open sidebar if closed */}
+      {isMobile && !sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-4 left-4 z-40 p-3 bg-white rounded shadow"
+          aria-label="Open sidebar"
+        >
+          <HamburgerIcon className="w-6 h-6" />
+        </button>
       )}
       <aside
         className={
