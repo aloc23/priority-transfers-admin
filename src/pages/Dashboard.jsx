@@ -3,15 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { formatCurrency } from "../utils/currency";
-import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon } from "../components/Icons";
+import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, WarningIcon, CalendarIcon, InboxIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
 import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
 import ExpenseModal from "../components/ExpenseModal";
+import ActionCard from "../components/ActionCard";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense } = useAppStore();
+  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, notifications, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense } = useAppStore();
   const { fleet } = useFleet();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,6 +82,148 @@ export default function Dashboard() {
     deleteExpense(item.id);
   }
 
+  // Actions categorization logic
+  const categorizeActions = () => {
+    const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const urgent = [];
+    const upcoming = [];
+    const pending = [];
+
+    // Overdue invoices (urgent)
+    invoices.filter(invoice => {
+      const dueDate = new Date(invoice.dueDate);
+      return invoice.status === 'unpaid' && dueDate < now;
+    }).forEach(invoice => {
+      urgent.push({
+        id: `invoice-${invoice.id}`,
+        title: `Overdue Invoice #${invoice.invoiceNumber}`,
+        description: `${invoice.customerName} - €${invoice.amount}`,
+        dueDate: invoice.dueDate,
+        quickActions: [
+          { label: 'Send Reminder', action: 'remind' },
+          { label: 'Call Customer', action: 'call' }
+        ]
+      });
+    });
+
+    // Critical notifications (urgent)
+    notifications.filter(n => !n.read && (n.priority === 'high' || n.type === 'urgent')).forEach(notification => {
+      urgent.push({
+        id: `notification-${notification.id}`,
+        title: notification.title || 'Important Notification',
+        description: notification.message,
+        quickActions: [
+          { label: 'Mark Read', action: 'mark_read' },
+          { label: 'View Details', action: 'view' }
+        ]
+      });
+    });
+
+    // Upcoming invoices due soon (upcoming)
+    invoices.filter(invoice => {
+      const dueDate = new Date(invoice.dueDate);
+      return invoice.status === 'unpaid' && dueDate >= now && dueDate <= threeDaysFromNow;
+    }).forEach(invoice => {
+      upcoming.push({
+        id: `invoice-upcoming-${invoice.id}`,
+        title: `Invoice Due Soon #${invoice.invoiceNumber}`,
+        description: `${invoice.customerName} - €${invoice.amount}`,
+        dueDate: invoice.dueDate,
+        quickActions: [
+          { label: 'Send Reminder', action: 'remind' },
+          { label: 'View Details', action: 'view' }
+        ]
+      });
+    });
+
+    // Upcoming bookings (next 24 hours)
+    bookings.filter(booking => {
+      const bookingDate = new Date(booking.date);
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      return booking.status !== 'completed' && bookingDate >= now && bookingDate <= tomorrow;
+    }).forEach(booking => {
+      upcoming.push({
+        id: `booking-${booking.id}`,
+        title: `Upcoming Transfer`,
+        description: `${booking.customerName} - ${booking.route}`,
+        dueDate: booking.date,
+        quickActions: [
+          { label: 'Confirm', action: 'confirm' },
+          { label: 'Assign Driver', action: 'assign' }
+        ]
+      });
+    });
+
+    // Pending expenses (pending admin)
+    expenses.filter(expense => expense.status === 'pending').forEach(expense => {
+      pending.push({
+        id: `expense-${expense.id}`,
+        title: `Expense Approval Required`,
+        description: `${expense.description} - €${expense.amount}`,
+        quickActions: [
+          { label: 'Approve', action: 'approve' },
+          { label: 'Review', action: 'review' }
+        ]
+      });
+    });
+
+    // Unread notifications (pending admin)
+    notifications.filter(n => !n.read && !urgent.find(u => u.id === `notification-${n.id}`)).forEach(notification => {
+      pending.push({
+        id: `notification-pending-${notification.id}`,
+        title: notification.title || 'Notification',
+        description: notification.message,
+        quickActions: [
+          { label: 'Mark Read', action: 'mark_read' },
+          { label: 'View Details', action: 'view' }
+        ]
+      });
+    });
+
+    // Partner contracts/agreements needing attention
+    partners.filter(partner => partner.status === 'pending' || partner.status === 'inactive').forEach(partner => {
+      pending.push({
+        id: `partner-${partner.id}`,
+        title: `Partner Status Review`,
+        description: `${partner.name} - ${partner.status}`,
+        quickActions: [
+          { label: 'Review', action: 'review' },
+          { label: 'Update Status', action: 'update_status' }
+        ]
+      });
+    });
+
+    return { urgent, upcoming, pending };
+  };
+
+  const actions = categorizeActions();
+
+  // Handle quick actions
+  const handleQuickAction = (item, action) => {
+    switch(action.action) {
+      case 'mark_read':
+        // Mark notification as read
+        const notificationId = parseInt(item.id.split('-')[1]);
+        // markNotificationRead(notificationId);
+        console.log('Marking notification as read:', notificationId);
+        break;
+      case 'approve':
+        // Approve expense
+        const expenseId = parseInt(item.id.split('-')[1]);
+        updateExpense(expenseId, { status: 'approved' });
+        break;
+      case 'remind':
+        // Send reminder for invoice
+        console.log('Sending reminder for:', item.title);
+        break;
+      default:
+        console.log('Quick action:', action.action, 'for:', item.title);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -103,6 +246,18 @@ export default function Dashboard() {
             role="tab"
           >
             Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab('actions')} 
+            className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto ${
+              activeTab === 'actions' 
+                ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+            }`}
+            aria-selected={activeTab === 'actions'}
+            role="tab"
+          >
+            Actions
           </button>
           <button 
             onClick={() => setActiveTab('accounting')} 
@@ -133,6 +288,33 @@ export default function Dashboard() {
             ))}
           </div>
           <ActivityList activities={recentActivity} />
+        </section>
+      )}
+      {activeTab === 'actions' && (
+        <section className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <ActionCard
+              title="Urgent"
+              type="urgent"
+              icon={WarningIcon}
+              items={actions.urgent}
+              onQuickAction={handleQuickAction}
+            />
+            <ActionCard
+              title="Upcoming"
+              type="upcoming"
+              icon={CalendarIcon}
+              items={actions.upcoming}
+              onQuickAction={handleQuickAction}
+            />
+            <ActionCard
+              title="Pending Admin"
+              type="pending"
+              icon={InboxIcon}
+              items={actions.pending}
+              onQuickAction={handleQuickAction}
+            />
+          </div>
         </section>
       )}
       {activeTab === 'accounting' && (
