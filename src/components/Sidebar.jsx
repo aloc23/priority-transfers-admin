@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { useResponsive } from "../hooks/useResponsive";
 import ManagementNav from "./ManagementNav";
@@ -43,7 +44,7 @@ const navigationItems = [
   },
   {
     path: "/finance",
-    label: "Estimates & Quotes",
+    label: "Estimates",
     icon: EstimationIcon,
     roles: ["Admin"]
   },
@@ -81,10 +82,38 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const { isMobile, isSmallMobile } = useResponsive();
   const shouldShowNavItem = (item) => item.roles.includes(currentUser?.role);
   const closeSidebarOnMobile = () => { if (isMobile) setSidebarOpen(false); };
+
+  // Handle sidebar toggle with localStorage for desktop
+  const handleSidebarToggle = () => {
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    
+    // Store manually collapsed state for desktop
+    if (!isMobile && !newState) {
+      localStorage.setItem('sidebarManuallyCollapsed', 'true');
+    } else if (!isMobile && newState) {
+      localStorage.removeItem('sidebarManuallyCollapsed');
+    }
+  };
+
+  // Add body overflow control for mobile
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, sidebarOpen]);
   const getNavLinkClasses = (isActive) =>
     `block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
     ${isActive ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105" : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"}
-    ${isMobile ? 'min-h-[48px] flex items-center' : ''}`;
+    ${isMobile ? 'min-h-[48px] flex items-center' : ''}
+    ${!sidebarOpen && !isMobile ? 'justify-center p-3' : ''}`;
 
   return (
     <>
@@ -100,7 +129,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
       {isMobile && !sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-40 p-3 bg-white rounded shadow"
+          className="fixed top-4 left-4 z-50 p-3 bg-white rounded shadow"
+          style={{ 
+            paddingTop: 'env(safe-area-inset-top)', 
+            paddingLeft: 'env(safe-area-inset-left)' 
+          }}
           aria-label="Open sidebar"
         >
           <HamburgerIcon className="w-6 h-6" />
@@ -110,7 +143,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         className={
           `${sidebarOpen ? "w-64" : "w-16"} ` +
           `${isMobile && !sidebarOpen ? 'hidden' : ''} ` +
-          `${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'} ` +
+          `${isMobile ? 'fixed inset-y-0 left-0 z-40' : 'relative'} ` +
           `bg-white transition-all duration-300 ease-in-out ` +
           `${isMobile ? '' : 'shadow-lg'} ` +
           `border-r border-slate-200 ` +
@@ -126,7 +159,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               {sidebarOpen && <span className="font-bold text-xl text-slate-800 tracking-tight">Priority</span>}
             </div>
             <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)} 
+              onClick={handleSidebarToggle} 
               className={
                 `px-3 py-2 text-slate-600 hover:text-slate-800 transition-colors ` +
                 `rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
@@ -157,9 +190,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                             aria-label={item.label}
                             title={!sidebarOpen ? item.label : undefined}
                           >
-                            <div className="flex items-center justify-center">
-                              <IconComponent className="w-6 h-6 flex-shrink-0 mx-auto" aria-hidden="true" />
-                              {sidebarOpen && <span className="ml-3">{item.label}</span>}
+                            <div className={`flex items-center ${!sidebarOpen && !isMobile ? 'justify-center' : 'justify-start'}`}>
+                              <IconComponent className={`w-6 h-6 flex-shrink-0 ${!sidebarOpen && !isMobile ? '' : 'mr-3'}`} aria-hidden="true" />
+                              {sidebarOpen && <span className="text-left">{item.label}</span>}
                             </div>
                           </NavLink>
                         </li>

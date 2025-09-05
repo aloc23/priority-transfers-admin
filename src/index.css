@@ -868,3 +868,46 @@ label {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Safe area support for mobile devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .fab-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .hamburger-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+  }
+}
+
+/* Enhanced mobile card layout for schedule */
+@media (max-width: 768px) {
+  .schedule-card {
+    @apply bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-3;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .schedule-card:hover {
+    @apply shadow-md;
+    transform: translateY(-1px);
+  }
+  
+  .schedule-card-header {
+    @apply flex items-start justify-between mb-3;
+  }
+  
+  .schedule-card-content {
+    @apply space-y-2;
+  }
+  
+  .schedule-card-actions {
+    @apply flex gap-2 mt-4 pt-3 border-t border-slate-100;
+  }
+  
+  /* Sticky section headers */
+  .sticky-header {
+    @apply sticky top-0 bg-white/95 backdrop-blur-sm z-10 py-2 border-b border-slate-200;
+  }
+}

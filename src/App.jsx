@@ -25,11 +25,22 @@ function AuthenticatedShell() {
   const [sidebarOpen, setSidebarOpen] = useState(isDesktop);
   
   // Handle responsive behavior for sidebar
+  // Only auto-open on desktop initially, allow manual collapse
   useEffect(() => {
-    if (isDesktop && !sidebarOpen) {
-      setSidebarOpen(true);
+    // Only auto-open the first time when switching to desktop
+    // This allows users to manually collapse on desktop
+    if (isDesktop && sidebarOpen === false) {
+      // Check if this is the first load or switching from mobile
+      const hasManuallyCollapsed = localStorage.getItem('sidebarManuallyCollapsed') === 'true';
+      if (!hasManuallyCollapsed) {
+        setSidebarOpen(true);
+      }
     }
-  }, [isDesktop, sidebarOpen]);
+    if (isMobile) {
+      // Clear the manually collapsed flag when on mobile
+      localStorage.removeItem('sidebarManuallyCollapsed');
+    }
+  }, [isDesktop, isMobile]);
   
   return (
     <div className="flex h-screen bg-slate-50">
