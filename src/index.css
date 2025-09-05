@@ -511,13 +511,44 @@ label {
   .flex\.flex-wrap\.items-center\.gap-4 {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
+    gap: 1rem;
   }
   
-  .flex\.flex-wrap\.items-center\.gap-4 > div {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  /* Estimation form mobile improvements */
+  .estimation-form-mobile {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  /* Schedule table mobile improvements */
+  .schedule-table-mobile {
+    @apply text-xs;
+  }
+  
+  .schedule-table-mobile th,
+  .schedule-table-mobile td {
+    @apply p-1;
+    min-width: 80px;
+  }
+  
+  /* Mobile calendar improvements */
+  .calendar-mobile {
+    height: 400px !important;
+  }
+  
+  /* Cost analysis mobile */
+  .cost-analysis-mobile {
+    @apply space-y-3;
+  }
+  
+  .cost-analysis-mobile .bg-gray-50,
+  .cost-analysis-mobile .bg-blue-50,
+  .cost-analysis-mobile .bg-green-50 {
+    @apply p-3;
+  }
+  
+  /* Fleet calculation results mobile */
+  .fleet-results-mobile {
+    @apply grid-cols-1 gap-4;
   }
 }
 

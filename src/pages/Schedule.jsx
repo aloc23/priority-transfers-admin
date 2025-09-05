@@ -5,16 +5,7 @@ import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon } from "../components/Icons";
-
-// Add TableIcon here since it's not in Icons.jsx yet  
-const TableIcon = ({ className = "w-4 h-4", ...props }) => (
-  <svg className={className} {...props} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M3 3h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-    <line x1="3" y1="9" x2="21" y2="9"/>
-    <line x1="9" y1="3" x2="9" y2="21"/>
-  </svg>
-);
+import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 
 const localizer = momentLocalizer(moment);
 
@@ -23,7 +14,7 @@ export default function Schedule() {
   const { fleet } = useFleet();
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'calendar'
+  const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
   const [filterDriver, setFilterDriver] = useState('');
   const [formData, setFormData] = useState({
     customer: "",
@@ -182,7 +173,7 @@ export default function Schedule() {
       {viewMode === 'table' ? (
         <div className="card">
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table schedule-table-mobile">
               <thead>
                 <tr>
                   <th>Customer</th>
@@ -236,7 +227,7 @@ export default function Schedule() {
                           className="btn bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-xs"
                           title="Send Reminder"
                         >
-                          📧
+                          <SendIcon className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => sendBookingReminder(booking.id, 'booking_confirmation')}
@@ -262,7 +253,7 @@ export default function Schedule() {
         </div>
       ) : (
         <div className="card">
-          <div style={{ height: '600px' }}>
+          <div style={{ height: '600px' }} className="calendar-mobile">>
             <Calendar
               localizer={localizer}
               events={calendarEvents}
