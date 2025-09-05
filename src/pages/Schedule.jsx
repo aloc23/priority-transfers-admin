@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 
 const localizer = momentLocalizer(moment);
@@ -25,7 +26,8 @@ export default function Schedule() {
     driver: "",
     vehicle: "",
     status: "pending",
-    type: "priority" // New field for Priority vs Outsourced
+    type: "priority", // New field for Priority vs Outsourced
+    price: 45 // Default price field
   });
 
   const handleSubmit = (e) => {
@@ -46,7 +48,8 @@ export default function Schedule() {
       driver: "",
       vehicle: "",
       status: "pending",
-      type: "priority"
+      type: "priority",
+      price: 45
     });
   };
 
@@ -133,7 +136,7 @@ export default function Schedule() {
           )}
           <button
             onClick={() => setShowModal(true)}
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-primary btn-floating flex items-center gap-2"
           >
             <PlusIcon className="w-4 h-4" />
             New Booking
@@ -182,6 +185,7 @@ export default function Schedule() {
                   <th>Date & Time</th>
                   <th>Driver</th>
                   <th>Vehicle</th>
+                  <th>Price</th>
                   <th>Type</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -189,22 +193,25 @@ export default function Schedule() {
               </thead>
               <tbody>
                 {filteredBookings.map((booking) => (
-                  <tr key={booking.id}>
+                  <tr key={booking.id} className="table-row-animated">
                     <td className="font-medium">{booking.customer}</td>
                     <td className="text-sm">{booking.pickup}</td>
                     <td className="text-sm">{booking.destination}</td>
                     <td className="text-sm">{booking.date} {booking.time}</td>
                     <td className="text-sm">{booking.driver}</td>
                     <td className="text-sm">{booking.vehicle}</td>
+                    <td className="text-sm font-semibold text-green-600">
+                      {formatCurrency(booking.price || 45)}
+                    </td>
                     <td>
-                      <span className={`badge ${
+                      <span className={`badge badge-animated ${
                         booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
                       }`}>
                         {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${
+                      <span className={`badge badge-animated ${
                         booking.status === 'confirmed' ? 'badge-green' :
                         booking.status === 'pending' ? 'badge-yellow' :
                         booking.status === 'completed' ? 'badge-blue' :
@@ -217,28 +224,28 @@ export default function Schedule() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleEdit(booking)}
-                          className="btn btn-outline px-2 py-1 text-xs"
+                          className="btn btn-outline btn-action px-2 py-1 text-xs"
                           title="Edit Booking"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => sendBookingReminder(booking.id, 'booking_reminder')}
-                          className="btn bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-xs"
+                          className="btn bg-blue-600 text-white hover:bg-blue-700 btn-action px-2 py-1 text-xs"
                           title="Send Reminder"
                         >
                           <SendIcon className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => sendBookingReminder(booking.id, 'booking_confirmation')}
-                          className="btn bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-xs"
+                          className="btn bg-green-600 text-white hover:bg-green-700 btn-action px-2 py-1 text-xs"
                           title="Send Confirmation"
                         >
                           <CheckIcon className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleDelete(booking.id)}
-                          className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs"
+                          className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-2 py-1 text-xs"
                           title="Delete Booking"
                         >
                           Delete
@@ -288,6 +295,7 @@ export default function Schedule() {
                     type="text"
                     value={formData.customer}
                     onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                    className="input-animated"
                     required
                   />
                 </div>
@@ -311,6 +319,7 @@ export default function Schedule() {
                   type="text"
                   value={formData.pickup}
                   onChange={(e) => setFormData({...formData, pickup: e.target.value})}
+                  className="input-animated"
                   required
                 />
               </div>
@@ -320,6 +329,7 @@ export default function Schedule() {
                   type="text"
                   value={formData.destination}
                   onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                  className="input-animated"
                   required
                 />
               </div>
@@ -369,6 +379,18 @@ export default function Schedule() {
                     <option value="outsourced">Outsourced</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block mb-1">Price (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                    className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
+                    placeholder="Enter price..."
+                  />
+                </div>
               </div>
               <div>
                 <label className="block mb-1">Status</label>
@@ -383,7 +405,7 @@ export default function Schedule() {
                 </select>
               </div>
               <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary btn-action">
                   {editingBooking ? "Update" : "Create"} Booking
                 </button>
                 <button
@@ -400,10 +422,11 @@ export default function Schedule() {
                       driver: "",
                       vehicle: "",
                       status: "pending",
-                      type: "priority"
+                      type: "priority",
+                      price: 45
                     });
                   }}
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-action"
                 >
                   Cancel
                 </button>

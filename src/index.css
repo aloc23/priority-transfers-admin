@@ -98,7 +98,198 @@ body { @apply bg-slate-50 text-slate-900; }
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px) scale(1.02);
 }
-/* Badge Styles */
+/* Enhanced Action Button Animations */
+.btn-action {
+  @apply transition-all duration-300 ease-out;
+  transform-origin: center;
+}
+
+.btn-action:hover {
+  animation: pulseGlow 0.6s ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.6), 0 0 25px rgba(139, 92, 246, 0.3);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+    transform: scale(1.02);
+  }
+}
+
+/* Floating Action Button Animations */
+.btn-floating {
+  @apply transition-all duration-300 ease-out;
+  animation: floatBounce 3s ease-in-out infinite;
+}
+
+@keyframes floatBounce {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.btn-floating:hover {
+  animation: none;
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+/* Success Animation */
+.btn-success-animation {
+  animation: successPulse 0.8s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: scale(1);
+  }
+  50% {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+  100% {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: scale(1);
+  }
+}
+
+/* Status Badge Animations */
+.badge-animated {
+  @apply transition-all duration-300 ease-out;
+}
+
+.badge-animated:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Table Row Hover Animation */
+.table-row-animated {
+  @apply transition-all duration-200 ease-out;
+}
+
+.table-row-animated:hover {
+  transform: translateX(2px);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: -4px 0 0 rgba(139, 92, 246, 0.3);
+}
+
+/* Form Input Focus Animation */
+.input-animated:focus {
+  animation: inputGlow 0.3s ease-out;
+}
+
+@keyframes inputGlow {
+  from {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Loading Spinner Animation */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Slide In Animation */
+.slide-in-animation {
+  animation: slideInFromRight 0.5s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fade In Animation */
+.fade-in-animation {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab Click Animation */
+.tab-button-animated {
+  @apply transition-all duration-300 ease-out;
+  position: relative;
+}
+
+.tab-button-animated:active {
+  transform: scale(0.98);
+}
+
+.tab-button-animated.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
+  animation: tabUnderline 0.3s ease-out;
+}
+
+@keyframes tabUnderline {
+  from {
+    width: 0%;
+    left: 50%;
+  }
+  to {
+    width: 100%;
+    left: 0%;
+  }
+}
 .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold; }
 .badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
 .badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
