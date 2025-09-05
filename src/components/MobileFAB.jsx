@@ -108,7 +108,13 @@ export default function MobileFAB() {
   };
 
   return (
-    <div className={`fixed z-50 fab-container ${isSmallMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'}`} aria-label="Mobile quick actions">
+    <div className={`fixed z-50 ${isSmallMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'}`} 
+         style={{ 
+           paddingBottom: 'env(safe-area-inset-bottom)', 
+           paddingRight: 'env(safe-area-inset-right)' 
+         }} 
+         aria-label="Mobile quick actions"
+    >
       {/* Backdrop */}
       {isOpen && (
         <div 

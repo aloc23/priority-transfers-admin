@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
+import { useResponsive } from "../hooks/useResponsive";
 import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -13,6 +14,7 @@ const localizer = momentLocalizer(moment);
 export default function Schedule() {
   const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser } = useAppStore();
   const { fleet } = useFleet();
+  const { isMobile } = useResponsive();
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
@@ -117,6 +119,111 @@ export default function Schedule() {
       time
     });
     setShowModal(true);
+  };
+
+  // Render mobile card for schedule items
+  const renderMobileCard = (booking) => {
+    // Find related invoice if exists
+    const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
+    let nextAction = null;
+    let actionHandler = null;
+    let actionLabel = '';
+    let actionColor = '';
+    
+    // Determine next action (best practice workflow)
+    if (booking.status === 'pending') {
+      nextAction = 'confirm';
+      actionLabel = 'Confirm';
+      actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
+      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+    } else if (booking.status === 'confirmed') {
+      nextAction = 'complete';
+      actionLabel = 'Mark as Complete';
+      actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
+      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+    } else if (booking.status === 'completed' && !relatedInvoice) {
+      nextAction = 'invoice';
+      actionLabel = 'Generate Invoice';
+      actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
+      actionHandler = () => generateInvoiceFromBooking(booking);
+    } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
+      nextAction = 'paid';
+      actionLabel = 'Mark as Paid';
+      actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
+      actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
+    } else if (relatedInvoice && relatedInvoice.status === 'paid') {
+      nextAction = 'none';
+    }
+
+    return (
+      <div key={booking.id} className="schedule-card">
+        <div className="schedule-card-header">
+          <div>
+            <h3 className="font-semibold text-lg text-slate-800 mb-1">{booking.customer}</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`badge badge-animated ${
+                booking.status === 'confirmed' ? 'badge-green' :
+                booking.status === 'pending' ? 'badge-yellow' :
+                booking.status === 'completed' ? 'badge-blue' :
+                'badge-red'
+              }`}>
+                {booking.status}
+              </span>
+              <span className={`badge badge-animated ${
+                booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
+              }`}>
+                {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-semibold text-green-600">
+              {formatCurrency(booking.price || 45)}
+            </div>
+            <div className="text-sm text-slate-500">
+              {booking.date} {booking.time}
+            </div>
+          </div>
+        </div>
+        
+        <div className="schedule-card-content">
+          <div className="grid grid-cols-1 gap-2">
+            <div className="text-sm">
+              <span className="font-medium text-slate-600">Route:</span> {booking.pickup} → {booking.destination}
+            </div>
+            <div className="text-sm">
+              <span className="font-medium text-slate-600">Driver:</span> {booking.driver}
+            </div>
+            <div className="text-sm">
+              <span className="font-medium text-slate-600">Vehicle:</span> {booking.vehicle}
+            </div>
+          </div>
+        </div>
+        
+        <div className="schedule-card-actions">
+          <button
+            onClick={() => handleEdit(booking)}
+            className="btn btn-outline btn-action px-3 py-2 text-sm flex-1"
+          >
+            Edit
+          </button>
+          {nextAction !== 'none' && (
+            <button
+              onClick={actionHandler}
+              className={`${actionColor} btn-action px-3 py-2 text-sm flex-1`}
+            >
+              {actionLabel}
+            </button>
+          )}
+          <button
+            onClick={() => handleDelete(booking.id)}
+            className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-3 py-2 text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -228,9 +335,29 @@ export default function Schedule() {
       </div>
 
       {viewMode === 'table' ? (
-        <div className="card" ref={tableRef}>
-          <div className="overflow-x-auto">
-            <table className="table schedule-table-mobile">
+        isMobile ? (
+          <div className="space-y-4">
+            {/* Sticky section header for mobile */}
+            <div className="sticky-header">
+              <h2 className="text-lg font-semibold text-slate-800">
+                {filterStatus === 'all' ? 'All Bookings' : `${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)} Bookings`}
+                <span className="ml-2 text-sm text-slate-500">
+                  ({filteredBookings.length} items)
+                </span>
+              </h2>
+            </div>
+            {/* Mobile cards */}
+            {filteredBookings.map(renderMobileCard)}
+            {filteredBookings.length === 0 && (
+              <div className="text-center py-8 text-slate-500">
+                No bookings found for the selected filters.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="card" ref={tableRef}>
+            <div className="overflow-x-auto">
+              <table className="table schedule-table-mobile">
               <thead>
                 <tr>
                   <th>Customer</th>
@@ -339,6 +466,7 @@ export default function Schedule() {
             </table>
           </div>
         </div>
+        )
       ) : (
         <div className="card">
           <div style={{ height: '600px' }} className="calendar-mobile">
