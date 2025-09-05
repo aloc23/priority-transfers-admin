@@ -2,17 +2,20 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
+import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
 import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
 import ExpenseModal from "../components/ExpenseModal";
+import MobileBookingList from "../components/MobileBookingList";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
   const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
   const { fleet } = useFleet();
+  const { isMobile } = useResponsive();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchParams, setSearchParams] = useSearchParams();
   const [accountingSubTab, setAccountingSubTab] = useState('overview');
@@ -188,69 +191,104 @@ export default function Dashboard() {
             {selectedCombinedStatus && (
               <div className="mt-4">
                 <h4 className="font-semibold mb-2">{selectedCombinedStatus} Bookings</h4>
-                <div className="overflow-x-auto">
-                  <table className="table w-full text-sm">
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Date</th>
-                        <th>Driver</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
-                        const inv = invoices.find(inv => inv.bookingId === booking.id);
-                        // Determine available actions
-                        const actions = [];
-                        // Helper to refresh dashboard after action
-                        const refresh = () => {
-                          if (typeof refreshAllData === 'function') refreshAllData();
-                          setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
-                        };
-                        if (booking.status === 'pending') {
-                          actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
-                        }
-                        if (booking.status === 'confirmed') {
-                          actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
-                        }
-                        if (booking.status === 'completed' && !inv) {
-                          actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
-                        }
-                        if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                          actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
-                        }
-                        return (
-                          <tr key={booking.id}>
-                            <td>{booking.customer}</td>
-                            <td>{booking.date} {booking.time}</td>
-                            <td>{booking.driver}</td>
-                            <td>{getCombinedStatus(booking)}</td>
-                            <td>
-                              <div className="inline-block">
-                                {actions.length === 0 && <span className="text-xs text-slate-400">No actions</span>}
-                                {actions.length > 0 && (
-                                  <div className="flex flex-col gap-1">
-                                    {actions.map((action, idx) => (
-                                      <button
-                                        key={idx}
-                                        className="btn btn-xs btn-outline mb-1"
-                                        onClick={action.onClick}
-                                      >
-                                        {action.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                
+                {/* Mobile-friendly card list */}
+                {isMobile ? (
+                  <MobileBookingList 
+                    bookings={bookingsByCombinedStatus[selectedCombinedStatus].map(booking => ({
+                      ...booking,
+                      customer: booking.customer || booking.customerName,
+                      status: getCombinedStatus(booking)
+                    }))}
+                    onActionClick={(booking) => {
+                      const inv = invoices.find(inv => inv.bookingId === booking.id);
+                      const refresh = () => {
+                        if (typeof refreshAllData === 'function') refreshAllData();
+                        setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
+                      };
+                      
+                      // Execute primary action based on status
+                      if (booking.status === 'pending' || booking.status === 'Pending') {
+                        updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                        refresh();
+                      } else if (booking.status === 'confirmed' || booking.status === 'Confirmed') {
+                        updateBooking(booking.id, { ...booking, status: 'completed' });
+                        refresh();
+                      } else if ((booking.status === 'completed' || booking.status === 'Completed') && !inv) {
+                        generateInvoiceFromBooking(booking);
+                        refresh();
+                      } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                        markInvoiceAsPaid(inv.id);
+                        refresh();
+                      }
+                    }}
+                  />
+                ) : (
+                  /* Desktop table view */
+                  <div className="overflow-x-auto">
+                    <table className="table w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th>Customer</th>
+                          <th>Date</th>
+                          <th>Driver</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
+                          const inv = invoices.find(inv => inv.bookingId === booking.id);
+                          // Determine available actions
+                          const actions = [];
+                          // Helper to refresh dashboard after action
+                          const refresh = () => {
+                            if (typeof refreshAllData === 'function') refreshAllData();
+                            setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
+                          };
+                          if (booking.status === 'pending') {
+                            actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
+                          }
+                          if (booking.status === 'confirmed') {
+                            actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
+                          }
+                          if (booking.status === 'completed' && !inv) {
+                            actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
+                          }
+                          if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                            actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
+                          }
+                          return (
+                            <tr key={booking.id}>
+                              <td>{booking.customer}</td>
+                              <td>{booking.date} {booking.time}</td>
+                              <td>{booking.driver}</td>
+                              <td>{getCombinedStatus(booking)}</td>
+                              <td>
+                                <div className="inline-block">
+                                  {actions.length === 0 && <span className="text-xs text-slate-400">No actions</span>}
+                                  {actions.length > 0 && (
+                                    <div className="flex flex-col gap-1">
+                                      {actions.map((action, idx) => (
+                                        <button
+                                          key={idx}
+                                          className="btn btn-xs btn-outline mb-1"
+                                          onClick={action.onClick}
+                                        >
+                                          {action.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
