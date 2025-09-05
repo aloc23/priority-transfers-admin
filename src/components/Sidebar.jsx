@@ -13,7 +13,8 @@ import {
   SettingsIcon,
   TrendUpIcon,
   EstimationIcon,
-  InvoiceIcon
+  InvoiceIcon,
+  HamburgerIcon
 } from "./Icons";
 
 const navigationItems = [
@@ -124,7 +125,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               }
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              &#9776;
+              <HamburgerIcon className="w-5 h-5" />
             </button>
           </div>
           {/* Navigation with section headings */}

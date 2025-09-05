@@ -59,7 +59,7 @@ export { PlusIcon };
 // Action icons
 export const EditIcon = PencilIcon;
 export const DeleteIcon = HeroTrashIcon;
-export const TrashIcon = HeroTrashIcon;
+export const TrashIcon = HeroTrashIcon; // Alias for backward compatibility
 export const ViewIcon = EyeIcon;
 export const SendIcon = PaperAirplaneIcon;
 export const DownloadIcon = ArrowDownTrayIcon;
