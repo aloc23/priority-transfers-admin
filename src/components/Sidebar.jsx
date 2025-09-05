@@ -83,9 +83,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const shouldShowNavItem = (item) => item.roles.includes(currentUser?.role);
   const closeSidebarOnMobile = () => { if (isMobile) setSidebarOpen(false); };
   const getNavLinkClasses = (isActive) =>
-    `block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-    ${isActive ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105" : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"}
-    ${isMobile ? 'min-h-[48px] flex items-center' : ''}`;
+    `group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+    ${isActive ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg scale-105" : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"}
+    ${isMobile ? 'min-h-[48px]' : ''}`;
 
   return (
     <>
@@ -98,15 +98,15 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         />
       )}
       <aside
-        className={
-          `${sidebarOpen ? "w-64" : "w-16"} ` +
-          `${isMobile && !sidebarOpen ? 'hidden' : ''} ` +
-          `${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'} ` +
-          `bg-white transition-all duration-300 ease-in-out ` +
-          `${isMobile ? '' : 'shadow-lg'} ` +
-          `border-r border-slate-200 ` +
-          `${isSmallMobile && sidebarOpen ? 'w-full' : ''}`
-        }
+        className={`
+          ${sidebarOpen ? "w-64" : "w-16"} 
+          ${isMobile && !sidebarOpen ? 'hidden' : ''} 
+          ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'} 
+          bg-white border-r border-slate-200
+          overflow-x-hidden transition-all duration-300 ease-in-out
+          ${isMobile ? '' : 'shadow-lg'}
+          ${isSmallMobile && sidebarOpen ? 'w-full' : ''}
+        `}
         aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
@@ -118,17 +118,17 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
             </div>
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)} 
-              className={
-                `px-3 py-2 text-slate-600 hover:text-slate-800 transition-colors ` +
-                `rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
-                `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : 'btn btn-outline'}`
-              }
+              className={`
+                px-3 py-2 text-slate-600 hover:text-slate-800 transition-colors
+                rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                ${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}
+              `}
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
               <HamburgerIcon className="w-5 h-5" />
             </button>
           </div>
-          {/* Navigation with section headings */}
+          {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto" aria-label="Main navigation">
             <ul className="space-y-2">
               {navSections.map(section => (
@@ -148,10 +148,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                             aria-label={item.label}
                             title={!sidebarOpen ? item.label : undefined}
                           >
-                            <div className="flex items-center justify-center">
-                              <IconComponent className="w-6 h-6 flex-shrink-0 mx-auto" aria-hidden="true" />
-                              {sidebarOpen && <span className="ml-3">{item.label}</span>}
-                            </div>
+                            <IconComponent className="w-6 h-6 flex-shrink-0 mx-auto" aria-hidden="true" />
+                            {sidebarOpen && <span className="ml-3">{item.label}</span>}
+                            {!sidebarOpen && (
+                              <span className="sr-only">{item.label}</span>
+                            )}
                           </NavLink>
                         </li>
                       );
@@ -160,7 +161,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   {sidebarOpen && <div className="border-b border-slate-100 my-2" />}
                 </li>
               ))}
-              {/* Management Section - Grouped Navigation */}
               <ManagementNav 
                 currentUser={currentUser} 
                 sidebarOpen={sidebarOpen} 
@@ -168,12 +168,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               />
             </ul>
           </nav>
-          {/* User info with avatar */}
-          <div className={
-            `p-4 border-t border-slate-200 bg-slate-50 ` +
-            `${sidebarOpen ? '' : 'text-center'} ` +
-            `${isMobile ? 'min-h-[80px]' : ''}`
-          }>
+          {/* User info */}
+          <div className={`
+            p-4 border-t border-slate-200 bg-slate-50 
+            ${sidebarOpen ? '' : 'text-center'}
+            ${isMobile ? 'min-h-[80px]' : ''}
+          `}>
             {sidebarOpen ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
@@ -189,10 +189,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 </div>
                 <button 
                   onClick={logout} 
-                  className={
-                    `text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
-                    `${isMobile ? 'min-h-[48px] w-full text-left flex items-center' : ''}`
-                  }
+                  className={`
+                    text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                    ${isMobile ? 'min-h-[48px] w-full text-left flex items-center' : ''}
+                  `}
                   aria-label="Logout"
                 >
                   Logout
@@ -201,10 +201,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
             ) : (
               <button 
                 onClick={logout} 
-                className={
-                  `text-lg hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
-                  `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`
-                }
+                className={`
+                  text-lg hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
+                  ${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}
+                `}
                 title="Logout"
                 aria-label="Logout"
               >
