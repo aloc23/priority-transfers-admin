@@ -1,6 +1,8 @@
 // Mobile-friendly booking list component for drill-down functionality
 import React from 'react';
-import { CustomerIcon, DriverIcon, BookingIcon } from './Icons';
+import { CustomerIcon, DriverIcon, BookingIcon, EditIcon, ViewIcon, CheckIcon } from './Icons';
+import ActionMenu from './ActionMenu';
+import { useResponsive } from '../hooks/useResponsive';
 
 const StatusBadge = ({ status }) => {
   const statusColors = {
@@ -23,6 +25,27 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function MobileBookingList({ bookings, onActionClick }) {
+  const { isMobile } = useResponsive();
+
+  const getBookingActions = (booking) => [
+    {
+      label: booking.status.toLowerCase() === 'pending' ? 'Confirm Booking' : 'View Details',
+      icon: booking.status.toLowerCase() === 'pending' ? CheckIcon : ViewIcon,
+      onClick: () => onActionClick(booking),
+    },
+    {
+      label: 'Edit Booking',
+      icon: EditIcon,
+      onClick: () => console.log('Edit booking:', booking.id),
+    },
+    {
+      label: 'Cancel Booking',
+      icon: BookingIcon,
+      onClick: () => console.log('Cancel booking:', booking.id),
+      destructive: true,
+      hidden: booking.status.toLowerCase() === 'completed' || booking.status.toLowerCase() === 'cancelled'
+    }
+  ];
   if (!bookings || bookings.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -39,15 +62,18 @@ export default function MobileBookingList({ bookings, onActionClick }) {
           key={booking.id || index} 
           className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
         >
-          {/* Header Row */}
+          {/* Header Row with Action Menu */}
           <div className="flex justify-between items-start mb-3">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-1 min-w-0">
               <CustomerIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              <span className="font-medium text-gray-900 text-sm">
+              <span className="font-medium text-gray-900 text-sm truncate">
                 {booking.customer || booking.customerName || 'Unknown Customer'}
               </span>
             </div>
-            <StatusBadge status={booking.status || 'pending'} />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge status={booking.status || 'pending'} />
+              <ActionMenu actions={getBookingActions(booking)} />
+            </div>
           </div>
 
           {/* Details Grid */}
@@ -81,21 +107,6 @@ export default function MobileBookingList({ bookings, onActionClick }) {
               </div>
             )}
           </div>
-
-          {/* Action Button */}
-          {onActionClick && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => onActionClick(booking)}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 min-h-[44px] flex items-center justify-center"
-              >
-                {booking.status.toLowerCase() === 'pending' ? 'Confirm' : 
-                 booking.status.toLowerCase() === 'confirmed' ? 'Mark Complete' :
-                 booking.status.toLowerCase() === 'completed' ? 'Generate Invoice' :
-                 'View Details'}
-              </button>
-            </div>
-          )}
         </div>
       ))}
     </div>

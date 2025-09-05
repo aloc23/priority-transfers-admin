@@ -4,7 +4,7 @@ import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
-import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon } from "../components/Icons";
+import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
 import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
@@ -22,7 +22,13 @@ export default function Dashboard() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
-  const [editingExpense, setEditingExpense] = useState(null);
+  const [showKPIModal, setShowKPIModal] = useState(false);
+  const [selectedKPI, setSelectedKPI] = useState(null);
+
+  const handleKPIClick = (kpi) => {
+    setSelectedKPI(kpi);
+    setShowKPIModal(true);
+  };
 
   const kpis = calculateKPIs({ income, invoices, expenses });
 
@@ -164,12 +170,26 @@ export default function Dashboard() {
         <section className="space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {enhancedStats.map((stat) => (
-              <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
+              <StatsCard 
+                key={stat.name} 
+                icon={stat.icon} 
+                label={stat.name} 
+                value={stat.value} 
+                className={stat.color} 
+                onClick={() => handleKPIClick(stat)}
+              />
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {operationalStats.map((stat) => (
-              <StatsCard key={stat.name} icon={stat.icon} label={stat.name} value={stat.value} className={stat.color} />
+              <StatsCard 
+                key={stat.name} 
+                icon={stat.icon} 
+                label={stat.name} 
+                value={stat.value} 
+                className={stat.color}
+                onClick={() => handleKPIClick(stat)}
+              />
             ))}
           </div>
           
@@ -493,6 +513,56 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+      )}
+
+      {/* KPI Detail Modal */}
+      {showKPIModal && selectedKPI && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">{selectedKPI.name} Details</h2>
+              <button 
+                onClick={() => setShowKPIModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-gradient-to-r from-purple-100 to-blue-100">
+                  <selectedKPI.icon className="w-8 h-8 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Current Value</p>
+                  <p className="text-2xl font-bold text-gray-900">{selectedKPI.value}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                This metric shows the {selectedKPI.name.toLowerCase()} for your business. 
+                {selectedKPI.name.includes('Income') && ' Track your revenue streams and growth.'}
+                {selectedKPI.name.includes('Expenses') && ' Monitor your operational costs.'}
+                {selectedKPI.name.includes('Customers') && ' See your active customer base.'}
+                {selectedKPI.name.includes('Drivers') && ' View available driver capacity.'}
+                {selectedKPI.name.includes('Vehicles') && ' Check your fleet status.'}
+              </p>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-gray-200">
+              <button 
+                onClick={() => setShowKPIModal(false)}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                {isMobile ? 'Confirm' : 'View Details'}
+              </button>
+              <button 
+                onClick={() => setShowKPIModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
