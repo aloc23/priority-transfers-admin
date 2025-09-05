@@ -344,45 +344,115 @@ export default function Billing() {
         </div>
       </div>
 
-      {/* Enhanced Filters */}
+      {/* Status Tabs */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-medium text-gray-900">Invoice Status</h3>
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            {Object.values({filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} other filters active
+          </span>
+        </div>
+        
+        {/* Status Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8" aria-label="Invoice Status Tabs">
+            <button 
+              onClick={() => setFilterStatus('all')} 
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                filterStatus === 'all' 
+                  ? 'border-purple-500 text-purple-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              aria-selected={filterStatus === 'all'}
+            >
+              All Statuses
+              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                {invoices.length}
+              </span>
+            </button>
+            <button 
+              onClick={() => setFilterStatus('pending')} 
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                filterStatus === 'pending' 
+                  ? 'border-amber-500 text-amber-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              aria-selected={filterStatus === 'pending'}
+            >
+              Pending
+              <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">
+                {invoices.filter(inv => inv.status === 'pending').length}
+              </span>
+            </button>
+            <button 
+              onClick={() => setFilterStatus('sent')} 
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                filterStatus === 'sent' 
+                  ? 'border-blue-500 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              aria-selected={filterStatus === 'sent'}
+            >
+              Sent
+              <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                {invoices.filter(inv => inv.status === 'sent').length}
+              </span>
+            </button>
+            <button 
+              onClick={() => setFilterStatus('paid')} 
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                filterStatus === 'paid' 
+                  ? 'border-green-500 text-green-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              aria-selected={filterStatus === 'paid'}
+            >
+              Paid
+              <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                {invoices.filter(inv => inv.status === 'paid').length}
+              </span>
+            </button>
+            <button 
+              onClick={() => setFilterStatus('cancelled')} 
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                filterStatus === 'cancelled' 
+                  ? 'border-red-500 text-red-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              aria-selected={filterStatus === 'cancelled'}
+            >
+              Cancelled
+              <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                {invoices.filter(inv => inv.status === 'cancelled').length}
+              </span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Other Filters */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FilterIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="font-medium text-gray-900">Advanced Filters</h3>
+            <h3 className="font-medium text-gray-900">Additional Filters</h3>
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              {Object.values({filterStatus, filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} active
+              {Object.values({filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} active
             </span>
           </div>
           <button
             onClick={() => {
-              setFilterStatus('all');
               setFilterType('all');
               setFilterSource('all');
               setFilterBookingAssociation('all');
             }}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
-            Clear All Filters
+            Clear Additional Filters
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Status:</label>
-            <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="sent">Sent</option>
-              <option value="paid">Paid</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">Type:</label>
             <select 
