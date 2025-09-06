@@ -121,7 +121,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
       {/* Mobile backdrop */}
       {sidebarOpen && isMobile && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close sidebar backdrop"
         />
@@ -130,10 +130,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
       {isMobile && !sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-50 p-3 bg-white rounded shadow"
+          className="fixed top-4 left-4 z-60 p-3 bg-white rounded shadow-lg"
           style={{ 
-            paddingTop: 'env(safe-area-inset-top)', 
-            paddingLeft: 'env(safe-area-inset-left)' 
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)', 
+            paddingLeft: 'max(env(safe-area-inset-left, 0px), 1rem)' 
           }}
           aria-label="Open sidebar"
         >
@@ -144,9 +144,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         className={
           `${sidebarOpen ? "w-64" : "w-16"} ` +
           `${isMobile && !sidebarOpen ? 'hidden' : ''} ` +
-          `${isMobile ? 'fixed inset-y-0 left-0 z-40' : 'relative'} ` +
+          `${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'} ` +
           `bg-white transition-all duration-300 ease-in-out ` +
-          `${isMobile ? '' : 'shadow-lg'} ` +
+          `${isMobile ? 'shadow-2xl' : 'shadow-lg'} ` +
           `border-r border-slate-200 ` +
           `${isSmallMobile && sidebarOpen ? 'w-full' : ''}`
         }

@@ -44,6 +44,9 @@
 html, body, #root { height: 100%; }
 body { @apply bg-slate-50 text-slate-900; }
 
+/* Custom z-index utilities for proper layering */
+.z-60 { z-index: 60; }
+
 .card { 
   @apply bg-white rounded-2xl p-6 transition-all duration-200 hover:-translate-y-0.5 border border-slate-200;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
