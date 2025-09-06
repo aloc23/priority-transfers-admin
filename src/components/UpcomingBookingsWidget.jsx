@@ -10,10 +10,10 @@ import { CalendarIcon, TableIcon, TodayIcon, BookingIcon, ChevronLeftIcon, Chevr
 
 const localizer = momentLocalizer(moment);
 
-export default function UpcomingBookingsWidget() {
+export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showViewModeSelector = true, calendarOnly = false }) {
   const { bookings, drivers } = useAppStore();
   const { isMobile } = useResponsive();
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'day', 'week', 'month'
+  const [viewMode, setViewMode] = useState(defaultViewMode); // 'list', 'day', 'week', 'month'
   const [selectedDate, setSelectedDate] = useState(new Date());
   
   // Get upcoming bookings (today and future)
@@ -171,7 +171,7 @@ export default function UpcomingBookingsWidget() {
   );
   
   const renderCalendarView = () => (
-    <div style={{ height: isMobile ? '300px' : '400px' }}>
+    <div style={{ height: isMobile ? '300px' : '400px' }} className="border-0">
       <Calendar
         localizer={localizer}
         events={calendarEvents}
@@ -199,76 +199,83 @@ export default function UpcomingBookingsWidget() {
           week: 'Week',
           day: 'Day'
         }}
+        style={{
+          border: 'none'
+        }}
       />
     </div>
   );
   
   return (
-    <div className="card">
+    <div className={calendarOnly ? "" : "card"}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900">
-          Upcoming Bookings
+          {calendarOnly ? "" : "Upcoming Bookings"}
         </h3>
         
         {/* View Mode Selector */}
-        <div className="flex items-center gap-2">
-          {viewMode !== 'list' && (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => navigateCalendar('prev')}
-                className="p-1 rounded hover:bg-slate-100"
-                aria-label="Previous"
-              >
-                <ChevronLeftIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={goToToday}
-                className="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 rounded"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => navigateCalendar('next')}
-                className="p-1 rounded hover:bg-slate-100"
-                aria-label="Next"
-              >
-                <ChevronRightIcon className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-          
-          <div className="flex bg-slate-100 rounded-lg p-1">
-            {viewModes.map(mode => {
-              const Icon = mode.icon;
-              return (
+        {showViewModeSelector && (
+          <div className="flex items-center gap-2">
+            {viewMode !== 'list' && (
+              <div className="flex items-center gap-1">
                 <button
-                  key={mode.id}
-                  onClick={() => setViewMode(mode.id)}
-                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                    viewMode === mode.id
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  onClick={() => navigateCalendar('prev')}
+                  className="p-1 rounded hover:bg-slate-100"
+                  aria-label="Previous"
                 >
-                  <Icon className="w-3 h-3 md:hidden" />
-                  <span className="hidden md:inline">{mode.label}</span>
+                  <ChevronLeftIcon className="w-4 h-4" />
                 </button>
-              );
-            })}
+                <button
+                  onClick={goToToday}
+                  className="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 rounded"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => navigateCalendar('next')}
+                  className="p-1 rounded hover:bg-slate-100"
+                  aria-label="Next"
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
+            <div className="flex bg-slate-100 rounded-lg p-1">
+              {viewModes.map(mode => {
+                const Icon = mode.icon;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => setViewMode(mode.id)}
+                    className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                      viewMode === mode.id
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3 md:hidden" />
+                    <span className="hidden md:inline">{mode.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       {/* Content */}
       {viewMode === 'list' ? renderListView() : renderCalendarView()}
       
-      {/* Summary */}
-      <div className="mt-4 pt-4 border-t border-slate-200">
-        <div className="flex items-center justify-between text-sm text-slate-600">
-          <span>Total upcoming: {upcomingBookings.length}</span>
-          <span>Today: {todaysBookings.length}</span>
+      {/* Summary - only show if not calendar only */}
+      {!calendarOnly && (
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="flex items-center justify-between text-sm text-slate-600">
+            <span>Total upcoming: {upcomingBookings.length}</span>
+            <span>Today: {todaysBookings.length}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
