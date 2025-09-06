@@ -13,6 +13,7 @@ import {
   PlusIcon,
   FilterIcon
 } from "../components/Icons";
+import PageHeader from "../components/PageHeader";
 
 export default function Billing() {
   const { 
@@ -247,6 +248,82 @@ export default function Billing() {
     }
   };
 
+  const handleViewInvoice = (invoice) => {
+    // Try to open invoice document if it exists
+    if (invoice.documentUrl) {
+      // Open in new tab
+      window.open(invoice.documentUrl, '_blank');
+    } else if (invoice.id) {
+      // Generate and view invoice document
+      generateInvoiceDocument(invoice);
+    } else {
+      // Fallback: show invoice details modal
+      alert(`Invoice Details:\n\nID: ${invoice.id}\nCustomer: ${invoice.customer}\nAmount: ${formatCurrency(invoice.amount)}\nStatus: ${invoice.status}\nDate: ${invoice.date}`);
+    }
+  };
+
+  const generateInvoiceDocument = (invoice) => {
+    // Create a simple HTML invoice document
+    const invoiceHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice ${invoice.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .invoice-details { margin: 20px 0; }
+          .invoice-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .invoice-table th, .invoice-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .invoice-table th { background-color: #f2f2f2; }
+          .total { font-weight: bold; font-size: 1.2em; text-align: right; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Priority Transfers</h1>
+          <h2>Invoice #${invoice.id}</h2>
+        </div>
+        <div class="invoice-details">
+          <p><strong>Bill To:</strong> ${invoice.customer || 'N/A'}</p>
+          <p><strong>Date:</strong> ${invoice.date || new Date().toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${invoice.status || 'Pending'}</p>
+          ${invoice.customerEmail ? `<p><strong>Email:</strong> ${invoice.customerEmail}</p>` : ''}
+        </div>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoice.items ? invoice.items.map(item => `
+              <tr>
+                <td>${item.description}</td>
+                <td>${formatCurrency(item.amount)}</td>
+              </tr>
+            `).join('') : `
+              <tr>
+                <td>Transport Service</td>
+                <td>${formatCurrency(invoice.amount)}</td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+        <div class="total">
+          Total: ${formatCurrency(invoice.amount)}
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open in new window
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(invoiceHtml);
+    newWindow.document.close();
+  };
+
   const handleGenerateInvoice = () => {
     const bookingWithoutInvoice = completedBookings.find(booking => 
       !invoices.some(inv => inv.bookingId === booking.id)
@@ -268,30 +345,35 @@ export default function Billing() {
     setFormData({ ...formData, items: newItems });
   };
 
+  const billingActions = (
+    <>
+      <button 
+        onClick={handleGenerateInvoice}
+        className="btn btn-outline"
+      >
+        <PlusIcon className="w-4 h-4 mr-2" />
+        Generate from Booking
+      </button>
+      <button 
+        onClick={() => {
+          setEditingInvoice(null);
+          setShowModal(true);
+        }}
+        className="btn btn-primary"
+      >
+        <PlusIcon className="w-4 h-4 mr-2" />
+        New Invoice
+      </button>
+    </>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Billing & Invoices</h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleGenerateInvoice}
-            className="btn btn-outline"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Generate from Booking
-          </button>
-          <button 
-            onClick={() => {
-              setEditingInvoice(null);
-              setShowModal(true);
-            }}
-            className="btn btn-primary"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            New Invoice
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Billing & Invoices"
+        actions={billingActions}
+        sticky={true}
+      />
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -607,6 +689,7 @@ export default function Billing() {
                     <td>
                       <div className="flex items-center gap-1">
                         <button 
+                          onClick={() => handleViewInvoice(invoice)}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
                           title="View Invoice"
                         >

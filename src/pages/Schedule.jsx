@@ -8,6 +8,7 @@ import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
+import PageHeader from "../components/PageHeader";
 
 const localizer = momentLocalizer(moment);
 
@@ -38,6 +39,7 @@ export default function Schedule() {
     time: "",
     driver: "",
     vehicle: "",
+    partner: "", // For outsourced bookings
     status: "pending",
     type: "priority", // New field for Priority vs Outsourced
     price: 45 // Default price field
@@ -60,6 +62,7 @@ export default function Schedule() {
       time: "",
       driver: "",
       vehicle: "",
+      partner: "",
       status: "pending",
       type: "priority",
       price: 45
@@ -226,84 +229,62 @@ export default function Schedule() {
     );
   };
 
+  const scheduleActions = (
+    <>
+      <button
+        onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
+        className="btn btn-outline flex items-center gap-2"
+      >
+        {viewMode === 'table' ? (
+          <>
+            <CalendarIcon className="w-4 h-4" />
+            Calendar View
+          </>
+        ) : (
+          <>
+            <TableIcon className="w-4 h-4" />
+            Table View
+          </>
+        )}
+      </button>
+      {/* Quick Invoice Creation - Only show for Admin */}
+      {currentUser?.role === 'Admin' && (
+        <Link
+          to="/finance"
+          className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+        >
+          <InvoiceIcon className="w-4 h-4" />
+          Create Estimate
+        </Link>
+      )}
+      <button
+        onClick={() => setShowModal(true)}
+        className="btn btn-primary btn-floating flex items-center gap-2"
+      >
+        <PlusIcon className="w-4 h-4" />
+        New Booking
+      </button>
+    </>
+  );
+
+  const statusTabs = [
+    { id: 'all', label: 'All', count: statusCounts.all },
+    { id: 'pending', label: 'Pending', count: statusCounts.pending },
+    { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
+    { id: 'completed', label: 'Completed', count: statusCounts.completed },
+    { id: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Schedule</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
-            className="btn btn-outline flex items-center gap-2"
-          >
-            {viewMode === 'table' ? (
-              <>
-                <CalendarIcon className="w-4 h-4" />
-                Calendar View
-              </>
-            ) : (
-              <>
-                <TableIcon className="w-4 h-4" />
-                Table View
-              </>
-            )}
-          </button>
-          {/* Quick Invoice Creation - Only show for Admin */}
-          {currentUser?.role === 'Admin' && (
-            <Link
-              to="/finance"
-              className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
-            >
-              <InvoiceIcon className="w-4 h-4" />
-              Create Estimate
-            </Link>
-          )}
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn btn-primary btn-floating flex items-center gap-2"
-          >
-            <PlusIcon className="w-4 h-4" />
-            New Booking
-          </button>
-        </div>
-      </div>
-
-      {/* Status Tabs */}
-      <div className="card mb-2">
-        <div className="flex gap-2 md:gap-4 items-center border-b border-slate-200 pb-2 mb-2 overflow-x-auto">
-          {[
-            { key: 'all', label: 'All', color: 'text-slate-700' },
-            { key: 'pending', label: 'Pending', color: 'text-yellow-600' },
-            { key: 'confirmed', label: 'Confirmed', color: 'text-green-600' },
-            { key: 'completed', label: 'Completed', color: 'text-blue-600' },
-            { key: 'cancelled', label: 'Cancelled', color: 'text-red-600' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setFilterStatus(tab.key);
-                if (viewMode !== 'table') setViewMode('table');
-                setTimeout(() => {
-                  if (tableRef.current) {
-                    tableRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }, 100);
-              }}
-              className={`px-3 py-1 rounded-t font-medium border-b-2 transition-all duration-150 flex items-center gap-1 ${
-                filterStatus === tab.key
-                  ? `${tab.color} border-b-2 border-current bg-slate-50 shadow-sm`
-                  : 'text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {tab.label}
-              <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${
-                filterStatus === tab.key ? 'bg-slate-200' : 'bg-slate-100'
-              }`}>
-                {statusCounts[tab.key]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Schedule"
+        actions={scheduleActions}
+        tabs={statusTabs}
+        activeTab={filterStatus}
+        onTabChange={setFilterStatus}
+        sticky={true}
+      />
 
       {/* Filters */}
       <div className="card mb-4">
@@ -508,19 +489,33 @@ export default function Schedule() {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block mb-1">Driver</label>
-                  <select
-                    value={formData.driver}
-                    onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                    required
-                  >
-                    <option value="">Select Driver</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.name}>{driver.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {formData.type === 'priority' && (
+                  <div>
+                    <label className="block mb-1">Driver</label>
+                    <select
+                      value={formData.driver}
+                      onChange={(e) => setFormData({...formData, driver: e.target.value})}
+                      required={formData.type === 'priority'}
+                    >
+                      <option value="">Select Driver</option>
+                      {drivers.map(driver => (
+                        <option key={driver.id} value={driver.name}>{driver.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {formData.type === 'outsourced' && (
+                  <div>
+                    <label className="block mb-1">Partner/External Provider</label>
+                    <input
+                      type="text"
+                      value={formData.partner || ''}
+                      onChange={(e) => setFormData({...formData, partner: e.target.value})}
+                      className="input-animated"
+                      placeholder="Enter partner company name"
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block mb-1">Pickup Location</label>
@@ -563,21 +558,23 @@ export default function Schedule() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Vehicle</label>
-                  <select
-                    value={formData.vehicle}
-                    onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                    required
-                  >
-                    <option value="">Select Vehicle</option>
-                    {fleet && fleet.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.name}>
-                        {vehicle.name} ({vehicle.type})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {formData.type === 'priority' && (
+                  <div>
+                    <label className="block mb-1">Vehicle</label>
+                    <select
+                      value={formData.vehicle}
+                      onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
+                      required={formData.type === 'priority'}
+                    >
+                      <option value="">Select Vehicle</option>
+                      {fleet && fleet.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.name}>
+                          {vehicle.name} ({vehicle.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block mb-1">Booking Type</label>
                   <select
@@ -585,7 +582,7 @@ export default function Schedule() {
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
                   >
                     <option value="priority">Priority Transfers</option>
-                    <option value="outsourced">Outsourced</option>
+                    <option value="outsourced">Outsourced/Partner</option>
                   </select>
                 </div>
                 <div>
@@ -630,6 +627,7 @@ export default function Schedule() {
                       time: "",
                       driver: "",
                       vehicle: "",
+                      partner: "",
                       status: "pending",
                       type: "priority",
                       price: 45

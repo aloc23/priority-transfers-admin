@@ -10,6 +10,8 @@ import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
 import ExpenseModal from "../components/ExpenseModal";
 import MobileBookingList from "../components/MobileBookingList";
+import PageHeader from "../components/PageHeader";
+import UpcomingBookingsWidget from "../components/UpcomingBookingsWidget";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -127,43 +129,21 @@ export default function Dashboard() {
     deleteExpense(item.id);
   }
 
+  const dashboardTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'accounting', label: 'Accounting' }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h1>
-        <div className="text-sm text-slate-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-2 md:space-x-8 px-2 md:px-0" aria-label="Tabs">
-          <button 
-            onClick={() => setActiveTab('overview')} 
-            className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto ${
-              activeTab === 'overview' 
-                ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
-            }`}
-            aria-selected={activeTab === 'overview'}
-            role="tab"
-          >
-            Overview
-          </button>
-          <button 
-            onClick={() => setActiveTab('accounting')} 
-            className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto ${
-              activeTab === 'accounting' 
-                ? 'border-purple-500 text-purple-600 bg-purple-50 md:bg-transparent shadow-sm md:shadow-none' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
-            }`}
-            aria-selected={activeTab === 'accounting'}
-            role="tab"
-          >
-            Accounting
-          </button>
-        </nav>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        tabs={dashboardTabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        sticky={true}
+      />
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
@@ -313,7 +293,11 @@ export default function Dashboard() {
             )}
           </div>
           
-          <ActivityList activities={recentActivity} />
+          {/* Upcoming Bookings Widget */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <UpcomingBookingsWidget />
+            <ActivityList activities={recentActivity} />
+          </div>
         </section>
       )}
       {activeTab === 'accounting' && (
