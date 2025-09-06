@@ -14,7 +14,8 @@ import {
   TrendUpIcon,
   EstimationIcon,
   InvoiceIcon,
-  HamburgerIcon, // Make sure this is exported from your Icons file
+  HamburgerIcon,
+  LogoutIcon,
 } from "./Icons";
 
 const navigationItems = [
@@ -244,13 +245,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               <button 
                 onClick={logout} 
                 className={
-                  `text-lg hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
+                  `hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
                   `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`
                 }
                 title="Logout"
                 aria-label="Logout"
               >
-                &#x1F6AA;&#xFE0F;
+                <LogoutIcon className="w-5 h-5" />
               </button>
             )}
           </div>
