@@ -18,6 +18,33 @@ export default function Schedule() {
   const { isMobile } = useResponsive();
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
+
+  // Function to scroll to a specific booking row after status change
+  // Mimics the invoice status feature for better user experience
+  const scrollToBooking = (bookingId) => {
+    // Wait for DOM update after status change
+    setTimeout(() => {
+      const bookingRow = document.querySelector(`tr[data-booking-id="${bookingId}"]`);
+      if (bookingRow && tableRef.current) {
+        // Calculate the offset to account for sticky header
+        const headerHeight = 120; // Approximate height of sticky header + padding
+        const elementTop = bookingRow.getBoundingClientRect().top + window.pageYOffset;
+        const offsetTop = elementTop - headerHeight;
+        
+        // Smooth scroll to the booking row
+        window.scrollTo({
+          top: offsetTop,
+          behavior: 'smooth'
+        });
+        
+        // Add a highlight effect to draw attention to the updated row
+        bookingRow.classList.add('highlight-booking-row');
+        setTimeout(() => {
+          bookingRow.classList.remove('highlight-booking-row');
+        }, 2000);
+      }
+    }, 100);
+  };
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
   const [filterDriver, setFilterDriver] = useState('');
@@ -134,32 +161,82 @@ export default function Schedule() {
     let actionColor = '';
     
     // Determine next action (best practice workflow)
+    // Enhanced with auto-scroll functionality for mobile cards
     if (booking.status === 'pending') {
       nextAction = 'confirm';
       actionLabel = 'Confirm';
       actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
-      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+      actionHandler = () => {
+        updateBooking(booking.id, { ...booking, status: 'confirmed' });
+        // For mobile cards, scroll to the updated card
+        setTimeout(() => {
+          const bookingCard = document.querySelector(`[data-booking-card-id="${booking.id}"]`);
+          if (bookingCard) {
+            bookingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            bookingCard.classList.add('highlight-booking-card');
+            setTimeout(() => {
+              bookingCard.classList.remove('highlight-booking-card');
+            }, 2000);
+          }
+        }, 100);
+      };
     } else if (booking.status === 'confirmed') {
       nextAction = 'complete';
       actionLabel = 'Mark as Complete';
       actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
-      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+      actionHandler = () => {
+        updateBooking(booking.id, { ...booking, status: 'completed' });
+        setTimeout(() => {
+          const bookingCard = document.querySelector(`[data-booking-card-id="${booking.id}"]`);
+          if (bookingCard) {
+            bookingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            bookingCard.classList.add('highlight-booking-card');
+            setTimeout(() => {
+              bookingCard.classList.remove('highlight-booking-card');
+            }, 2000);
+          }
+        }, 100);
+      };
     } else if (booking.status === 'completed' && !relatedInvoice) {
       nextAction = 'invoice';
       actionLabel = 'Generate Invoice';
       actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
-      actionHandler = () => generateInvoiceFromBooking(booking);
+      actionHandler = () => {
+        generateInvoiceFromBooking(booking);
+        setTimeout(() => {
+          const bookingCard = document.querySelector(`[data-booking-card-id="${booking.id}"]`);
+          if (bookingCard) {
+            bookingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            bookingCard.classList.add('highlight-booking-card');
+            setTimeout(() => {
+              bookingCard.classList.remove('highlight-booking-card');
+            }, 2000);
+          }
+        }, 100);
+      };
     } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
       nextAction = 'paid';
       actionLabel = 'Mark as Paid';
       actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
-      actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
+      actionHandler = () => {
+        markInvoiceAsPaid(relatedInvoice.id);
+        setTimeout(() => {
+          const bookingCard = document.querySelector(`[data-booking-card-id="${booking.id}"]`);
+          if (bookingCard) {
+            bookingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            bookingCard.classList.add('highlight-booking-card');
+            setTimeout(() => {
+              bookingCard.classList.remove('highlight-booking-card');
+            }, 2000);
+          }
+        }, 100);
+      };
     } else if (relatedInvoice && relatedInvoice.status === 'paid') {
       nextAction = 'none';
     }
 
     return (
-      <div key={booking.id} className="schedule-card">
+      <div key={booking.id} className="schedule-card" data-booking-card-id={booking.id}>
         <div className="schedule-card-header">
           <div>
             <h3 className="font-semibold text-lg text-slate-800 mb-1">{booking.customer}</h3>
@@ -362,31 +439,44 @@ export default function Schedule() {
                   let actionLabel = '';
                   let actionColor = '';
                   // Determine next action (best practice workflow)
+                  // Enhanced with auto-scroll functionality for better UX
                   if (booking.status === 'pending') {
                     nextAction = 'confirm';
                     actionLabel = 'Confirm';
                     actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
-                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                    actionHandler = () => {
+                      updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                      scrollToBooking(booking.id);
+                    };
                   } else if (booking.status === 'confirmed') {
                     nextAction = 'complete';
                     actionLabel = 'Mark as Complete';
                     actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
-                    actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+                    actionHandler = () => {
+                      updateBooking(booking.id, { ...booking, status: 'completed' });
+                      scrollToBooking(booking.id);
+                    };
                   } else if (booking.status === 'completed' && !relatedInvoice) {
                     nextAction = 'invoice';
                     actionLabel = 'Generate Invoice';
                     actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
-                    actionHandler = () => generateInvoiceFromBooking(booking);
+                    actionHandler = () => {
+                      generateInvoiceFromBooking(booking);
+                      scrollToBooking(booking.id);
+                    };
                   } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
                     nextAction = 'paid';
                     actionLabel = 'Mark as Paid';
                     actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
-                    actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
+                    actionHandler = () => {
+                      markInvoiceAsPaid(relatedInvoice.id);
+                      scrollToBooking(booking.id);
+                    };
                   } else if (relatedInvoice && relatedInvoice.status === 'paid') {
                     nextAction = 'none';
                   }
                   return (
-                    <tr key={booking.id} className="table-row-animated">
+                    <tr key={booking.id} className="table-row-animated" data-booking-id={booking.id}>
                       <td className="font-medium">{booking.customer}</td>
                       <td className="text-sm">{booking.pickup}</td>
                       <td className="text-sm">{booking.destination}</td>

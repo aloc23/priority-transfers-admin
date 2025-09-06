@@ -13,8 +13,9 @@ export default function PageHeader({
 }) {
   const { isMobile } = useResponsive();
   
+  // Use solid background for sticky headers to prevent content bleeding through
   const headerClasses = `
-    ${sticky ? 'sticky top-0 z-40 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/50' : ''}
+    ${sticky ? 'sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm' : ''}
     ${className}
     pb-6
   `;
