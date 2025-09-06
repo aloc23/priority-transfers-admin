@@ -14,7 +14,7 @@ export default function PageHeader({
   const { isMobile } = useResponsive();
   
   const headerClasses = `
-    ${sticky ? 'sticky top-0 z-40 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/50' : ''}
+    ${sticky ? 'sticky top-0 z-40 bg-slate-50 border-b border-slate-200' : ''}
     ${className}
     pb-6
   `;

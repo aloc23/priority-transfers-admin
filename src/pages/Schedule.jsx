@@ -22,6 +22,7 @@ export default function Schedule() {
   const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
   const [filterDriver, setFilterDriver] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [highlightedBooking, setHighlightedBooking] = useState(null);
 
   // Booking status counts for tabs
   const statusCounts = useMemo(() => {
@@ -79,6 +80,32 @@ export default function Schedule() {
     if (confirm("Are you sure you want to delete this booking?")) {
       deleteBooking(id);
     }
+  };
+
+  // Function to handle actions with auto-scroll and highlight
+  const handleActionWithScroll = (action, bookingId) => {
+    // Execute the action
+    action();
+    
+    // Highlight the booking
+    setHighlightedBooking(bookingId);
+    
+    // Scroll to the booking row after a small delay to allow for state updates
+    setTimeout(() => {
+      const bookingElement = document.getElementById(`booking-${bookingId}`);
+      if (bookingElement) {
+        bookingElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+      
+      // Remove highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedBooking(null);
+      }, 3000);
+    }, 100);
   };
 
   // Memoize filtered bookings for performance
@@ -159,7 +186,11 @@ export default function Schedule() {
     }
 
     return (
-      <div key={booking.id} className="schedule-card">
+      <div 
+        key={booking.id} 
+        id={`booking-${booking.id}`}
+        className={`schedule-card ${highlightedBooking === booking.id ? 'bg-yellow-50 border-yellow-300 shadow-lg' : ''} transition-all duration-500`}
+      >
         <div className="schedule-card-header">
           <div>
             <h3 className="font-semibold text-lg text-slate-800 mb-1">{booking.customer}</h3>
@@ -212,7 +243,7 @@ export default function Schedule() {
           </button>
           {nextAction !== 'none' && (
             <button
-              onClick={actionHandler}
+              onClick={() => handleActionWithScroll(actionHandler, booking.id)}
               className={`${actionColor} btn-action px-3 py-2 text-sm flex-1`}
             >
               {actionLabel}
@@ -386,7 +417,11 @@ export default function Schedule() {
                     nextAction = 'none';
                   }
                   return (
-                    <tr key={booking.id} className="table-row-animated">
+                    <tr 
+                      key={booking.id} 
+                      id={`booking-${booking.id}`}
+                      className={`table-row-animated ${highlightedBooking === booking.id ? 'bg-yellow-50 border-yellow-300' : ''} transition-all duration-500`}
+                    >
                       <td className="font-medium">{booking.customer}</td>
                       <td className="text-sm">{booking.pickup}</td>
                       <td className="text-sm">{booking.destination}</td>
@@ -424,7 +459,7 @@ export default function Schedule() {
                           </button>
                           {nextAction !== 'none' && (
                             <button
-                              onClick={actionHandler}
+                              onClick={() => handleActionWithScroll(actionHandler, booking.id)}
                               className={`${actionColor} btn-action px-2 py-1 text-xs`}
                               title={actionLabel}
                             >
