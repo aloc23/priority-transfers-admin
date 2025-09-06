@@ -306,21 +306,9 @@ export default function Dashboard() {
             )}
           </div>
           
-          {/* Two-Column Dashboard Layout: Upcoming Bookings + Calendar */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column: Upcoming Bookings (List View) - Desktop Order 1 */}
-            <div className="order-2 lg:order-1">
-              <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={false} />
-            </div>
-            {/* Right Column: Calendar Widget - Desktop Order 2, Mobile Order 1 (Top) */}
-            <div className="order-1 lg:order-2">
-              <div className="card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900">Calendar</h3>
-                </div>
-                <UpcomingBookingsWidget defaultViewMode="month" showViewModeSelector={true} calendarOnly={true} />
-              </div>
-            </div>
+          {/* Unified Calendar & Bookings Widget */}
+          <div>
+            <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={true} />
           </div>
           
           {/* Activity Section */}

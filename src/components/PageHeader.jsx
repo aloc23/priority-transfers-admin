@@ -14,15 +14,15 @@ export default function PageHeader({
   const { isMobile } = useResponsive();
   
   const headerClasses = `
-    ${sticky ? 'sticky top-0 z-50 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/50' : ''}
+    ${sticky ? 'sticky top-0 z-40 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/50' : ''}
     ${className}
     pb-6
   `;
   
   const headerStyle = sticky ? {
     paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)',
-    paddingLeft: 'env(safe-area-inset-left, 0px)',
-    paddingRight: 'env(safe-area-inset-right, 0px)',
+    paddingLeft: 'max(env(safe-area-inset-left, 0px), 1rem)',
+    paddingRight: 'max(env(safe-area-inset-right, 0px), 1rem)',
   } : {};
 
   return (

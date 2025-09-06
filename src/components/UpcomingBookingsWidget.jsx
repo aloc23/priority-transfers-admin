@@ -16,13 +16,13 @@ export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showV
   const [viewMode, setViewMode] = useState(defaultViewMode); // 'list', 'day', 'week', 'month'
   const [selectedDate, setSelectedDate] = useState(new Date());
   
-  // Get upcoming bookings (today and future)
+  // Get upcoming bookings (today and future, confirmed only)
   const upcomingBookings = useMemo(() => {
     const today = moment().startOf('day');
     return bookings
       .filter(booking => {
         const bookingDate = moment(booking.date);
-        return bookingDate.isSameOrAfter(today) && booking.status !== 'cancelled';
+        return bookingDate.isSameOrAfter(today) && booking.status === 'confirmed';
       })
       .sort((a, b) => moment(a.date).diff(moment(b.date)));
   }, [bookings]);
@@ -210,7 +210,7 @@ export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showV
     <div className={calendarOnly ? "" : "card"}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900">
-          {calendarOnly ? "" : "Upcoming Bookings"}
+          {showViewModeSelector ? "Upcoming Bookings & Calendar" : (calendarOnly ? "" : "Upcoming Bookings")}
         </h3>
         
         {/* View Mode Selector */}
