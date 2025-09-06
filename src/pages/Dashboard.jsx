@@ -40,6 +40,17 @@ export default function Dashboard() {
   const totalExpensesNum = typeof kpis.totalExpenses === 'number' ? kpis.totalExpenses : 0;
   const netProfitNum = typeof kpis.netProfit === 'number' ? kpis.netProfit : 0;
 
+  // Calculate Today's Bookings and Confirmed Bookings
+  const today = new Date().toISOString().split('T')[0];
+  const todaysBookings = bookings.filter(booking => booking.date === today);
+  const confirmedBookings = bookings.filter(booking => booking.status === 'confirmed');
+
+  const bookingStats = [
+    { name: "Today's Bookings", value: todaysBookings.length, icon: BookingIcon, color: "bg-gradient-to-r from-purple-600 to-purple-500" },
+    { name: "Confirmed Bookings", value: confirmedBookings.length, icon: BookingIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" }
+  ];
+
+  // Financial KPIs for Accounting tab only
   const enhancedStats = [
     { name: "Total Income", value: `€${totalIncomeNum.toFixed(2)}`, icon: RevenueIcon, color: "bg-gradient-to-r from-emerald-600 to-green-500" },
     { name: "Paid Invoices", value: `€${paidInvoicesNum.toFixed(2)}`, icon: RevenueIcon, color: "bg-gradient-to-r from-blue-600 to-blue-500" },
@@ -148,18 +159,20 @@ export default function Dashboard() {
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <section className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {enhancedStats.map((stat) => (
+          {/* Booking KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {bookingStats.map((stat) => (
               <StatsCard 
                 key={stat.name} 
                 icon={stat.icon} 
                 label={stat.name} 
                 value={stat.value} 
-                className={stat.color} 
+                className={stat.color}
                 onClick={() => handleKPIClick(stat)}
               />
             ))}
           </div>
+          {/* Operational Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {operationalStats.map((stat) => (
               <StatsCard 
@@ -293,9 +306,25 @@ export default function Dashboard() {
             )}
           </div>
           
-          {/* Upcoming Bookings Widget */}
+          {/* Two-Column Dashboard Layout: Upcoming Bookings + Calendar */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <UpcomingBookingsWidget />
+            {/* Left Column: Upcoming Bookings (List View) - Desktop Order 1 */}
+            <div className="order-2 lg:order-1">
+              <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={false} />
+            </div>
+            {/* Right Column: Calendar Widget - Desktop Order 2, Mobile Order 1 (Top) */}
+            <div className="order-1 lg:order-2">
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900">Calendar</h3>
+                </div>
+                <UpcomingBookingsWidget defaultViewMode="month" showViewModeSelector={true} calendarOnly={true} />
+              </div>
+            </div>
+          </div>
+          
+          {/* Activity Section */}
+          <div>
             <ActivityList activities={recentActivity} />
           </div>
         </section>
@@ -348,10 +377,18 @@ export default function Dashboard() {
           {/* Subtab Content */}
           {accountingSubTab === 'overview' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <StatsCard icon={RevenueIcon} label="Total Income" value={`€${totalIncomeNum.toFixed(2)}`} className="bg-green-100 text-green-700" />
-                <StatsCard icon={EstimationIcon} label="Total Expenses" value={`€${totalExpensesNum.toFixed(2)}`} className="bg-red-100 text-red-700" />
-                <StatsCard icon={BookingIcon} label="Net Profit" value={`€${netProfitNum.toFixed(2)}`} className="bg-blue-100 text-blue-700" />
+              {/* Financial KPIs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {enhancedStats.map((stat) => (
+                  <StatsCard 
+                    key={stat.name} 
+                    icon={stat.icon} 
+                    label={stat.name} 
+                    value={stat.value} 
+                    className={stat.color} 
+                    onClick={() => handleKPIClick(stat)}
+                  />
+                ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

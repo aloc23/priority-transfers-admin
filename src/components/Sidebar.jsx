@@ -250,7 +250,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 title="Logout"
                 aria-label="Logout"
               >
-                &#128274;
+                &#x1F6AA;&#xFE0F;
               </button>
             )}
           </div>
