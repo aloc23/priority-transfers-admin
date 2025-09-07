@@ -159,13 +159,31 @@ export default function Dashboard() {
       <PageHeader
         title="Dashboard"
         subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        tabs={dashboardTabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        sticky={true}
+        plain={true}
       />
 
-      {/* Status Blocks - moved below header */}
+      {/* Dashboard Tabs - moved below header */}
+      <div className="border-b border-slate-200">
+        <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Dashboard Tabs">
+          {dashboardTabs.map((tab) => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)} 
+              className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                activeTab === tab.id 
+                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+              }`}
+              aria-selected={activeTab === tab.id}
+              role="tab"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Status Blocks - moved below tabs */}
       {activeTab === 'overview' && (
         <StatusBlockGrid 
           title="Booking & Invoice Status"
