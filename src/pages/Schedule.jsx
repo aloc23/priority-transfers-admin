@@ -349,49 +349,26 @@ export default function Schedule() {
         className="mb-2"
       />
 
-      {/* Status Blocks - harmonized with booking/invoice status */}
+    {/* Status Blocks - Booking status only */}
       <div className="mb-2">
-        <StatusBlockGrid 
-          title="Booking & Invoice Status"
-          statusData={combinedStatusList.map(status => ({
-            id: status.toLowerCase(),
-            label: status,
-            count: bookingsByCombinedStatus[status]?.length || 0,
-            color: combinedStatusColors[status]
+        <StatusBlockGrid
+          title="Booking Status"
+          statusData={statusTabs.filter(tab => tab.id !== 'all').map(tab => ({
+            id: tab.id,
+            label: tab.label,
+            count: tab.count,
+            color:
+              tab.id === 'pending' ? 'bg-gradient-to-r from-amber-400 via-yellow-200 to-yellow-100'
+              : tab.id === 'confirmed' ? 'bg-gradient-to-r from-green-400 via-emerald-200 to-green-100'
+              : tab.id === 'completed' ? 'bg-gradient-to-r from-blue-400 via-indigo-200 to-blue-100'
+              : tab.id === 'cancelled' ? 'bg-gradient-to-r from-slate-400 via-slate-200 to-slate-100'
+              : 'bg-gradient-to-r from-slate-200 to-slate-100'
           }))}
-          selectedStatus={selectedCombinedStatus?.toLowerCase()}
-          onStatusClick={(statusId) => {
-            const status = statusId ? combinedStatusList.find(s => s.toLowerCase() === statusId) : null;
-            setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status);
-            if (status) {
-              setFilterStatus(status.toLowerCase());
-              if (viewMode === 'calendar') {
-                // Find the first booking with this status
-                const bookingsOfStatus = bookings.filter(b => getCombinedStatus(b).toLowerCase() === status.toLowerCase());
-                if (bookingsOfStatus.length > 0) {
-                  // Find the date of the first booking
-                  const firstBooking = bookingsOfStatus[0];
-                  // Try to scroll to the calendar cell for that date
-                  setTimeout(() => {
-                    const dateStr = firstBooking.date;
-                    // Try to find the calendar cell by aria-label or data-date
-                    const cell = document.querySelector(`[aria-label*='${dateStr}'], [data-date='${dateStr}']`);
-                    if (cell) {
-                      cell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-                      cell.classList.add('ring-2', 'ring-blue-400');
-                      setTimeout(() => cell.classList.remove('ring-2', 'ring-blue-400'), 2000);
-                    }
-                  }, 200);
-                }
-              } else {
-                setViewMode('table');
-                setTimeout(() => {
-                  const table = document.querySelector('.schedule-table-mobile, .schedule-table-desktop');
-                  if (table) table.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }
-            }
-          }}
+          selectedStatus={filterStatus}
+          onStatusClick={setFilterStatus}
+          cardClassName="backdrop-blur-md bg-white/80 border border-slate-200 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-200 group"
+          countClassName="text-2xl font-extrabold text-slate-900 drop-shadow-sm"
+          labelClassName="text-xs font-bold text-slate-700 uppercase tracking-wider"
         />
       </div>
 
