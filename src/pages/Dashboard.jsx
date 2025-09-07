@@ -199,31 +199,44 @@ export default function Dashboard() {
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <section className="space-y-6">
-          {/* Booking KPIs */}
+          {/* Booking KPIs - Modern Card UI with timeframe dropdown */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {bookingStats.map((stat) => (
-              <StatsCard 
-                key={stat.name} 
-                icon={stat.icon} 
-                label={stat.name} 
-                value={stat.value} 
-                className={stat.color}
-                onClick={() => handleKPIClick(stat)}
-              />
+              <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-purple-400 to-purple-600 shadow">
+                    <stat.icon className="w-7 h-7 text-white" />
+                  </span>
+                  <div>
+                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">{stat.label}</div>
+                    <div className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</div>
+                  </div>
+                </div>
+                {/* Timeframe dropdown (placeholder) */}
+                <div className="absolute top-4 right-4">
+                  <select className="bg-white/80 border border-slate-200 rounded px-2 py-1 text-xs font-medium text-slate-600 focus:outline-none">
+                    <option>Today</option>
+                    <option>This Week</option>
+                    <option>This Month</option>
+                  </select>
+                </div>
+              </div>
             ))}
           </div>
-          
-          {/* Operational Stats */}
+          {/* Operational Stats - Modern Card UI */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {operationalStats.map((stat) => (
-              <StatsCard 
-                key={stat.name} 
-                icon={stat.icon} 
-                label={stat.name} 
-                value={stat.value} 
-                className={stat.color}
-                onClick={() => handleKPIClick(stat)}
-              />
+              <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-600 shadow">
+                    <stat.icon className="w-7 h-7 text-white" />
+                  </span>
+                  <div>
+                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">{stat.label}</div>
+                    <div className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
           
@@ -394,14 +407,37 @@ export default function Dashboard() {
               {/* Financial KPIs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {enhancedStats.map((stat) => (
-                  <StatsCard 
-                    key={stat.name} 
-                    icon={stat.icon} 
-                    label={stat.name} 
-                    value={stat.value} 
-                    className={stat.color} 
-                    onClick={() => handleKPIClick(stat)}
-                  />
+                  <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
+                    {/* Header Section */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 shadow">
+                          <stat.icon className="w-6 h-6 text-white" />
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-slate-800">{stat.name}</span>
+                          <span className="text-xs text-slate-500">{`Sep 1 - Sep 7, 2025`}</span>
+                        </div>
+                      </div>
+                      <button className="text-slate-400 hover:text-slate-600 p-1 rounded-full transition-colors" title="More options">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+                      </button>
+                    </div>
+                    {/* Main Value */}
+                    <div className="flex items-end justify-between mt-2">
+                      <span className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</span>
+                      {/* Example: change vs previous period */}
+                      <span className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">+4.98% ↑</span>
+                    </div>
+                    {/* Dropdown for timeframe (below value) */}
+                    <div className="mt-3 flex justify-end">
+                      <select className="bg-white/80 border border-slate-200 rounded px-2 py-1 text-xs font-medium text-slate-600 focus:outline-none">
+                        <option>Month</option>
+                        <option>Quarter</option>
+                        <option>Year</option>
+                      </select>
+                    </div>
+                  </div>
                 ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
