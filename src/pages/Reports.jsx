@@ -412,70 +412,101 @@ export default function Reports() {
 
       {activeTab === "overview" && (
         <>
-          {/* Enhanced KPI Dashboard */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {/* KPI Card Helper */}
-            {[
-              {
-                value: typeof enhancedKPIs.customerRetention === 'number' ? removeTrailingZero(enhancedKPIs.customerRetention) + '%' : '—',
-                label: 'Customer Retention',
-                color: 'text-emerald-600',
-                trend: '+2.3%',
-                trendColor: 'text-emerald-500',
-                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-              },
-              {
-                value: typeof enhancedKPIs.averageBookingValue === 'number' ? formatCurrency(enhancedKPIs.averageBookingValue, 1) : '—',
-                label: 'Avg Booking Value',
-                color: 'text-purple-600',
-                trend: '+5.1%',
-                trendColor: 'text-emerald-500',
-                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-              },
-              {
-                value: typeof enhancedKPIs.growthRate === 'number' ? removeTrailingZero(enhancedKPIs.growthRate) + '%' : '—',
-                label: 'Growth Rate',
-                color: 'text-blue-600',
-                trend: 'MoM',
-                trendColor: 'text-emerald-500',
-                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-              },
-              {
-                value: typeof enhancedKPIs.customerSatisfaction === 'number' ? removeTrailingZero(enhancedKPIs.customerSatisfaction) : '—',
-                label: 'Satisfaction',
-                color: 'text-amber-600',
-                trend: 'Rating',
-                trendColor: 'text-slate-500',
-                icon: <StarIcon className="w-3 h-3 text-amber-500 mr-1" />
-              },
-              {
-                value: typeof enhancedKPIs.operationalEfficiency === 'number' ? removeTrailingZero(enhancedKPIs.operationalEfficiency) + '%' : '—',
-                label: 'Efficiency',
-                color: 'text-cyan-600',
-                trend: '+1.2%',
-                trendColor: 'text-emerald-500',
-                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-              },
-              {
-                value: typeof enhancedKPIs.profitMargin === 'number' ? removeTrailingZero(enhancedKPIs.profitMargin) + '%' : '—',
-                label: 'Profit Margin',
-                color: 'text-green-600',
-                trend: '+3.4%',
-                trendColor: 'text-emerald-500',
-                icon: <TrendUpIcon className="w-3 h-3 text-emerald-500 mr-1" />
-              }
-            ].map((kpi, idx) => (
-              <div key={kpi.label} className="card p-4 flex flex-col justify-between min-h-[110px]">
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</div>
-                  <div className="text-xs text-slate-600">{kpi.label}</div>
-                  <div className="flex items-center justify-center mt-1">
-                    {kpi.icon}
-                    <span className={`text-xs ${kpi.trendColor}`}>{kpi.trend}</span>
-                  </div>
-                </div>
+          {/* Enhanced KPI Dashboard - Reorganized for Better UX */}
+          <div className="space-y-6">
+            {/* Primary Performance KPIs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Performance Metrics</h2>
+                <span className="text-sm text-gray-500">Key performance indicators</span>
               </div>
-            ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  {
+                    value: typeof enhancedKPIs.customerRetention === 'number' ? removeTrailingZero(enhancedKPIs.customerRetention) + '%' : '—',
+                    label: 'Customer Retention',
+                    color: 'text-emerald-600',
+                    trend: '+2.3%',
+                    trendColor: 'text-emerald-500',
+                    icon: <TrendUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                  },
+                  {
+                    value: typeof enhancedKPIs.operationalEfficiency === 'number' ? removeTrailingZero(enhancedKPIs.operationalEfficiency) + '%' : '—',
+                    label: 'Operational Efficiency',
+                    color: 'text-cyan-600',
+                    trend: '+1.2%',
+                    trendColor: 'text-emerald-500',
+                    icon: <TrendUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                  },
+                  {
+                    value: typeof enhancedKPIs.customerSatisfaction === 'number' ? removeTrailingZero(enhancedKPIs.customerSatisfaction) : '—',
+                    label: 'Customer Satisfaction',
+                    color: 'text-amber-600',
+                    trend: 'Rating',
+                    trendColor: 'text-slate-500',
+                    icon: <StarIcon className="w-4 h-4 text-amber-500 mr-1" />
+                  }
+                ].map((kpi, idx) => (
+                  <div key={kpi.label} className="card p-6 flex flex-col justify-between min-h-[130px] hover:shadow-lg transition-shadow">
+                    <div className="text-center">
+                      <div className={`text-3xl font-bold ${kpi.color}`}>{kpi.value}</div>
+                      <div className="text-sm text-slate-600 mt-2">{kpi.label}</div>
+                      <div className="flex items-center justify-center mt-2">
+                        {kpi.icon}
+                        <span className={`text-sm font-medium ${kpi.trendColor}`}>{kpi.trend}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Financial KPIs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Financial Analytics</h2>
+                <span className="text-sm text-gray-500">Revenue and growth metrics</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  {
+                    value: typeof enhancedKPIs.averageBookingValue === 'number' ? formatCurrency(enhancedKPIs.averageBookingValue, 1) : '—',
+                    label: 'Average Booking Value',
+                    color: 'text-purple-600',
+                    trend: '+5.1%',
+                    trendColor: 'text-emerald-500',
+                    icon: <TrendUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                  },
+                  {
+                    value: typeof enhancedKPIs.growthRate === 'number' ? removeTrailingZero(enhancedKPIs.growthRate) + '%' : '—',
+                    label: 'Monthly Growth',
+                    color: 'text-blue-600',
+                    trend: 'MoM',
+                    trendColor: 'text-emerald-500',
+                    icon: <TrendUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                  },
+                  {
+                    value: typeof enhancedKPIs.profitMargin === 'number' ? removeTrailingZero(enhancedKPIs.profitMargin) + '%' : '—',
+                    label: 'Profit Margin',
+                    color: 'text-green-600',
+                    trend: '+3.4%',
+                    trendColor: 'text-emerald-500',
+                    icon: <TrendUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                  }
+                ].map((kpi, idx) => (
+                  <div key={kpi.label} className="card p-6 flex flex-col justify-between min-h-[130px] hover:shadow-lg transition-shadow">
+                    <div className="text-center">
+                      <div className={`text-3xl font-bold ${kpi.color}`}>{kpi.value}</div>
+                      <div className="text-sm text-slate-600 mt-2">{kpi.label}</div>
+                      <div className="flex items-center justify-center mt-2">
+                        {kpi.icon}
+                        <span className={`text-sm font-medium ${kpi.trendColor}`}>{kpi.trend}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Monthly Overview */}

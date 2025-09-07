@@ -301,20 +301,122 @@ body { @apply bg-slate-50 text-slate-900; }
 .badge-purple { @apply bg-purple-100 text-purple-800 border border-purple-200; }
 .badge-cyan { @apply bg-cyan-100 text-cyan-800 border border-cyan-200; }
 
-/* Tab Navigation Improvements */
+/* Enhanced Tab Navigation */
 .tab-nav {
   @apply border-b border-slate-200 bg-white sticky top-0 z-10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
 }
 
 .tab-button {
-  @apply py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center;
+  @apply py-3 px-4 md:py-2 md:px-6 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center;
+  position: relative;
 }
 
 .tab-button.active {
-  @apply border-purple-500 text-purple-600 bg-purple-50;
+  @apply border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
 }
 
+.tab-button.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 2px 2px 0 0;
+}
+
+.tab-button:not(.active) {
+  @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent;
+}
+
+/* Enhanced KPI Section Styling */
+.kpi-section-header {
+  @apply flex items-center justify-between mb-4 pb-2 border-b border-slate-100;
+}
+
+.kpi-section-title {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+.kpi-section-subtitle {
+  @apply text-sm text-gray-500;
+}
+
+/* Improved Card Hover Effects */
+.stats-card {
+  @apply transition-all duration-300 hover:shadow-lg hover:scale-105;
+  transform-origin: center;
+}
+
+.stats-card:active {
+  @apply scale-95;
+}
+
+/* Enhanced Table Styling */
+.table th.sortable {
+  @apply cursor-pointer hover:bg-slate-100 transition-colors select-none;
+}
+
+.table th.sortable:hover {
+  background: linear-gradient(135deg, var(--slate-100) 0%, var(--granite-100) 100%);
+}
+
+/* Calendar Enhancements */
+.rbc-calendar {
+  @apply bg-white rounded-xl border border-slate-200 shadow-lg;
+  font-family: inherit;
+}
+
+.rbc-header {
+  background: linear-gradient(135deg, var(--slate-50) 0%, var(--granite-50) 100%);
+  @apply font-semibold text-slate-800 border-b border-slate-200 py-4;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.rbc-event {
+  @apply rounded-md text-white font-medium shadow-sm;
+  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
+  border: none;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.rbc-event:hover {
+  @apply shadow-md scale-105;
+}
+
+/* Status Block Improvements */
+.status-block {
+  @apply transition-all duration-200 hover:scale-105 hover:shadow-md;
+}
+
+.status-block.selected {
+  @apply ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Mobile Responsive Improvements */
+@media (max-width: 768px) {
+  .tab-button {
+    @apply flex-1 text-center min-w-0 px-2;
+  }
+  
+  .kpi-section-header {
+    @apply flex-col items-start gap-2;
+  }
+  
+  .stats-card {
+    @apply hover:scale-100; /* Disable scale on mobile */
+  }
+}
+
+/* Additional tab styles for future use */
 .tab-button.inactive {
   @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50;
 }

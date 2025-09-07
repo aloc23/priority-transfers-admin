@@ -7,7 +7,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
-import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
+import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, ChevronUpIcon, ChevronDownIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import ToggleSwitch from "../components/ToggleSwitch";
@@ -25,6 +25,8 @@ export default function Schedule() {
   const [filterDriver, setFilterDriver] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [highlightedBooking, setHighlightedBooking] = useState(null);
+  const [sortField, setSortField] = useState('date');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // Booking status counts for tabs
   const statusCounts = useMemo(() => {
@@ -148,8 +150,18 @@ export default function Schedule() {
     }, 100);
   };
 
-  // Memoize filtered bookings for performance
-  const filteredBookings = useMemo(() => {
+  // Sorting function
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Memoize filtered and sorted bookings for performance
+  const filteredAndSortedBookings = useMemo(() => {
     let result = bookings;
     if (filterDriver) {
       result = result.filter(booking => booking.driver === filterDriver);
@@ -157,8 +169,36 @@ export default function Schedule() {
     if (filterStatus !== 'all') {
       result = result.filter(booking => booking.status === filterStatus);
     }
+    
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Handle different field types
+      if (sortField === 'date') {
+        aValue = new Date(a.date + ' ' + a.time);
+        bValue = new Date(b.date + ' ' + b.time);
+      } else if (sortField === 'price') {
+        aValue = parseFloat(a.price) || 0;
+        bValue = parseFloat(b.price) || 0;
+      } else {
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+      }
+      
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+    
     return result;
-  }, [bookings, filterDriver, filterStatus]);
+  }, [bookings, filterDriver, filterStatus, sortField, sortDirection]);
+
+  // Use filtered and sorted bookings for backward compatibility
+  const filteredBookings = filteredAndSortedBookings;
 
   // Memoize calendar events for performance
   const calendarEvents = useMemo(() => {
@@ -191,7 +231,22 @@ export default function Schedule() {
     setShowModal(true);
   };
 
-  // Render mobile card for schedule items
+  // Sortable Header Component
+  const SortableHeader = ({ field, label, className = "" }) => (
+    <th 
+      className={`cursor-pointer hover:bg-slate-50 transition-colors select-none ${className}`}
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center justify-between">
+        <span>{label}</span>
+        {sortField === field && (
+          sortDirection === 'asc' 
+            ? <ChevronUpIcon className="w-4 h-4 text-blue-500" />
+            : <ChevronDownIcon className="w-4 h-4 text-blue-500" />
+        )}
+      </div>
+    </th>
+  );
   const renderMobileCard = (booking) => {
     // Find related invoice if exists
     const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
@@ -395,17 +450,15 @@ export default function Schedule() {
         }}
       />
 
-      {/* Status Filters - moved below status blocks */}
-      <div className="border-b border-slate-200">
+      {/* Status Filters - Enhanced styling */}
+      <div className="tab-nav">
         <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Status Filter Tabs">
           {statusTabs.map((tab) => (
             <button 
               key={tab.id}
               onClick={() => setFilterStatus(tab.id)} 
-              className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
-                filterStatus === tab.id 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+              className={`tab-button flex-1 md:flex-none ${
+                filterStatus === tab.id ? 'active' : ''
               }`}
               aria-selected={filterStatus === tab.id}
               role="tab"
@@ -471,15 +524,15 @@ export default function Schedule() {
               <table className="table schedule-table-mobile">
               <thead>
                 <tr>
-                  <th>Customer</th>
-                  <th>Pickup</th>
-                  <th>Destination</th>
-                  <th>Date & Time</th>
-                  <th>Driver</th>
-                  <th>Vehicle</th>
-                  <th>Price</th>
-                  <th>Type</th>
-                  <th>Status</th>
+                  <SortableHeader field="customer" label="Customer" />
+                  <SortableHeader field="pickup" label="Pickup" />
+                  <SortableHeader field="destination" label="Destination" />
+                  <SortableHeader field="date" label="Date & Time" />
+                  <SortableHeader field="driver" label="Driver" />
+                  <SortableHeader field="vehicle" label="Vehicle" />
+                  <SortableHeader field="price" label="Price" />
+                  <SortableHeader field="type" label="Type" />
+                  <SortableHeader field="status" label="Status" />
                   <th>Actions</th>
                 </tr>
               </thead>

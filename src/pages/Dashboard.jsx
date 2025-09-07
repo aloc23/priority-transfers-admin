@@ -162,17 +162,15 @@ export default function Dashboard() {
         plain={true}
       />
 
-      {/* Dashboard Tabs - moved below header */}
-      <div className="border-b border-slate-200">
+      {/* Dashboard Tabs - Enhanced styling */}
+      <div className="tab-nav">
         <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Dashboard Tabs">
           {dashboardTabs.map((tab) => (
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id)} 
-              className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
-                activeTab === tab.id 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+              className={`tab-button flex-1 md:flex-none ${
+                activeTab === tab.id ? 'active' : ''
               }`}
               aria-selected={activeTab === tab.id}
               role="tab"
@@ -198,33 +196,68 @@ export default function Dashboard() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <section className="space-y-6">
-          {/* Booking KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {bookingStats.map((stat) => (
-              <StatsCard 
-                key={stat.name} 
-                icon={stat.icon} 
-                label={stat.name} 
-                value={stat.value} 
-                className={stat.color}
-                onClick={() => handleKPIClick(stat)}
-              />
-            ))}
+        <section className="space-y-8">
+          {/* Primary KPI Section - Financial Overview */}
+          <div className="space-y-4">
+            <div className="kpi-section-header">
+              <h2 className="kpi-section-title">Financial Overview</h2>
+              <span className="kpi-section-subtitle">Quick financial snapshot</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {enhancedStats.map((stat) => (
+                <div key={stat.name} className="stats-card">
+                  <StatsCard 
+                    icon={stat.icon} 
+                    label={stat.name} 
+                    value={stat.value} 
+                    className={stat.color}
+                    onClick={() => handleKPIClick(stat)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
           
-          {/* Operational Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {operationalStats.map((stat) => (
-              <StatsCard 
-                key={stat.name} 
-                icon={stat.icon} 
-                label={stat.name} 
-                value={stat.value} 
-                className={stat.color}
-                onClick={() => handleKPIClick(stat)}
-              />
-            ))}
+          {/* Secondary KPI Section - Daily Operations */}
+          <div className="space-y-4">
+            <div className="kpi-section-header">
+              <h2 className="kpi-section-title">Today's Operations</h2>
+              <span className="kpi-section-subtitle">Current day activity</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {bookingStats.map((stat) => (
+                <div key={stat.name} className="stats-card">
+                  <StatsCard 
+                    icon={stat.icon} 
+                    label={stat.name} 
+                    value={stat.value} 
+                    className={stat.color}
+                    onClick={() => handleKPIClick(stat)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Tertiary KPI Section - Resources */}
+          <div className="space-y-4">
+            <div className="kpi-section-header">
+              <h2 className="kpi-section-title">Resource Status</h2>
+              <span className="kpi-section-subtitle">Available capacity</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {operationalStats.map((stat) => (
+                <div key={stat.name} className="stats-card">
+                  <StatsCard 
+                    icon={stat.icon} 
+                    label={stat.name} 
+                    value={stat.value} 
+                    className={stat.color}
+                    onClick={() => handleKPIClick(stat)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
           
           {/* Selected Status Bookings Details */}
