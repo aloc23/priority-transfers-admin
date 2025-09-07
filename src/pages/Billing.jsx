@@ -14,6 +14,7 @@ import {
   FilterIcon
 } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
+import StatusBlockGrid from "../components/StatusBlockGrid";
 
 export default function Billing() {
   const { 
@@ -367,12 +368,54 @@ export default function Billing() {
     </>
   );
 
+  // Prepare invoice status data for StatusBlockGrid
+  const invoiceStatusData = [
+    {
+      id: 'all',
+      label: 'All Statuses',
+      count: invoices.length,
+      color: 'bg-gradient-to-r from-slate-600 to-slate-500'
+    },
+    {
+      id: 'pending',
+      label: 'Pending',
+      count: invoices.filter(inv => inv.status === 'pending').length,
+      color: 'bg-gradient-to-r from-amber-600 to-yellow-500'
+    },
+    {
+      id: 'sent',
+      label: 'Sent',
+      count: invoices.filter(inv => inv.status === 'sent').length,
+      color: 'bg-gradient-to-r from-blue-600 to-blue-500'
+    },
+    {
+      id: 'paid',
+      label: 'Paid',
+      count: invoices.filter(inv => inv.status === 'paid').length,
+      color: 'bg-gradient-to-r from-green-600 to-emerald-500'
+    },
+    {
+      id: 'cancelled',
+      label: 'Cancelled',
+      count: invoices.filter(inv => inv.status === 'cancelled').length,
+      color: 'bg-gradient-to-r from-red-600 to-pink-500'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Billing & Invoices"
         actions={billingActions}
-        sticky={true}
+        plain={true}
+      />
+
+      {/* Invoice Status Blocks - moved below header */}
+      <StatusBlockGrid 
+        title="Invoice Status"
+        statusData={invoiceStatusData}
+        selectedStatus={filterStatus}
+        onStatusClick={(statusId) => setFilterStatus(statusId || 'all')}
       />
 
       {/* Revenue Stats */}
@@ -426,98 +469,12 @@ export default function Billing() {
         </div>
       </div>
 
-      {/* Status Tabs */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-gray-900">Invoice Status</h3>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-            {Object.values({filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} other filters active
-          </span>
-        </div>
-        
-        {/* Status Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8" aria-label="Invoice Status Tabs">
-            <button 
-              onClick={() => setFilterStatus('all')} 
-              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                filterStatus === 'all' 
-                  ? 'border-purple-500 text-purple-600 active' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              aria-selected={filterStatus === 'all'}
-            >
-              All Statuses
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                {invoices.length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setFilterStatus('pending')} 
-              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                filterStatus === 'pending' 
-                  ? 'border-amber-500 text-amber-600 active' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              aria-selected={filterStatus === 'pending'}
-            >
-              Pending
-              <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">
-                {invoices.filter(inv => inv.status === 'pending').length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setFilterStatus('sent')} 
-              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                filterStatus === 'sent' 
-                  ? 'border-blue-500 text-blue-600 active' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              aria-selected={filterStatus === 'sent'}
-            >
-              Sent
-              <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                {invoices.filter(inv => inv.status === 'sent').length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setFilterStatus('paid')} 
-              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                filterStatus === 'paid' 
-                  ? 'border-green-500 text-green-600 active' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              aria-selected={filterStatus === 'paid'}
-            >
-              Paid
-              <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-                {invoices.filter(inv => inv.status === 'paid').length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setFilterStatus('cancelled')} 
-              className={`tab-button-animated py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                filterStatus === 'cancelled' 
-                  ? 'border-red-500 text-red-600 active' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              aria-selected={filterStatus === 'cancelled'}
-            >
-              Cancelled
-              <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
-                {invoices.filter(inv => inv.status === 'cancelled').length}
-              </span>
-            </button>
-          </nav>
-        </div>
-      </div>
-
       {/* Other Filters */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FilterIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="font-medium text-gray-900">Additional Filters</h3>
+            <h3 className="text-lg font-medium text-gray-900">Additional Filters</h3>
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
               {Object.values({filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} active
             </span>
