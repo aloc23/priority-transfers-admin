@@ -9,6 +9,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
+import ToggleSwitch from "../components/ToggleSwitch";
 
 const localizer = momentLocalizer(moment);
 
@@ -262,22 +263,14 @@ export default function Schedule() {
 
   const scheduleActions = (
     <>
-      <button
-        onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
-        className="btn btn-outline flex items-center gap-2"
-      >
-        {viewMode === 'table' ? (
-          <>
-            <CalendarIcon className="w-4 h-4" />
-            Calendar View
-          </>
-        ) : (
-          <>
-            <TableIcon className="w-4 h-4" />
-            Table View
-          </>
-        )}
-      </button>
+      <ToggleSwitch 
+        leftLabel="Table"
+        rightLabel="Calendar"
+        leftIcon={TableIcon}
+        rightIcon={CalendarIcon}
+        isRight={viewMode === 'calendar'}
+        onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+      />
       {/* Quick Invoice Creation - Only show for Admin */}
       {currentUser?.role === 'Admin' && (
         <Link

@@ -913,4 +913,37 @@ label {
   .sticky-header {
     @apply sticky top-0 bg-white z-10 py-2 border-b border-slate-200;
   }
+
+  /* Status Block Grid mobile improvements */
+  .status-block-mobile {
+    @apply grid-cols-2 gap-2;
+  }
+  
+  .status-block-mobile button {
+    @apply min-h-[60px] p-2 text-xs;
+  }
+
+  /* Toggle switch improvements for mobile */
+  .toggle-switch-mobile {
+    @apply scale-90;
+  }
+
+  /* Improved touch targets for mobile */
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Better spacing for mobile cards */
+  .mobile-card-spacing {
+    @apply p-3 mb-3;
+  }
+
+  /* Responsive tab navigation */
+  .mobile-tab-nav {
+    @apply flex-nowrap overflow-x-auto space-x-1;
+  }
+  
+  .mobile-tab-nav button {
+    @apply flex-shrink-0 px-3 py-2 text-xs;
+  }
 }
