@@ -423,6 +423,12 @@ export default function Billing() {
     }
   ];
 
+  // Optionally, you can add more filters (e.g., filterCustomer, filterDate) if needed
+  // For simplicity, we'll keep their variables but not implement their logic in this snippet
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+
   return (
     <div className="space-y-4">
       <PageHeader title="Invoices" />
@@ -653,158 +659,6 @@ export default function Billing() {
                         </td>
                       </tr>
                     )}
-                  </>
-                );
-              })}
-            </tbody>
-          </table>
-          {filteredInvoices.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No invoices found matching the current filters.
-            </div>
-          )}
-        </div>
-      </div>
-      {/* Modal ... */}
-    </div>
-  );
-                const isSelected = selectedInvoices.has(invoice.id);
-                const booking = getBookingForInvoice(invoice);
-                const [expanded, setExpanded] = useState(false);
-                return (
-                  <>
-                  <tr key={invoice.id} className={isSelected ? 'bg-green-50' : ''}>
-                    {payableInvoices.length > 0 && (
-                      <td>
-                        {isPayable && (
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                            checked={isSelected}
-                            onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                            title="Select for bulk payment"
-                          />
-                        )}
-                      </td>
-                    )}
-                    <td className="font-mono text-sm font-medium">{invoice.id}</td>
-                    <td className="font-medium">{invoice.customer}</td>
-                    <td>
-                      {booking ? (
-                        <NavLink 
-                          to="/schedule" 
-                          className="text-blue-600 hover:text-blue-800 font-medium underline decoration-dotted hover:decoration-solid transition-all"
-                          title={`View booking: ${booking.pickup} → ${booking.destination}`}
-                        >
-                          Booking #{booking.id}
-                        </NavLink>
-                      ) : (
-                        <span className="text-gray-400 italic text-sm">Ad hoc invoice</span>
-                      )}
-                    </td>
-                    <td className="text-sm">{invoice.date}</td>
-                    <td className="font-bold">{formatCurrency(invoice.amount)}</td>
-                    <td>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        invoice.bookingId === null ? 'bg-gray-100 text-gray-800' :
-                        invoice.type === 'priority' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {invoice.bookingId === null ? 'Ad Hoc' :
-                         invoice.type === 'priority' ? 'Internal' : 'Outsourced'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                        invoice.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => handleViewInvoice(invoice)}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                          title="View Invoice"
-                        >
-                          <ViewIcon className="w-3 h-3" />
-                        </button>
-                        {invoice.editable && (
-                          <button 
-                            onClick={() => handleEdit(invoice)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                            title="Edit Invoice"
-                          >
-                            <EditIcon className="w-3 h-3" />
-                          </button>
-                        )}
-                        {(invoice.status === 'pending' || invoice.status === 'sent') && (
-                          <button 
-                            onClick={() => handleSendInvoice(invoice)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                            title="Send Invoice"
-                          >
-                            <SendIcon className="w-3 h-3" />
-                          </button>
-                        )}
-                        {(invoice.status === 'sent' || invoice.status === 'pending') && (
-                          <button 
-                            onClick={() => handleSinglePayment(invoice.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
-                            title="Mark as Paid"
-                          >
-                            <span className="font-bold">€</span>
-                          </button>
-                        )}
-                        <button 
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                          title="Download Invoice"
-                        >
-                          <DownloadIcon className="w-3 h-3" />
-                        </button>
-                        {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                          <button 
-                            onClick={() => cancelInvoice(invoice.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all"
-                            title="Cancel Invoice"
-                          >
-                            <XIcon className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        className="text-xs text-blue-600 hover:underline"
-                        onClick={() => setExpanded((prev) => !prev)}
-                        title={expanded ? 'Hide details' : 'Show details'}
-                      >
-                        {expanded ? '▲' : '▼'}
-                      </button>
-                    </td>
-                  </tr>
-                  {expanded && (
-                    <tr className="bg-blue-50">
-                      <td colSpan={10} className="p-4">
-                        {/* Expanded invoice details: items, audit, etc. */}
-                        <div>
-                          <div className="font-semibold mb-2">Invoice Items</div>
-                          <ul className="list-disc ml-6">
-                            {invoice.items && invoice.items.length > 0 ? invoice.items.map((item, idx) => (
-                              <li key={idx}>
-                                {item.description} — Qty: {item.quantity}, Rate: {formatCurrency(item.rate)}, Amount: {formatCurrency(item.amount)}
-                              </li>
-                            )) : <li>No items</li>}
-                          </ul>
-                          {/* Add more details as needed, e.g. audit log */}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                   </>
                 );
               })}
