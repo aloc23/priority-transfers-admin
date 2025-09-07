@@ -9,6 +9,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
+import StatusBlockGrid from "../components/StatusBlockGrid";
 import ToggleSwitch from "../components/ToggleSwitch";
 
 const localizer = momentLocalizer(moment);
@@ -33,6 +34,44 @@ export default function Schedule() {
     });
     return counts;
   }, [bookings]);
+
+  // Combined booking/invoice status logic (same as Dashboard)
+  const getCombinedStatus = (booking) => {
+    const inv = invoices.find(inv => inv.bookingId === booking.id);
+    if (booking.status === 'pending') return 'Pending';
+    if (booking.status === 'confirmed') return 'Confirmed';
+    if (booking.status === 'completed' && !inv) return 'Completed';
+    if (inv && (inv.status === 'pending' || inv.status === 'sent')) return 'Invoiced';
+    if (inv && inv.status === 'paid') return 'Paid';
+    if (inv && inv.status === 'overdue') return 'Overdue';
+    if (booking.status === 'cancelled') return 'Cancelled';
+    return 'Other';
+  };
+
+  const combinedStatusList = ['Pending', 'Confirmed', 'Completed', 'Invoiced', 'Paid', 'Overdue', 'Cancelled'];
+  const combinedStatusColors = {
+    Pending: 'bg-gradient-to-r from-amber-600 to-yellow-500',
+    Confirmed: 'bg-gradient-to-r from-green-600 to-emerald-500',
+    Completed: 'bg-gradient-to-r from-blue-600 to-indigo-500',
+    Invoiced: 'bg-gradient-to-r from-orange-500 to-yellow-400',
+    Paid: 'bg-gradient-to-r from-blue-700 to-green-500',
+    Overdue: 'bg-gradient-to-r from-red-600 to-pink-500',
+    Cancelled: 'bg-gradient-to-r from-slate-400 to-slate-600',
+    Other: 'bg-gradient-to-r from-slate-300 to-slate-400'
+  };
+
+  const bookingsByCombinedStatus = useMemo(() => {
+    const map = {};
+    combinedStatusList.forEach(status => { map[status] = []; });
+    bookings.forEach(b => {
+      const status = getCombinedStatus(b);
+      if (!map[status]) map[status] = [];
+      map[status].push(b);
+    });
+    return map;
+  }, [bookings, invoices]);
+
+  const [selectedCombinedStatus, setSelectedCombinedStatus] = useState(null);
   const [formData, setFormData] = useState({
     customer: "",
     pickup: "",
@@ -303,12 +342,79 @@ export default function Schedule() {
     <div className="space-y-6">
       <PageHeader
         title="Schedule"
-        actions={scheduleActions}
-        tabs={statusTabs}
-        activeTab={filterStatus}
-        onTabChange={setFilterStatus}
-        sticky={true}
+        plain={true}
       />
+
+      {/* Actions - moved below header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 card">
+        <div className="flex items-center gap-3">
+          <ToggleSwitch 
+            leftLabel="Table"
+            rightLabel="Calendar"
+            leftIcon={TableIcon}
+            rightIcon={CalendarIcon}
+            isRight={viewMode === 'calendar'}
+            onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Quick Invoice Creation - Only show for Admin */}
+          {currentUser?.role === 'admin' && (
+            <Link
+              to="/billing"
+              className="btn btn-accent btn-sm gap-2 font-medium hover:scale-105 transition-transform duration-200"
+            >
+              <InvoiceIcon className="w-4 h-4" />
+              Quick Invoice
+            </Link>
+          )}
+          <button 
+            className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
+            onClick={() => setShowModal(true)}
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">Add Booking</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Status Blocks - harmonized with booking/invoice status */}
+      <StatusBlockGrid 
+        title="Booking & Invoice Status"
+        statusData={combinedStatusList.map(status => ({
+          id: status.toLowerCase(),
+          label: status,
+          count: bookingsByCombinedStatus[status]?.length || 0,
+          color: combinedStatusColors[status]
+        }))}
+        selectedStatus={selectedCombinedStatus?.toLowerCase()}
+        onStatusClick={(statusId) => {
+          const status = statusId ? combinedStatusList.find(s => s.toLowerCase() === statusId) : null;
+          setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status);
+        }}
+      />
+
+      {/* Status Filters - moved below status blocks */}
+      <div className="border-b border-slate-200">
+        <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Status Filter Tabs">
+          {statusTabs.map((tab) => (
+            <button 
+              key={tab.id}
+              onClick={() => setFilterStatus(tab.id)} 
+              className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                filterStatus === tab.id 
+                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+              }`}
+              aria-selected={filterStatus === tab.id}
+              role="tab"
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {/* Filters */}
       <div className="card mb-4">
