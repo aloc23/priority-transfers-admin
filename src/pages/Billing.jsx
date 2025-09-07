@@ -15,6 +15,7 @@ import {
 } from "../components/Icons";
 import ToggleSwitch from "../components/ToggleSwitch";
 import PageHeader from "../components/PageHeader";
+import StatsCard from "../components/StatsCard";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 
 export default function Billing() {
@@ -432,14 +433,43 @@ export default function Billing() {
   return (
     <div className="space-y-4">
       <PageHeader title="Invoices" />
-      {/* KPIs block */}
-      <div>{/* ...existing KPIs code... */}</div>
-      {/* Status block */}
-      <div>{/* ...existing status block code... */}</div>
+      {/* KPIs and Status block grouped together */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* KPIs block */}
+        <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-green-200 p-6 mb-2 md:mb-0 flex flex-col gap-3 hover:shadow-2xl transition-all duration-200 group min-h-[170px]">
+          <div className="flex items-center gap-4 mb-2">
+            <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-green-400 to-emerald-500 shadow">
+              <RevenueIcon className="w-8 h-8 text-white" />
+            </span>
+            <div>
+              <div className="text-xs font-bold text-green-700 uppercase tracking-wider">Total Revenue</div>
+              <div className="text-3xl font-extrabold text-green-800 drop-shadow-sm">{formatCurrency(totalRevenue)}</div>
+            </div>
+          </div>
+          <div className="flex gap-4 mt-2">
+            <div className="flex-1 bg-white/90 rounded-xl p-4 flex flex-col items-center shadow-sm border border-yellow-100">
+              <div className="text-xs text-gray-500 font-semibold mb-1">Pending</div>
+              <div className="text-lg font-bold text-yellow-600">{formatCurrency(pendingPayments)}</div>
+            </div>
+            <div className="flex-1 bg-white/90 rounded-xl p-4 flex flex-col items-center shadow-sm border border-green-100">
+              <div className="text-xs text-gray-500 font-semibold mb-1">Paid</div>
+              <div className="text-lg font-bold text-green-600">{formatCurrency(paidInvoices)}</div>
+            </div>
+          </div>
+        </div>
+        {/* Status block as cards */}
+        <StatusBlockGrid
+          title="Invoice Status"
+          statusData={invoiceStatusData}
+          selectedStatus={filterStatus}
+          onStatusClick={setFilterStatus}
+          className="bg-white rounded-lg shadow p-4"
+        />
+      </div>
       {/* Filters + Invoice List block */}
-      <div className="card p-4">
-        {/* Compact Filter Tabs */}
-        <div className="border-b border-slate-200 mb-2">
+      <div className="card p-4 mt-2">
+        {/* Compact Filter Tabs and Filters in one row */}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
           <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-6 px-2 md:px-0" aria-label="Invoice Status Tabs">
             {statusTabs.map((tab) => (
               <button
@@ -457,7 +487,37 @@ export default function Billing() {
               </button>
             ))}
           </nav>
+          {/* Compact filter controls */}
+          <div className="flex gap-2 items-center ml-auto">
+            <input
+              type="text"
+              placeholder="Customer name"
+              value={filterCustomer}
+              onChange={e => setFilterCustomer(e.target.value)}
+              className="input input-xs"
+            />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="input input-xs"
+            />
+            <button
+              className={`btn btn-outline btn-xs ${showAdvancedFilters ? 'bg-blue-50' : ''}`}
+              onClick={() => setShowAdvancedFilters((v) => !v)}
+              type="button"
+            >
+              <FilterIcon className="w-4 h-4 mr-1" />
+              Filters
+            </button>
+          </div>
         </div>
+        {/* Advanced filters dropdown */}
+        {showAdvancedFilters && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {/* Add more advanced filters here if needed */}
+          </div>
+        )}
         {/* Invoice List Table Header with Dropdowns */}
         <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
           <div className="flex gap-2 items-center">
