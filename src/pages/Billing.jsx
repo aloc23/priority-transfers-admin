@@ -13,10 +13,23 @@ import {
   PlusIcon,
   FilterIcon
 } from "../components/Icons";
+import ToggleSwitch from "../components/ToggleSwitch";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 
 export default function Billing() {
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const toggleExpandRow = (invoiceId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(invoiceId)) {
+        newSet.delete(invoiceId);
+      } else {
+        newSet.add(invoiceId);
+      }
+      return newSet;
+    });
+  };
   const { 
     bookings, 
     customers,
@@ -45,6 +58,14 @@ export default function Billing() {
     bookingId: null, // For manual booking association
     type: 'priority' // Default type
   });
+  // For compact filter tabs
+  const statusTabs = [
+    { id: 'all', label: 'All' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'paid', label: 'Paid' },
+    { id: 'overdue', label: 'Overdue' },
+    { id: 'cancelled', label: 'Cancelled' },
+  ];
 
   const completedBookings = bookings.filter(booking => booking.status === "completed");
   const totalRevenue = calculateRevenue(bookings, "completed", invoices);
@@ -403,166 +424,72 @@ export default function Billing() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Billing & Invoices"
-        actions={billingActions}
-        plain={true}
-      />
-
-      {/* Invoice Status Blocks - moved below header */}
-      <StatusBlockGrid 
-        title="Invoice Status"
-        statusData={invoiceStatusData}
-        selectedStatus={filterStatus}
-        onStatusClick={(statusId) => setFilterStatus(statusId || 'all')}
-      />
-
-      {/* Revenue Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="card hover:shadow-lg transition-shadow">
-          <div className="flex items-center">
-            <div className="bg-green-500 rounded-lg p-3 text-white mr-4">
-              <RevenueIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-            </div>
-          </div>
+    <div className="space-y-4">
+      <PageHeader title="Invoices" />
+      {/* KPIs block */}
+      <div>{/* ...existing KPIs code... */}</div>
+      {/* Status block */}
+      <div>{/* ...existing status block code... */}</div>
+      {/* Filters + Invoice List block */}
+      <div className="card p-4">
+        {/* Compact Filter Tabs */}
+        <div className="border-b border-slate-200 mb-2">
+          <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-6 px-2 md:px-0" aria-label="Invoice Status Tabs">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilterStatus(tab.id)}
+                className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
+                  filterStatus === tab.id
+                    ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
+                }`}
+                aria-selected={filterStatus === tab.id}
+                role="tab"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
-
-        <div className="card hover:shadow-lg transition-shadow">
-          <div className="flex items-center">
-            <div className="bg-yellow-500 rounded-lg p-3 text-white mr-4">
-              <InvoiceIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(pendingPayments)}</p>
-              <p className="text-sm text-gray-600">Pending Payments</p>
-            </div>
+        {/* Invoice List Table Header with Dropdowns */}
+        <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+          <div className="flex gap-2 items-center">
+            <span className="font-semibold text-lg">Invoices</span>
+            <span className="text-slate-500 text-sm">({filteredInvoices.length})</span>
           </div>
-        </div>
-
-        <div className="card hover:shadow-lg transition-shadow">
-          <div className="flex items-center">
-            <div className="bg-blue-500 rounded-lg p-3 text-white mr-4">
-              <RevenueIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(paidInvoices)}</p>
-              <p className="text-sm text-gray-600">Paid Invoices</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card hover:shadow-lg transition-shadow">
-          <div className="flex items-center">
-            <div className="bg-purple-500 rounded-lg p-3 text-white mr-4">
-              <InvoiceIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
-              <p className="text-sm text-gray-600">Total Invoices</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Other Filters */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <FilterIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-medium text-gray-900">Additional Filters</h3>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              {Object.values({filterType, filterSource, filterBookingAssociation}).filter(v => v !== 'all').length} active
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              setFilterType('all');
-              setFilterSource('all');
-              setFilterBookingAssociation('all');
-            }}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            Clear Additional Filters
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Type:</label>
-            <select 
-              value={filterType} 
-              onChange={(e) => setFilterType(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          <div className="flex gap-2 items-center">
+            <button
+              className="btn btn-outline btn-xs"
+              onClick={() => setShowAdvancedFilters((v) => !v)}
             >
-              <option value="all">All Types</option>
-              <option value="priority">Priority</option>
-              <option value="outsourced">Outsourced</option>
-            </select>
-          </div>
-          
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Source:</label>
-            <select 
-              value={filterSource} 
-              onChange={(e) => setFilterSource(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Sources</option>
-              <option value="internal">Internal/Bookings</option>
-              <option value="outsourced">Outsourced</option>
-              <option value="adhoc">Ad Hoc</option>
-            </select>
-          </div>
-          
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Booking Link:</label>
-            <select 
-              value={filterBookingAssociation} 
-              onChange={(e) => setFilterBookingAssociation(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Invoices</option>
-              <option value="linked">Linked to Booking</option>
-              <option value="unlinked">Not Linked</option>
-            </select>
+              Filters
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Invoices Table */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Invoices ({filteredInvoices.length})
-          </h2>
-          
-          {/* Bulk Payment Actions */}
-          {payableInvoices.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                {selectedInvoices.size} of {payableInvoices.length} selected
-              </span>
-              {selectedInvoices.size > 0 && (
-                <button 
-                  onClick={handleBulkPayment}
-                  className="btn bg-green-600 text-white hover:bg-green-700 px-4 py-2 text-sm font-medium shadow-sm hover:shadow-md transition-all"
-                  title={`Mark ${selectedInvoices.size} invoice(s) as paid`}
-                >
-                  ✓ Mark {selectedInvoices.size} as Paid
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
+        {/* Dropdowns for extra filters, shown inline in header or as dropdown */}
+        {showAdvancedFilters && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            <input
+              type="text"
+              placeholder="Customer name"
+              value={filterCustomer}
+              onChange={e => setFilterCustomer(e.target.value)}
+              className="input input-xs"
+            />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="input input-xs"
+            />
+            {/* Add more advanced filters here if needed */}
+          </div>
+        )}
+        {/* Invoice List Table */}
         <div className="overflow-x-auto">
           <table className="table">
-            <thead>
+            <thead className="sticky top-0 bg-white z-10">
               <tr>
                 {payableInvoices.length > 0 && (
                   <th className="w-12">
@@ -583,15 +510,169 @@ export default function Billing() {
                 <th>Source</th>
                 <th>Status</th>
                 <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {filteredInvoices.map((invoice) => {
-                const isPayable = invoice.status === 'sent' || invoice.status === 'pending';
                 const isSelected = selectedInvoices.has(invoice.id);
                 const booking = getBookingForInvoice(invoice);
-                
+                const isPayable = invoice.status === 'sent' || invoice.status === 'pending';
+                const expanded = expandedRows.has(invoice.id);
                 return (
+                  <>
+                    <tr key={invoice.id} className={isSelected ? 'bg-green-50' : ''}>
+                      {payableInvoices.length > 0 && (
+                        <td>
+                          {isPayable && (
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                              checked={isSelected}
+                              onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                              title="Select for bulk payment"
+                            />
+                          )}
+                        </td>
+                      )}
+                      <td className="font-mono text-sm font-medium">{invoice.id}</td>
+                      <td className="font-medium">{invoice.customer}</td>
+                      <td>
+                        {booking ? (
+                          <NavLink 
+                            to="/schedule" 
+                            className="text-blue-600 hover:text-blue-800 font-medium underline decoration-dotted hover:decoration-solid transition-all"
+                            title={`View booking: ${booking.pickup} → ${booking.destination}`}
+                          >
+                            Booking #{booking.id}
+                          </NavLink>
+                        ) : (
+                          <span className="text-gray-400 italic text-sm">Ad hoc invoice</span>
+                        )}
+                      </td>
+                      <td className="text-sm">{invoice.date}</td>
+                      <td className="font-bold">{formatCurrency(invoice.amount)}</td>
+                      <td>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          invoice.bookingId === null ? 'bg-gray-100 text-gray-800' :
+                          invoice.type === 'priority' ? 'bg-blue-100 text-blue-800' : 
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {invoice.bookingId === null ? 'Ad Hoc' :
+                           invoice.type === 'priority' ? 'Internal' : 'Outsourced'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                          invoice.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => handleViewInvoice(invoice)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                            title="View Invoice"
+                          >
+                            <ViewIcon className="w-3 h-3" />
+                          </button>
+                          {invoice.editable && (
+                            <button 
+                              onClick={() => handleEdit(invoice)}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                              title="Edit Invoice"
+                            >
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                          )}
+                          {(invoice.status === 'pending' || invoice.status === 'sent') && (
+                            <button 
+                              onClick={() => handleSendInvoice(invoice)}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                              title="Send Invoice"
+                            >
+                              <SendIcon className="w-3 h-3" />
+                            </button>
+                          )}
+                          {(invoice.status === 'sent' || invoice.status === 'pending') && (
+                            <button 
+                              onClick={() => handleSinglePayment(invoice.id)}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
+                              title="Mark as Paid"
+                            >
+                              <span className="font-bold">€</span>
+                            </button>
+                          )}
+                          <button 
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                            title="Download Invoice"
+                          >
+                            <DownloadIcon className="w-3 h-3" />
+                          </button>
+                          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                            <button 
+                              onClick={() => cancelInvoice(invoice.id)}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all"
+                              title="Cancel Invoice"
+                            >
+                              <XIcon className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <button
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={() => toggleExpandRow(invoice.id)}
+                          title={expanded ? 'Hide details' : 'Show details'}
+                        >
+                          {expanded ? '▲' : '▼'}
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="bg-blue-50">
+                        <td colSpan={payableInvoices.length > 0 ? 10 : 9} className="p-4">
+                          {/* Expanded invoice details: items, audit, etc. */}
+                          <div>
+                            <div className="font-semibold mb-2">Invoice Items</div>
+                            <ul className="list-disc ml-6">
+                              {invoice.items && invoice.items.length > 0 ? invoice.items.map((item, idx) => (
+                                <li key={idx}>
+                                  {item.description} — Qty: {item.quantity}, Rate: {formatCurrency(item.rate)}, Amount: {formatCurrency(item.amount)}
+                                </li>
+                              )) : <li>No items</li>}
+                            </ul>
+                            {/* Add more details as needed, e.g. audit log */}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredInvoices.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No invoices found matching the current filters.
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Modal ... */}
+    </div>
+  );
+                const isSelected = selectedInvoices.has(invoice.id);
+                const booking = getBookingForInvoice(invoice);
+                const [expanded, setExpanded] = useState(false);
+                return (
+                  <>
                   <tr key={invoice.id} className={isSelected ? 'bg-green-50' : ''}>
                     {payableInvoices.length > 0 && (
                       <td>
@@ -696,12 +777,39 @@ export default function Billing() {
                         )}
                       </div>
                     </td>
+                    <td>
+                      <button
+                        className="text-xs text-blue-600 hover:underline"
+                        onClick={() => setExpanded((prev) => !prev)}
+                        title={expanded ? 'Hide details' : 'Show details'}
+                      >
+                        {expanded ? '▲' : '▼'}
+                      </button>
+                    </td>
                   </tr>
+                  {expanded && (
+                    <tr className="bg-blue-50">
+                      <td colSpan={10} className="p-4">
+                        {/* Expanded invoice details: items, audit, etc. */}
+                        <div>
+                          <div className="font-semibold mb-2">Invoice Items</div>
+                          <ul className="list-disc ml-6">
+                            {invoice.items && invoice.items.length > 0 ? invoice.items.map((item, idx) => (
+                              <li key={idx}>
+                                {item.description} — Qty: {item.quantity}, Rate: {formatCurrency(item.rate)}, Amount: {formatCurrency(item.amount)}
+                              </li>
+                            )) : <li>No items</li>}
+                          </ul>
+                          {/* Add more details as needed, e.g. audit log */}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </>
                 );
               })}
             </tbody>
           </table>
-          
           {filteredInvoices.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               No invoices found matching the current filters.
