@@ -16,6 +16,7 @@ import PageHeader from "../components/PageHeader";
 import UpcomingBookingsWidget from "../components/UpcomingBookingsWidget";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import BookingsCalendarWidget from "../components/BookingsCalendarWidget";
+import InvoiceStatusBlock from "../components/InvoiceStatusBlock";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -197,6 +198,11 @@ export default function Dashboard() {
           
           {/* New Unified Bookings & Calendar Widget */}
           <BookingsCalendarWidget />
+          
+          {/* Invoice Status Block */}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <InvoiceStatusBlock compact={true} showInvoiceList={true} />
+          </div>
         </div>
       )}
 

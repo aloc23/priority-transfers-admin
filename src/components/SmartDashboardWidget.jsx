@@ -57,37 +57,39 @@ export default function SmartDashboardWidget({ onBookClick }) {
     const end = start + 1; // 1 hour duration
     return `${booking.time} - ${end.toString().padStart(2, "0")}:00`;
   }
-  // Fleet: busy/unavailable if management status is not 'active', else check bookings
+  // Fleet: busy/unavailable if management status is not 'active', else check CONFIRMED bookings only
   const fleetStatus = fleet.map(f => {
     const bookingsForFleet = bookings.filter(b => b.vehicleId === f.id && b.date === selectedDateStr);
+    const confirmedBookingsForFleet = bookingsForFleet.filter(b => b.status === 'confirmed');
     let statusLabel = 'Available';
     let statusColor = 'bg-green-100 text-green-700';
-    let unavailableHours = bookingsForFleet.map(getUnavailableHours).filter(Boolean);
+    let unavailableHours = confirmedBookingsForFleet.map(getUnavailableHours).filter(Boolean);
     if (f.status && f.status !== 'active') {
       statusLabel = f.status.charAt(0).toUpperCase() + f.status.slice(1); // e.g. Maintenance, Inactive
       statusColor = 'bg-red-100 text-red-700';
       unavailableHours = ['All day'];
-    } else if (bookingsForFleet.length > 0) {
+    } else if (confirmedBookingsForFleet.length > 0) {
       statusLabel = 'Busy';
       statusColor = 'bg-red-100 text-red-700';
     }
-    return { ...f, statusLabel, statusColor, bookingsForFleet, unavailableHours };
+    return { ...f, statusLabel, statusColor, bookingsForFleet, unavailableHours, confirmedBookingsForFleet };
   });
-  // Driver: busy/offline if management status is not 'available', else check bookings
+  // Driver: busy/offline if management status is not 'available', else check CONFIRMED bookings only
   const driverStatus = drivers.map(driver => {
     const bookingsForDriver = bookings.filter(b => b.driver === driver.name && b.date === selectedDateStr);
+    const confirmedBookingsForDriver = bookingsForDriver.filter(b => b.status === 'confirmed');
     let statusLabel = 'Available';
     let statusColor = 'bg-green-100 text-green-700';
-    let unavailableHours = bookingsForDriver.map(getUnavailableHours).filter(Boolean);
+    let unavailableHours = confirmedBookingsForDriver.map(getUnavailableHours).filter(Boolean);
     if (driver.status && driver.status !== 'available') {
       statusLabel = driver.status.charAt(0).toUpperCase() + driver.status.slice(1); // e.g. Busy, Offline
       statusColor = 'bg-red-100 text-red-700';
       unavailableHours = ['All day'];
-    } else if (bookingsForDriver.length > 0) {
+    } else if (confirmedBookingsForDriver.length > 0) {
       statusLabel = 'Busy';
       statusColor = 'bg-red-100 text-red-700';
     }
-    return { ...driver, statusLabel, statusColor, bookingsForDriver, unavailableHours };
+    return { ...driver, statusLabel, statusColor, bookingsForDriver, unavailableHours, confirmedBookingsForDriver };
   });
   // Expand state for fleet/driver
   const [expandedFleet, setExpandedFleet] = useState(null);
@@ -235,7 +237,7 @@ export default function SmartDashboardWidget({ onBookClick }) {
                           {f.unavailableHours.length > 0 && (
                             <div className="mb-1"><b>Unavailable hours:</b> {f.unavailableHours.join(', ')}</div>
                           )}
-                          {f.bookingsForFleet.length > 0 && f.statusLabel === 'Busy' && f.bookingsForFleet.map((b, i) => (
+                          {f.confirmedBookingsForFleet.length > 0 && f.statusLabel === 'Busy' && f.confirmedBookingsForFleet.map((b, i) => (
                             <div key={b.id || i} className="mb-1 p-1 rounded bg-red-50 border border-red-100">
                               <div><b>Time:</b> {b.time}</div>
                               <div><b>Route:</b> {b.pickup} → {b.destination}</div>
@@ -292,7 +294,7 @@ export default function SmartDashboardWidget({ onBookClick }) {
                           {d.unavailableHours.length > 0 && (
                             <div className="mb-1"><b>Unavailable hours:</b> {d.unavailableHours.join(', ')}</div>
                           )}
-                          {d.bookingsForDriver.length > 0 && d.statusLabel === 'Busy' && d.bookingsForDriver.map((b, i) => (
+                          {d.confirmedBookingsForDriver.length > 0 && d.statusLabel === 'Busy' && d.confirmedBookingsForDriver.map((b, i) => (
                             <div key={b.id || i} className="mb-1 p-1 rounded bg-red-50 border border-red-100">
                               <div><b>Time:</b> {b.time}</div>
                               <div><b>Route:</b> {b.pickup} → {b.destination}</div>
