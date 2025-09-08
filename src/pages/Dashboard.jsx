@@ -6,6 +6,8 @@ import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
+import SmartDashboardWidget from "../components/SmartDashboardWidget";
+import DashboardCard from "../components/DashboardCard";
 import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
 import ExpenseModal from "../components/ExpenseModal";
@@ -155,6 +157,7 @@ export default function Dashboard() {
   }));
 
   return (
+
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
@@ -162,7 +165,7 @@ export default function Dashboard() {
         plain={true}
       />
 
-      {/* Dashboard Tabs - moved below header */}
+      {/* Dashboard Tabs - moved below header, KPI cards removed (now handled by SmartDashboardWidget) */}
       <div className="border-b border-slate-200">
         <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Dashboard Tabs">
           {dashboardTabs.map((tab) => (
@@ -183,17 +186,123 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Status Blocks - moved below tabs */}
+      {/* Responsive: Side-by-side on desktop, stacked on mobile */}
       {activeTab === 'overview' && (
-        <StatusBlockGrid 
-          title="Booking & Invoice Status"
-          statusData={statusData}
-          selectedStatus={selectedCombinedStatus?.toLowerCase()}
-          onStatusClick={(statusId) => {
-            const status = statusId ? combinedStatusList.find(s => s.toLowerCase() === statusId) : null;
-            setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status);
-          }}
-        />
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          {/* Fleet & Driver Status (SmartDashboardWidget) */}
+          <div className="flex-1 min-w-0">
+            <SmartDashboardWidget onBookClick={() => setShowIncomeModal(true)} compact />
+          </div>
+          {/* Booking & Invoice Status + Table */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-0 overflow-hidden flex flex-col gap-0">
+              <div className="p-4 pb-2">
+                <StatusBlockGrid 
+                  title="Booking & Invoice Status"
+                  statusData={statusData}
+                  selectedStatus={selectedCombinedStatus?.toLowerCase()}
+                  onStatusClick={(statusId) => {
+                    const status = statusId ? combinedStatusList.find(s => s.toLowerCase() === statusId) : null;
+                    setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status);
+                  }}
+                  className="mb-0"
+                />
+              </div>
+              <div className="border-t border-slate-100 mx-2" />
+              <div className="p-4 pt-3">
+                <h3 className="text-base font-semibold text-gray-900 mb-2">
+                  {selectedCombinedStatus ? `${selectedCombinedStatus} Bookings` : 'Paid Bookings'}
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-xs">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Driver</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        let rows = [];
+                        if (selectedCombinedStatus) {
+                          if (bookingsByCombinedStatus[selectedCombinedStatus]) {
+                            rows = bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
+                              const inv = invoices.find(inv => inv.bookingId === booking.id);
+                              // Determine available actions
+                              const actions = [];
+                              const refresh = () => {
+                                if (typeof refreshAllData === 'function') refreshAllData();
+                                setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
+                              };
+                              if (booking.status === 'pending') {
+                                actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
+                              }
+                              if (booking.status === 'confirmed') {
+                                actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
+                              }
+                              if (booking.status === 'completed' && !inv) {
+                                actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
+                              }
+                              if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                                actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
+                              }
+                              return {
+                                customer: booking.customer || booking.customerName || '-',
+                                date: booking.date || '-',
+                                driver: booking.driver || '-',
+                                status: getCombinedStatus(booking),
+                                actions
+                              };
+                            });
+                          }
+                        } else {
+                          // Default: show Paid Bookings (from invoices)
+                          rows = invoices.filter(inv => inv.status === 'paid').map(inv => ({
+                            customer: inv.customer || '-',
+                            date: inv.date || '-',
+                            driver: inv.driver || '-',
+                            status: inv.status,
+                            actions: []
+                          }));
+                        }
+                        return rows.length > 0 ? rows.map((row, i) => (
+                          <tr key={i}>
+                            <td>{row.customer}</td>
+                            <td>{row.date}</td>
+                            <td>{row.driver}</td>
+                            <td>{row.status}</td>
+                            <td>
+                              {row.actions && row.actions.length > 0 ? (
+                                <div className="flex flex-col gap-1">
+                                  {row.actions.map((action, idx) => (
+                                    <button
+                                      key={idx}
+                                      className="btn btn-xs btn-outline mb-1"
+                                      onClick={action.onClick}
+                                    >
+                                      {action.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">No actions</span>
+                              )}
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan="5" className="text-center text-slate-400">No records found</td></tr>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Tab Content */}
@@ -226,17 +335,18 @@ export default function Dashboard() {
           {/* Operational Stats - Modern Card UI */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {operationalStats.map((stat) => (
-              <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-600 shadow">
-                    <stat.icon className="w-7 h-7 text-white" />
-                  </span>
-                  <div>
-                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">{stat.label}</div>
-                    <div className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</div>
-                  </div>
-                </div>
-              </div>
+              <DashboardCard
+                key={stat.name}
+                icon={stat.icon}
+                name={stat.name}
+                value={stat.value}
+                dateRange={"Sep 1 - Sep 7, 2025"}
+                change={"+0.00% ↑"}
+                changeColor="bg-green-100 text-green-700"
+                dropdownOptions={["Month", "Quarter", "Year"]}
+                moreOptions={true}
+                className=""
+              />
             ))}
           </div>
           
@@ -346,8 +456,21 @@ export default function Dashboard() {
           )}
           
           {/* Unified Calendar & Bookings Widget */}
-          <div>
-            <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={true} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mb-6">
+            {/* Confirmed Bookings KPI */}
+            <div className="flex flex-col items-center bg-green-50 rounded-xl shadow border border-green-100 p-4">
+              <span className="text-2xl font-bold text-green-700">{confirmedBookings.length}</span>
+              <span className="text-xs text-green-900 tracking-wide mt-1">Confirmed Bookings</span>
+            </div>
+            {/* Pending Bookings KPI */}
+            <div className="flex flex-col items-center bg-yellow-50 rounded-xl shadow border border-yellow-100 p-4">
+              <span className="text-2xl font-bold text-yellow-700">{bookings.filter(b => b.status === 'pending').length}</span>
+              <span className="text-xs text-yellow-900 tracking-wide mt-1">Pending Bookings</span>
+            </div>
+            {/* Upcoming Bookings List Block */}
+            <div className="col-span-1 md:col-span-1">
+              <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={true} />
+            </div>
           </div>
           
           {/* Activity Section */}
@@ -404,42 +527,7 @@ export default function Dashboard() {
           {/* Subtab Content */}
           {accountingSubTab === 'overview' && (
             <div className="space-y-6">
-              {/* Financial KPIs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {enhancedStats.map((stat) => (
-                  <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
-                    {/* Header Section */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 shadow">
-                          <stat.icon className="w-6 h-6 text-white" />
-                        </span>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-slate-800">{stat.name}</span>
-                          <span className="text-xs text-slate-500">{`Sep 1 - Sep 7, 2025`}</span>
-                        </div>
-                      </div>
-                      <button className="text-slate-400 hover:text-slate-600 p-1 rounded-full transition-colors" title="More options">
-                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
-                      </button>
-                    </div>
-                    {/* Main Value */}
-                    <div className="flex items-end justify-between mt-2">
-                      <span className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</span>
-                      {/* Example: change vs previous period */}
-                      <span className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">+4.98% ↑</span>
-                    </div>
-                    {/* Dropdown for timeframe (below value) */}
-                    <div className="mt-3 flex justify-end">
-                      <select className="bg-white/80 border border-slate-200 rounded px-2 py-1 text-xs font-medium text-slate-600 focus:outline-none">
-                        <option>Month</option>
-                        <option>Quarter</option>
-                        <option>Year</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Financial KPIs replaced by SmartDashboardWidget above */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold mb-2">Recent Income</h3>
