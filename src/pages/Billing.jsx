@@ -432,7 +432,7 @@ export default function Billing() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Invoices" />
+      <PageHeader title="Invoices" actions={billingActions} />
       {/* KPIs and Status block grouped together */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* KPIs block */}
