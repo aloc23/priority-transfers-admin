@@ -1,5 +1,6 @@
 // Unified Bookings & Calendar Widget
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -12,11 +13,17 @@ const localizer = momentLocalizer(moment);
 export default function BookingsCalendarWidget() {
   const { bookings, drivers, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData } = useAppStore();
   const { isMobile } = useResponsive();
+  const navigate = useNavigate();
   
   // State management
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedStatus, setSelectedStatus] = useState(null); // 'confirmed', 'pending', 'upcoming'
   const [calendarView, setCalendarView] = useState('month');
+
+  // Handle Book Now button click
+  const handleBookNowClick = () => {
+    navigate('/schedule');
+  };
 
   // Combine booking and invoice status like in Dashboard.jsx
   const getCombinedStatus = (booking) => {
@@ -168,7 +175,10 @@ export default function BookingsCalendarWidget() {
       {/* Header with Title and Book Now Button */}
       <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
         <h2 className="text-xl font-bold text-slate-900">Bookings & Calendar</h2>
-        <button className="btn btn-primary flex items-center gap-2">
+        <button 
+          onClick={handleBookNowClick}
+          className="btn btn-primary flex items-center gap-2"
+        >
           <PlusIcon className="w-4 h-4" />
           <span className="hidden sm:inline">Book Now</span>
           <span className="sm:hidden">Book</span>
