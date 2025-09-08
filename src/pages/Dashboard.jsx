@@ -6,7 +6,6 @@ import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
-import SmartDashboardWidget from "../components/SmartDashboardWidget";
 import DashboardCard from "../components/DashboardCard";
 import ActivityList from "../components/ActivityList";
 import IncomeModal from "../components/IncomeModal";
@@ -17,6 +16,9 @@ import UpcomingBookingsWidget from "../components/UpcomingBookingsWidget";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import BookingsCalendarWidget from "../components/BookingsCalendarWidget";
 import InvoiceStatusBlock from "../components/InvoiceStatusBlock";
+import BookingStatusBlock from "../components/BookingStatusBlock";
+import FinancialKPIBlock from "../components/FinancialKPIBlock";
+import FleetDriverChecker from "../components/FleetDriverChecker";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -188,21 +190,29 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Fleet & Driver Status and Unified Bookings & Calendar */}
+      {/* Overview Tab Content - Separate, Clean Blocks */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Fleet & Driver Status (preserved as requested) */}
-          <div className="max-w-2xl mx-auto">
-            <SmartDashboardWidget onBookClick={() => setShowIncomeModal(true)} compact />
-          </div>
-          
-          {/* New Unified Bookings & Calendar Widget */}
-          <BookingsCalendarWidget />
-          
-          {/* Invoice Status Block */}
+          {/* Financial KPIs - Separate Block */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <InvoiceStatusBlock compact={true} showInvoiceList={true} />
+            <FinancialKPIBlock compact={true} />
           </div>
+
+          {/* Booking Status KPIs - Separate Block */}  
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <BookingStatusBlock compact={true} showBookingList={true} />
+          </div>
+
+          {/* Invoice Status KPIs - Separate Block with Action Buttons */}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <InvoiceStatusBlock compact={true} showInvoiceList={true} showAddButtons={true} />
+          </div>
+
+          {/* Fleet & Driver Status - Separate, Clean Block */}
+          <FleetDriverChecker compact={true} />
+
+          {/* Unified Bookings & Calendar */}
+          <BookingsCalendarWidget />
         </div>
       )}
 
@@ -210,7 +220,8 @@ export default function Dashboard() {
       {activeTab === 'overview' && (
         <section className="space-y-6">
           {/* Activity Section */}
-          <div>
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
             <ActivityList activities={recentActivity} />
           </div>
         </section>
