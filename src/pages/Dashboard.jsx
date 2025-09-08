@@ -15,6 +15,7 @@ import MobileBookingList from "../components/MobileBookingList";
 import PageHeader from "../components/PageHeader";
 import UpcomingBookingsWidget from "../components/UpcomingBookingsWidget";
 import StatusBlockGrid from "../components/StatusBlockGrid";
+import BookingsCalendarWidget from "../components/BookingsCalendarWidget";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -186,293 +187,22 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Responsive: Side-by-side on desktop, stacked on mobile */}
+      {/* Fleet & Driver Status and Unified Bookings & Calendar */}
       {activeTab === 'overview' && (
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          {/* Fleet & Driver Status (SmartDashboardWidget) */}
-          <div className="flex-1 min-w-0">
+        <div className="space-y-6">
+          {/* Fleet & Driver Status (preserved as requested) */}
+          <div className="max-w-2xl mx-auto">
             <SmartDashboardWidget onBookClick={() => setShowIncomeModal(true)} compact />
           </div>
-          {/* Booking & Invoice Status + Table */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-0 overflow-hidden flex flex-col gap-0">
-              <div className="p-4 pb-2">
-                <StatusBlockGrid 
-                  title="Booking & Invoice Status"
-                  statusData={statusData}
-                  selectedStatus={selectedCombinedStatus?.toLowerCase()}
-                  onStatusClick={(statusId) => {
-                    const status = statusId ? combinedStatusList.find(s => s.toLowerCase() === statusId) : null;
-                    setSelectedCombinedStatus(selectedCombinedStatus === status ? null : status);
-                  }}
-                  className="mb-0"
-                />
-              </div>
-              <div className="border-t border-slate-100 mx-2" />
-              <div className="p-4 pt-3">
-                <h3 className="text-base font-semibold text-gray-900 mb-2">
-                  {selectedCombinedStatus ? `${selectedCombinedStatus} Bookings` : 'Paid Bookings'}
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="table w-full text-xs">
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Date</th>
-                        <th>Driver</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        let rows = [];
-                        if (selectedCombinedStatus) {
-                          if (bookingsByCombinedStatus[selectedCombinedStatus]) {
-                            rows = bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
-                              const inv = invoices.find(inv => inv.bookingId === booking.id);
-                              // Determine available actions
-                              const actions = [];
-                              const refresh = () => {
-                                if (typeof refreshAllData === 'function') refreshAllData();
-                                setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
-                              };
-                              if (booking.status === 'pending') {
-                                actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
-                              }
-                              if (booking.status === 'confirmed') {
-                                actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
-                              }
-                              if (booking.status === 'completed' && !inv) {
-                                actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
-                              }
-                              if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                                actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
-                              }
-                              return {
-                                customer: booking.customer || booking.customerName || '-',
-                                date: booking.date || '-',
-                                driver: booking.driver || '-',
-                                status: getCombinedStatus(booking),
-                                actions
-                              };
-                            });
-                          }
-                        } else {
-                          // Default: show Paid Bookings (from invoices)
-                          rows = invoices.filter(inv => inv.status === 'paid').map(inv => ({
-                            customer: inv.customer || '-',
-                            date: inv.date || '-',
-                            driver: inv.driver || '-',
-                            status: inv.status,
-                            actions: []
-                          }));
-                        }
-                        return rows.length > 0 ? rows.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.customer}</td>
-                            <td>{row.date}</td>
-                            <td>{row.driver}</td>
-                            <td>{row.status}</td>
-                            <td>
-                              {row.actions && row.actions.length > 0 ? (
-                                <div className="flex flex-col gap-1">
-                                  {row.actions.map((action, idx) => (
-                                    <button
-                                      key={idx}
-                                      className="btn btn-xs btn-outline mb-1"
-                                      onClick={action.onClick}
-                                    >
-                                      {action.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-slate-400">No actions</span>
-                              )}
-                            </td>
-                          </tr>
-                        )) : (
-                          <tr><td colSpan="5" className="text-center text-slate-400">No records found</td></tr>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
+          
+          {/* New Unified Bookings & Calendar Widget */}
+          <BookingsCalendarWidget />
         </div>
       )}
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <section className="space-y-6">
-          {/* Booking KPIs - Modern Card UI with timeframe dropdown */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {bookingStats.map((stat) => (
-              <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-purple-400 to-purple-600 shadow">
-                    <stat.icon className="w-7 h-7 text-white" />
-                  </span>
-                  <div>
-                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">{stat.label}</div>
-                    <div className="text-2xl font-extrabold text-slate-900 drop-shadow-sm">{stat.value}</div>
-                  </div>
-                </div>
-                {/* Timeframe dropdown (placeholder) */}
-                <div className="absolute top-4 right-4">
-                  <select className="bg-white/80 border border-slate-200 rounded px-2 py-1 text-xs font-medium text-slate-600 focus:outline-none">
-                    <option>Today</option>
-                    <option>This Week</option>
-                    <option>This Month</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* Operational Stats - Modern Card UI */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {operationalStats.map((stat) => (
-              <DashboardCard
-                key={stat.name}
-                icon={stat.icon}
-                name={stat.name}
-                value={stat.value}
-                dateRange={"Sep 1 - Sep 7, 2025"}
-                change={"+0.00% ↑"}
-                changeColor="bg-green-100 text-green-700"
-                dropdownOptions={["Month", "Quarter", "Year"]}
-                moreOptions={true}
-                className=""
-              />
-            ))}
-          </div>
-          
-          {/* Selected Status Bookings Details */}
-          {selectedCombinedStatus && (
-            <div className="card">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">{selectedCombinedStatus} Bookings</h3>
-              
-              {/* Mobile-friendly card list */}
-              {isMobile ? (
-                <MobileBookingList 
-                  bookings={bookingsByCombinedStatus[selectedCombinedStatus].map(booking => ({
-                    ...booking,
-                    customer: booking.customer || booking.customerName,
-                    status: getCombinedStatus(booking)
-                  }))}
-                  onActionClick={(booking) => {
-                    const inv = invoices.find(inv => inv.bookingId === booking.id);
-                    const refresh = () => {
-                      if (typeof refreshAllData === 'function') refreshAllData();
-                      setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
-                    };
-                    
-                    // Execute primary action based on status
-                    if (booking.status === 'pending' || booking.status === 'Pending') {
-                      updateBooking(booking.id, { ...booking, status: 'confirmed' });
-                      refresh();
-                    } else if (booking.status === 'confirmed' || booking.status === 'Confirmed') {
-                      updateBooking(booking.id, { ...booking, status: 'completed' });
-                      refresh();
-                    } else if ((booking.status === 'completed' || booking.status === 'Completed') && !inv) {
-                      generateInvoiceFromBooking(booking);
-                      refresh();
-                    } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                      markInvoiceAsPaid(inv.id);
-                      refresh();
-                    }
-                  }}
-                />
-              ) : (
-                /* Desktop table view */
-                <div className="overflow-x-auto">
-                  <table className="table w-full text-sm">
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Date</th>
-                        <th>Driver</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookingsByCombinedStatus[selectedCombinedStatus].map(booking => {
-                        const inv = invoices.find(inv => inv.bookingId === booking.id);
-                        // Determine available actions
-                        const actions = [];
-                        // Helper to refresh dashboard after action
-                        const refresh = () => {
-                          if (typeof refreshAllData === 'function') refreshAllData();
-                          setTimeout(() => setSelectedCombinedStatus(selectedCombinedStatus), 0);
-                        };
-                        if (booking.status === 'pending') {
-                          actions.push({ label: 'Confirm', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'confirmed' }); refresh(); } });
-                        }
-                        if (booking.status === 'confirmed') {
-                          actions.push({ label: 'Mark as Complete', onClick: async () => { await updateBooking(booking.id, { ...booking, status: 'completed' }); refresh(); } });
-                        }
-                        if (booking.status === 'completed' && !inv) {
-                          actions.push({ label: 'Generate Invoice', onClick: async () => { await generateInvoiceFromBooking(booking); refresh(); } });
-                        }
-                        if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                          actions.push({ label: 'Mark as Paid', onClick: async () => { await markInvoiceAsPaid(inv.id); refresh(); } });
-                        }
-                        return (
-                          <tr key={booking.id}>
-                            <td>{booking.customer}</td>
-                            <td>{booking.date} {booking.time}</td>
-                            <td>{booking.driver}</td>
-                            <td>{getCombinedStatus(booking)}</td>
-                            <td>
-                              <div className="inline-block">
-                                {actions.length === 0 && <span className="text-xs text-slate-400">No actions</span>}
-                                {actions.length > 0 && (
-                                  <div className="flex flex-col gap-1">
-                                    {actions.map((action, idx) => (
-                                      <button
-                                        key={idx}
-                                        className="btn btn-xs btn-outline mb-1"
-                                        onClick={action.onClick}
-                                      >
-                                        {action.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Unified Calendar & Bookings Widget */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mb-6">
-            {/* Confirmed Bookings KPI */}
-            <div className="flex flex-col items-center bg-green-50 rounded-xl shadow border border-green-100 p-4">
-              <span className="text-2xl font-bold text-green-700">{confirmedBookings.length}</span>
-              <span className="text-xs text-green-900 tracking-wide mt-1">Confirmed Bookings</span>
-            </div>
-            {/* Pending Bookings KPI */}
-            <div className="flex flex-col items-center bg-yellow-50 rounded-xl shadow border border-yellow-100 p-4">
-              <span className="text-2xl font-bold text-yellow-700">{bookings.filter(b => b.status === 'pending').length}</span>
-              <span className="text-xs text-yellow-900 tracking-wide mt-1">Pending Bookings</span>
-            </div>
-            {/* Upcoming Bookings List Block */}
-            <div className="col-span-1 md:col-span-1">
-              <UpcomingBookingsWidget defaultViewMode="list" showViewModeSelector={true} />
-            </div>
-          </div>
-          
           {/* Activity Section */}
           <div>
             <ActivityList activities={recentActivity} />
