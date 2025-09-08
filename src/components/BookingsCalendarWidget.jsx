@@ -5,24 +5,61 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useAppStore } from '../context/AppStore';
+import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 const localizer = momentLocalizer(moment);
 
 export default function BookingsCalendarWidget() {
-  const { bookings, drivers, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData } = useAppStore();
+  const { bookings, drivers, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData, addBooking } = useAppStore();
+  const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const navigate = useNavigate();
   
   // State management
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null); // Start with no date selected
   const [selectedStatus, setSelectedStatus] = useState(null); // 'confirmed', 'pending', 'upcoming'
   const [calendarView, setCalendarView] = useState('month');
+  const [showBookingModal, setShowBookingModal] = useState(false); // For direct booking form
+  
+  // Form state for booking modal
+  const [bookingForm, setBookingForm] = useState({
+    customer: '',
+    pickup: '',
+    destination: '',
+    date: moment().format('YYYY-MM-DD'),
+    time: '09:00',
+    driver: '',
+    vehicleId: '',
+    status: 'pending',
+    type: 'priority',
+    price: 45
+  });
 
-  // Handle Book Now button click
+  // Handle Book Now button click - open form directly instead of navigating
   const handleBookNowClick = () => {
-    navigate('/schedule');
+    setShowBookingModal(true);
+  };
+
+  // Handle booking form submission
+  const handleBookingSubmit = (e) => {
+    e.preventDefault();
+    addBooking(bookingForm);
+    setShowBookingModal(false);
+    // Reset form
+    setBookingForm({
+      customer: '',
+      pickup: '',
+      destination: '',
+      date: moment().format('YYYY-MM-DD'),
+      time: '09:00',
+      driver: '',
+      vehicleId: '',
+      status: 'pending',
+      type: 'priority',
+      price: 45
+    });
   };
 
   // Combine booking and invoice status like in Dashboard.jsx
@@ -55,17 +92,11 @@ export default function BookingsCalendarWidget() {
     });
   }, [bookings]);
 
-  // Filter bookings based on selected date and status
+  // Single filter logic: either status OR date, not both (like Schedule tab)
   const filteredBookings = useMemo(() => {
     let filtered = [...bookings];
 
-    // Filter by date if selected
-    if (selectedDate) {
-      const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
-      filtered = filtered.filter(booking => booking.date === selectedDateStr);
-    }
-
-    // Filter by status if selected
+    // Status filter takes priority if selected
     if (selectedStatus) {
       if (selectedStatus === 'confirmed') {
         filtered = filtered.filter(booking => booking.status === 'confirmed');
@@ -78,6 +109,11 @@ export default function BookingsCalendarWidget() {
           return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
         });
       }
+    } 
+    // Only apply date filter if no status filter is selected
+    else if (selectedDate) {
+      const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
+      filtered = filtered.filter(booking => booking.date === selectedDateStr);
     }
 
     return filtered;
@@ -104,14 +140,23 @@ export default function BookingsCalendarWidget() {
     });
   }, [upcomingBookings]);
 
-  // Handle pill click
+  // Handle pill click - single filter logic
   const handleStatusFilter = (status) => {
-    setSelectedStatus(selectedStatus === status ? null : status);
+    if (selectedStatus === status) {
+      // Deselect if same status clicked
+      setSelectedStatus(null);
+    } else {
+      // Select new status and clear date filter
+      setSelectedStatus(status);
+      setSelectedDate(null);
+    }
   };
 
-  // Handle date selection from calendar
+  // Handle date selection from calendar - single filter logic
   const handleCalendarDateSelect = (date) => {
+    // Select date and clear status filter
     setSelectedDate(date);
+    setSelectedStatus(null);
   };
 
   // Navigate calendar
@@ -256,7 +301,7 @@ export default function BookingsCalendarWidget() {
               startAccessor="start"
               endAccessor="end"
               view={calendarView}
-              date={selectedDate}
+              date={selectedDate || new Date()}
               onNavigate={setSelectedDate}
               onSelectSlot={({ start }) => handleCalendarDateSelect(start)}
               onView={setCalendarView}
@@ -279,13 +324,10 @@ export default function BookingsCalendarWidget() {
             <h3 className="text-sm font-semibold text-slate-700">
               {selectedStatus ? 
                 `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} Bookings` :
-                'All Bookings'
+                selectedDate ?
+                  `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}` :
+                  'All Bookings'
               }
-              {selectedDate && (
-                <span className="text-xs text-slate-500 ml-2">
-                  for {moment(selectedDate).format('MMM D, YYYY')}
-                </span>
-              )}
             </h3>
             <div className="text-xs text-slate-500">
               {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
@@ -301,7 +343,7 @@ export default function BookingsCalendarWidget() {
                   <button
                     onClick={() => {
                       setSelectedStatus(null);
-                      setSelectedDate(new Date());
+                      setSelectedDate(null);
                     }}
                     className="mt-2 text-xs text-blue-600 hover:text-blue-800"
                   >
@@ -359,6 +401,113 @@ export default function BookingsCalendarWidget() {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">Create New Booking</h2>
+              <form onSubmit={handleBookingSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Customer</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bookingForm.customer}
+                    onChange={(e) => setBookingForm({ ...bookingForm, customer: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Pickup Location</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bookingForm.pickup}
+                    onChange={(e) => setBookingForm({ ...bookingForm, pickup: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Destination</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bookingForm.destination}
+                    onChange={(e) => setBookingForm({ ...bookingForm, destination: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={bookingForm.date}
+                      onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                    <input
+                      type="time"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={bookingForm.time}
+                      onChange={(e) => setBookingForm({ ...bookingForm, time: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
+                  <select
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bookingForm.driver}
+                    onChange={(e) => setBookingForm({ ...bookingForm, driver: e.target.value })}
+                  >
+                    <option value="">Select Driver</option>
+                    {drivers.map((driver) => (
+                      <option key={driver.id} value={driver.name}>
+                        {driver.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Price (€)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bookingForm.price}
+                    onChange={(e) => setBookingForm({ ...bookingForm, price: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Create Booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowBookingModal(false)}
+                    className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
