@@ -154,6 +154,22 @@ export default function InvoiceStatusBlock({
     setShowModal(true);
   };
 
+  // Handle Edit Invoice
+  const handleEditInvoice = (invoiceId) => {
+    // This would typically open an invoice editing modal or navigate to edit page
+    console.log('Edit invoice:', invoiceId);
+    // For now, we'll use the basic modal approach
+    setShowModal(true);
+  };
+
+  // Handle View Invoice
+  const handleViewInvoice = (invoiceId) => {
+    // This would typically open an invoice viewing modal or navigate to view page
+    console.log('View invoice:', invoiceId);
+    // For now, we'll use the basic modal approach
+    setShowModal(true);
+  };
+
   // Filter invoices if showing list
   const filteredInvoices = useMemo(() => {
     if (!showInvoiceList) return [];
@@ -265,31 +281,6 @@ export default function InvoiceStatusBlock({
               </div>
             ) : (
               filteredInvoices.map((invoice) => {
-                // Determine next logical action
-                let actionButton = null;
-                if (invoice.status === 'pending' || invoice.status === 'sent') {
-                  actionButton = (
-                    <button
-                      onClick={() => handleMarkAsPaid(invoice.id)}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 transition-all"
-                      title="Mark as Paid"
-                    >
-                      € Paid
-                    </button>
-                  );
-                } else if (invoice.status === 'pending') {
-                  actionButton = (
-                    <button
-                      onClick={() => handleSendInvoice(invoice.id, invoice)}
-                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-all"
-                      title="Send Invoice"
-                    >
-                      <SendIcon className="w-3 h-3 mr-1" />
-                      Send
-                    </button>
-                  );
-                }
-
                 return (
                   <div key={invoice.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between">
@@ -305,7 +296,9 @@ export default function InvoiceStatusBlock({
                             invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
                             'bg-slate-100 text-slate-800'
                           }`}>
-                            {invoice.status}
+                            {invoice.status === 'pending' ? 'Draft' : 
+                             invoice.status === 'sent' ? 'Invoiced' :
+                             invoice.status}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-slate-400">
@@ -314,16 +307,56 @@ export default function InvoiceStatusBlock({
                           <span>{invoice.date}</span>
                         </div>
                       </div>
+                      
+                      {/* Action Buttons based on new workflow */}
                       <div className="flex items-center gap-1 ml-2">
-                        {actionButton}
-                        {(invoice.status !== 'paid' && invoice.status !== 'cancelled') && (
-                          <button
-                            onClick={() => handleCancelInvoice(invoice.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-all"
-                            title="Cancel Invoice"
-                          >
-                            ✕
-                          </button>
+                        {invoice.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleEditInvoice(invoice.id)}
+                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              title="Edit Draft"
+                            >
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleSendInvoice(invoice.id, invoice)}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                              title="Send Invoice"
+                            >
+                              <SendIcon className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
+                        {invoice.status === 'sent' && (
+                          <>
+                            <button
+                              onClick={() => handleViewInvoice(invoice.id)}
+                              className="px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-700 transition-colors"
+                              title="View Invoice"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleEditInvoice(invoice.id)}
+                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              title="Edit Invoice"
+                            >
+                              <EditIcon className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleMarkAsPaid(invoice.id)}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                              title="Mark as Paid"
+                            >
+                              Paid
+                            </button>
+                          </>
+                        )}
+                        {invoice.status === 'paid' && (
+                          <span className="text-xs text-slate-500 px-2 py-1">
+                            View Only
+                          </span>
                         )}
                       </div>
                     </div>
