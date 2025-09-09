@@ -8,7 +8,7 @@ export default function BookingStatusBlock({
   showBookingList = false,
   onStatusFilter = null 
 }) {
-  const { bookings, invoices, updateBooking } = useAppStore();
+  const { bookings, invoices, updateBooking, confirmBooking, markBookingCompleted, deleteBooking } = useAppStore();
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
 
@@ -303,6 +303,51 @@ export default function BookingStatusBlock({
                         <span>{booking.date} at {booking.time}</span>
                         <span>€{booking.price || booking.amount || 0}</span>
                       </div>
+                    </div>
+                    
+                    {/* Action Buttons based on new workflow */}
+                    <div className="flex gap-1 ml-2">
+                      {booking.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => confirmBooking(booking.id)}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                            title="Confirm Booking"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => deleteBooking(booking.id)}
+                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            title="Remove Booking"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                      {booking.status === 'confirmed' && (
+                        <>
+                          <button
+                            onClick={() => markBookingCompleted(booking.id)}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                            title="Mark as Completed"
+                          >
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => deleteBooking(booking.id)}
+                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            title="Remove Booking"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                      {booking.status === 'completed' && (
+                        <span className="text-xs text-slate-500 px-2 py-1">
+                          View Only
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

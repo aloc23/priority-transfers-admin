@@ -615,7 +615,13 @@ export function AppStoreProvider({ children }) {
 
   const addBooking = (booking) => {
     try {
-      const newBooking = { ...booking, id: Date.now(), type: booking.type || "priority" };
+      // All new bookings start as "pending" regardless of input
+      const newBooking = { 
+        ...booking, 
+        id: Date.now(), 
+        type: booking.type || "priority",
+        status: "pending" // Force all new bookings to pending status
+      };
       const updatedBookings = [...bookings, newBooking];
       setBookings(updatedBookings);
       safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
@@ -681,8 +687,8 @@ export function AppStoreProvider({ children }) {
         relatedId: id
       });
       
-      // Auto-generate invoice if booking status changed to completed and no invoice exists
-      if (updates.status === 'completed' && oldBooking.status !== 'completed') {
+      // Auto-generate draft invoice if booking status changed to confirmed and no invoice exists
+      if (updates.status === 'confirmed' && oldBooking.status === 'pending') {
         const existingInvoice = invoices.find(inv => inv.bookingId === id);
         if (!existingInvoice) {
           generateInvoiceFromBooking(updatedBooking);
@@ -735,6 +741,63 @@ export function AppStoreProvider({ children }) {
     } catch (error) {
       console.error('Failed to delete booking:', error);
       return { success: false, error: 'Failed to delete booking' };
+    }
+  };
+
+  // New workflow-specific functions
+  const confirmBooking = (bookingId) => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return { success: false, error: 'Booking not found' };
+      
+      const updatedBooking = { ...booking, status: 'confirmed' };
+      const updatedBookings = bookings.map(b => 
+        b.id === bookingId ? updatedBooking : b
+      );
+      setBookings(updatedBookings);
+      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      
+      // Generate draft invoice for confirmed booking
+      const existingInvoice = invoices.find(inv => inv.bookingId === bookingId);
+      if (!existingInvoice) {
+        generateInvoiceFromBooking(updatedBooking);
+      }
+      
+      addActivityLog({
+        type: 'booking_confirmed',
+        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created`,
+        relatedId: bookingId
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to confirm booking:', error);
+      return { success: false, error: 'Failed to confirm booking' };
+    }
+  };
+
+  const markBookingCompleted = (bookingId) => {
+    try {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return { success: false, error: 'Booking not found' };
+      
+      const updatedBooking = { ...booking, status: 'completed' };
+      const updatedBookings = bookings.map(b => 
+        b.id === bookingId ? updatedBooking : b
+      );
+      setBookings(updatedBookings);
+      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      
+      addActivityLog({
+        type: 'booking_completed',
+        description: `Booking completed for ${updatedBooking.customer}`,
+        relatedId: bookingId
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to mark booking completed:', error);
+      return { success: false, error: 'Failed to mark booking completed' };
     }
   };
 
@@ -1644,6 +1707,8 @@ export function AppStoreProvider({ children }) {
     addBooking,
     updateBooking,
     deleteBooking,
+    confirmBooking,
+    markBookingCompleted,
     addCustomer,
     updateCustomer,
     deleteCustomer,
