@@ -17,6 +17,8 @@ import StatusBlockGrid from "../components/StatusBlockGrid";
 import BookingsCalendarWidget from "../components/BookingsCalendarWidget";
 import InvoiceStatusBlock from "../components/InvoiceStatusBlock";
 import BookingStatusBlock from "../components/BookingStatusBlock";
+import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
+import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
 import { calculateKPIs } from '../utils/kpi';
@@ -190,7 +192,7 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Overview Tab Content - Separate, Clean Blocks */}
+      {/* Overview Tab Content - New Structure */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Financial KPIs - Separate Block */}
@@ -198,15 +200,11 @@ export default function Dashboard() {
             <FinancialKPIBlock compact={true} />
           </div>
 
-          {/* Booking Status KPIs - Separate Block */}  
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <BookingStatusBlock compact={true} showBookingList={true} />
-          </div>
+          {/* Grouped Booking & Invoice Status - New Tabbed Component */}
+          <BookingInvoiceStatusTabs compact={true} />
 
-          {/* Invoice Status KPIs - Separate Block with Action Buttons */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <InvoiceStatusBlock compact={true} showInvoiceList={true} showAddButtons={true} />
-          </div>
+          {/* Combined Booking & Invoice Status - Standalone Overview Component */}
+          <CombinedStatusSummary compact={true} />
 
           {/* Fleet & Driver Status - Separate, Clean Block */}
           <FleetDriverChecker compact={true} />
