@@ -21,6 +21,7 @@ import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
+import BookingsFleetGroupedWidget from "../components/BookingsFleetGroupedWidget";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -200,17 +201,14 @@ export default function Dashboard() {
             <FinancialKPIBlock compact={true} />
           </div>
 
+          {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
+          <BookingsFleetGroupedWidget compact={true} />
+
           {/* Grouped Booking & Invoice Status - New Tabbed Component */}
           <BookingInvoiceStatusTabs compact={true} />
 
           {/* Combined Booking & Invoice Status - Standalone Overview Component */}
           <CombinedStatusSummary compact={true} />
-
-          {/* Fleet & Driver Status - Separate, Clean Block */}
-          <FleetDriverChecker compact={true} />
-
-          {/* Unified Bookings & Calendar */}
-          <BookingsCalendarWidget />
         </div>
       )}
 
