@@ -196,11 +196,6 @@ export default function Dashboard() {
       {/* Overview Tab Content - New Structure */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Financial KPIs - Separate Block */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <FinancialKPIBlock compact={true} />
-          </div>
-
           {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
           <BookingsFleetGroupedWidget compact={true} />
 
@@ -270,7 +265,10 @@ export default function Dashboard() {
           {/* Subtab Content */}
           {accountingSubTab === 'overview' && (
             <div className="space-y-6">
-              {/* Financial KPIs replaced by SmartDashboardWidget above */}
+              {/* Financial KPIs Block at the top of Financial Overview */}
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <FinancialKPIBlock compact={true} />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold mb-2">Recent Income</h3>

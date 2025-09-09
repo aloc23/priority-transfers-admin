@@ -9,6 +9,23 @@ import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
+// Book Now Button as a subcomponent for external placement
+export function BookNowButton({ onClick }) {
+  const handleClick = onClick || (() => setShowBookingModal(true));
+  return (
+    <button 
+      onClick={handleClick}
+      className="btn btn-primary flex items-center gap-2"
+    >
+      <PlusIcon className="w-4 h-4" />
+      <span className="hidden sm:inline">Book Now</span>
+      <span className="sm:hidden">Book</span>
+    </button>
+  );
+}
+
+BookingsCalendarWidget.BookNowButton = BookNowButton;
+
 const localizer = momentLocalizer(moment);
 
 export default function BookingsCalendarWidget() {
@@ -217,50 +234,46 @@ export default function BookingsCalendarWidget() {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      {/* Header with Title and Book Now Button */}
-      <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
-        <h2 className="text-xl font-bold text-slate-900">Bookings & Calendar</h2>
-        <button 
-          onClick={handleBookNowClick}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Book Now</span>
-          <span className="sm:hidden">Book</span>
-        </button>
-      </div>
+
+
 
       {/* KPI Pills */}
       <div className="px-6 py-4">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleStatusFilter('confirmed')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm border border-green-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:ring-offset-2 ${
               selectedStatus === 'confirmed'
-                ? 'bg-green-600 text-white shadow-lg'
-                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-lg scale-105'
+                : 'bg-green-50 text-green-700 hover:bg-green-100'
             }`}
+            style={{ letterSpacing: '0.01em' }}
           >
+            <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2 align-middle"></span>
             Confirmed: {confirmedBookings.length}
           </button>
           <button
             onClick={() => handleStatusFilter('pending')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm border border-amber-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 ${
               selectedStatus === 'pending'
-                ? 'bg-amber-600 text-white shadow-lg'
-                : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-white shadow-lg scale-105'
+                : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
             }`}
+            style={{ letterSpacing: '0.01em' }}
           >
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2 align-middle"></span>
             Pending: {pendingBookings.length}
           </button>
           <button
             onClick={() => handleStatusFilter('upcoming')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm border border-blue-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 ${
               selectedStatus === 'upcoming'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg scale-105'
+                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
             }`}
+            style={{ letterSpacing: '0.01em' }}
           >
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2 align-middle"></span>
             Upcoming: {upcomingBookings.length}
           </button>
         </div>
@@ -269,32 +282,35 @@ export default function BookingsCalendarWidget() {
       {/* Main Content Area */}
       <div className={`p-6 pt-2 ${isMobile ? 'space-y-6' : 'grid grid-cols-5 gap-6'}`}>
         {/* Calendar (Left Side) */}
-        <div className={`${isMobile ? '' : 'col-span-2'} bg-slate-50 rounded-xl p-4`}>
+        <div className={`${isMobile ? '' : 'col-span-2'} bg-gradient-to-br from-slate-50 to-white rounded-2xl p-4 shadow-md border border-slate-100`}> 
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-700">Calendar</h3>
+            <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">Calendar</span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => navigateCalendar('prev')}
-                className="p-1 rounded hover:bg-slate-200 transition-colors"
+                className="p-1 rounded-full hover:bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                aria-label="Previous Month"
               >
                 <ChevronLeftIcon className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setSelectedDate(new Date())}
-                className="px-2 py-1 text-xs bg-slate-200 hover:bg-slate-300 rounded transition-colors"
+                className="px-2 py-1 text-xs font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                aria-label="Today"
               >
                 Today
               </button>
               <button
                 onClick={() => navigateCalendar('next')}
-                className="p-1 rounded hover:bg-slate-200 transition-colors"
+                className="p-1 rounded-full hover:bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                aria-label="Next Month"
               >
                 <ChevronRightIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div style={{ height: isMobile ? '250px' : '300px' }}>
+          <div style={{ height: isMobile ? '350px' : '450px' }}>
             <Calendar
               localizer={localizer}
               events={calendarEvents}
@@ -312,7 +328,8 @@ export default function BookingsCalendarWidget() {
               selectable
               popup
               style={{
-                fontSize: '12px'
+                fontSize: isMobile ? '13px' : '15px',
+                minHeight: isMobile ? '350px' : '450px'
               }}
             />
           </div>
@@ -355,46 +372,37 @@ export default function BookingsCalendarWidget() {
               filteredBookings.map((booking) => {
                 const actions = getBookingActions(booking);
                 const status = getCombinedStatus(booking);
-                
                 return (
-                  <div key={booking.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="text-sm font-medium text-slate-900 truncate">
-                            {booking.customer || booking.customerName}
-                          </h4>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                            booking.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                            'bg-slate-100 text-slate-800'
-                          }`}>
-                            {status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mb-1 truncate">
-                          {booking.pickup} → {booking.destination}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-slate-400">
-                          <span>{booking.date} • {booking.time}</span>
-                          <span>Driver: {booking.driver || 'Unassigned'}</span>
-                        </div>
-                      </div>
-                      {actions.length > 0 && (
-                        <div className="flex flex-col gap-1 ml-4">
-                          {actions.map((action, idx) => (
-                            <button
-                              key={idx}
-                              onClick={action.onClick}
-                              className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                            >
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                  <details key={booking.id} className="bg-white border border-slate-200 rounded-lg p-3 group">
+                    <summary className="flex items-center justify-between cursor-pointer select-none">
+                      <span className="font-medium text-slate-800 truncate">{booking.customer || booking.customerName}</span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                        booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                        booking.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                        'bg-slate-100 text-slate-800'
+                      }`}>
+                        {status}
+                      </span>
+                    </summary>
+                    <div className="mt-2 text-xs text-slate-500">
+                      <div><strong>Route:</strong> {booking.pickup} → {booking.destination}</div>
+                      <div><strong>Date:</strong> {booking.date} • {booking.time}</div>
+                      <div><strong>Driver:</strong> {booking.driver || 'Unassigned'}</div>
                     </div>
-                  </div>
+                    {actions.length > 0 && (
+                      <div className="flex flex-col gap-1 mt-2">
+                        {actions.map((action, idx) => (
+                          <button
+                            key={idx}
+                            onClick={action.onClick}
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </details>
                 );
               })
             )}
