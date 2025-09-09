@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import BookingStatusBlock from './BookingStatusBlock';
 import InvoiceStatusBlock from './InvoiceStatusBlock';
+import { BookingIcon, InvoiceIcon } from './Icons';
 
 export default function BookingInvoiceStatusTabs({ compact = false }) {
   const [activeTab, setActiveTab] = useState('booking');
 
   const tabs = [
-    { id: 'booking', label: 'Booking Status', icon: '📋' },
-    { id: 'invoice', label: 'Invoice Status', icon: '💰' }
+    { id: 'booking', label: 'Booking Status', icon: BookingIcon },
+    { id: 'invoice', label: 'Invoice Status', icon: InvoiceIcon }
   ];
 
   return (
@@ -25,7 +26,9 @@ export default function BookingInvoiceStatusTabs({ compact = false }) {
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <span className="text-lg">{tab.icon}</span>
+              <span className="w-4 h-4">
+                <tab.icon className="w-4 h-4" />
+              </span>
               <span>{tab.label}</span>
             </button>
           ))}
