@@ -317,7 +317,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-indigo-50/10 pointer-events-none"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-5">
-                <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">📅 Calendar</span>
+                <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">Calendar</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => navigateCalendar('prev')}
@@ -394,7 +394,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
               )}
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text">
-                  📋 {selectedStatus ? 
+                  {selectedStatus ? 
                     `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} Bookings` :
                     selectedDate ?
                       `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}` :
