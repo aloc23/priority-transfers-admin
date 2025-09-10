@@ -7,6 +7,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
+import { formatCurrency } from '../utils/currency';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 // Context for Book Now button (provides openModal and openModalWithDate)
@@ -51,6 +52,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
   const [selectedDate, setSelectedDate] = useState(null); // Start with no date selected
   const [selectedStatus, setSelectedStatus] = useState(null); // 'confirmed', 'pending', 'upcoming'
   const [calendarView, setCalendarView] = useState('month');
+  const [selectedCalendarBooking, setSelectedCalendarBooking] = useState(null); // For popover
 
   // Handle Book Now button click - open form directly instead of navigating
 
@@ -101,7 +103,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
     });
   };
 
-  // Combine booking and invoice status like in Dashboard.jsx
+  // Combined booking/invoice status logic (same as Schedule)
   const getCombinedStatus = (booking) => {
     const inv = invoices.find(inv => inv.bookingId === booking.id);
     if (booking.status === 'pending') return 'Pending';
@@ -112,6 +114,17 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
     if (inv && inv.status === 'overdue') return 'Overdue';
     if (booking.status === 'cancelled') return 'Cancelled';
     return 'Other';
+  };
+
+  const combinedStatusColors = {
+    Pending: 'bg-gradient-to-r from-amber-600 to-yellow-500',
+    Confirmed: 'bg-gradient-to-r from-green-600 to-emerald-500',
+    Completed: 'bg-gradient-to-r from-blue-600 to-indigo-500',
+    Invoiced: 'bg-gradient-to-r from-orange-500 to-yellow-400',
+    Paid: 'bg-gradient-to-r from-blue-700 to-green-500',
+    Overdue: 'bg-gradient-to-r from-red-600 to-pink-500',
+    Cancelled: 'bg-gradient-to-r from-slate-400 to-slate-600',
+    Other: 'bg-gradient-to-r from-slate-300 to-slate-400'
   };
 
   // Calculate KPIs
@@ -352,6 +365,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                   view={calendarView}
                   date={selectedDate || new Date()}
                   onNavigate={setSelectedDate}
+                  onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
                   onSelectSlot={({ start }) => handleCalendarDateSelect(start)}
                   onView={setCalendarView}
                   views={['month']}
@@ -817,6 +831,126 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                 >
                   Create Booking
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Booking Detail Popover */}
+        {selectedCalendarBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" onClick={() => setSelectedCalendarBooking(null)}>
+            <div className="bg-white rounded-xl shadow-xl p-6 min-w-[320px] max-w-[90vw] relative" onClick={e => e.stopPropagation()}>
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedCalendarBooking(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close popover"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              
+              {/* Status badge */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white`} style={{background: combinedStatusColors[getCombinedStatus(selectedCalendarBooking)] || '#64748b'}}>
+                  {getCombinedStatus(selectedCalendarBooking)}
+                </span>
+              </div>
+              
+              {/* Customer info */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg font-bold text-white shadow-lg">
+                  {selectedCalendarBooking.customer?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div>
+                  <div className="font-semibold text-lg text-slate-800">{selectedCalendarBooking.customer}</div>
+                  <div className="text-sm text-slate-500">{selectedCalendarBooking.pickup} → {selectedCalendarBooking.destination}</div>
+                </div>
+              </div>
+              
+              {/* Booking details */}
+              <div className="space-y-2 mb-4">
+                <div className="text-sm">
+                  <span className="font-medium text-slate-600">Date & Time:</span> {selectedCalendarBooking.date} at {selectedCalendarBooking.time}
+                </div>
+                <div className="flex gap-4">
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-600">Driver:</span> {selectedCalendarBooking.driver || 'Not assigned'}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-600">Vehicle:</span> {selectedCalendarBooking.vehicle || 'Not assigned'}
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-600">Type:</span> {selectedCalendarBooking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-600">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Action buttons */}
+              <div className="flex gap-2 mt-4">
+                {(() => {
+                  const status = selectedCalendarBooking.status;
+                  const inv = invoices.find(inv => inv.bookingId === selectedCalendarBooking.id);
+                  if (status === 'pending') {
+                    return (
+                      <button 
+                        className="btn btn-primary flex-1" 
+                        onClick={() => { 
+                          updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'confirmed' }); 
+                          setSelectedCalendarBooking(null); 
+                        }}
+                      >
+                        Confirm Booking
+                      </button>
+                    );
+                  } else if (status === 'confirmed') {
+                    return (
+                      <button 
+                        className="btn btn-secondary flex-1" 
+                        onClick={() => { 
+                          updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); 
+                          setSelectedCalendarBooking(null); 
+                        }}
+                      >
+                        Mark Complete
+                      </button>
+                    );
+                  } else if (status === 'completed' && !inv) {
+                    return (
+                      <button 
+                        className="btn btn-primary flex-1" 
+                        onClick={() => { 
+                          generateInvoiceFromBooking(selectedCalendarBooking); 
+                          setSelectedCalendarBooking(null); 
+                        }}
+                      >
+                        Generate Invoice
+                      </button>
+                    );
+                  } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                    return (
+                      <button 
+                        className="btn btn-primary flex-1" 
+                        onClick={() => { 
+                          markInvoiceAsPaid(inv.id); 
+                          setSelectedCalendarBooking(null); 
+                        }}
+                      >
+                        Mark as Paid
+                      </button>
+                    );
+                  } else if (inv && inv.status === 'paid') {
+                    return <span className="btn btn-outline flex-1 opacity-50 cursor-default">Completed & Paid</span>;
+                  }
+                  return null;
+                })()}
+                <button className="btn btn-outline px-4" onClick={() => setSelectedCalendarBooking(null)}>Close</button>
               </div>
             </div>
           </div>
