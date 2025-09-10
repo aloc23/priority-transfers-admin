@@ -24,7 +24,16 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
     vehicleId: '',
     status: 'pending',
     type: 'priority',
-    price: 45
+    price: 45,
+    // New enhanced fields
+    bookingType: 'internal', // 'internal' | 'outsourced'
+    tripType: 'single', // 'single' | 'tour'
+    returnTrip: false,
+    returnPickup: '',
+    returnDestination: '',
+    returnDate: '',
+    returnTime: '',
+    partnerId: ''
   });
 
   const openBookingModalDefault = () => {
@@ -38,7 +47,16 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
       vehicleId: '',
       status: 'pending',
       type: 'priority',
-      price: 45
+      price: 45,
+      // New enhanced fields
+      bookingType: 'internal',
+      tripType: 'single',
+      returnTrip: false,
+      returnPickup: '',
+      returnDestination: '',
+      returnDate: '',
+      returnTime: '',
+      partnerId: ''
     });
     setShowBookingModal(true);
   };
