@@ -482,7 +482,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
 
         {/* Enhanced Booking Modal with Improved Layout */}
         {showBookingModal && (
-          <div className="modal-backdrop">
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-xl flex items-center justify-center">
             <div className="modal-container">
               {/* Simplified Header */}
               <div className="modal-header">
