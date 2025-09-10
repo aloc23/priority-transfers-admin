@@ -712,5 +712,6 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
         </button>
       </div>
     </div>
-  </div>
-)}
+    </div>
+  </BookNowContext.Provider>
+);
