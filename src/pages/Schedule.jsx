@@ -14,6 +14,37 @@ import ToggleSwitch from "../components/ToggleSwitch";
 
 const localizer = momentLocalizer(moment);
 
+// Helper function to get booking type display
+const getBookingTypeDisplay = (type) => {
+  switch (type) {
+    case 'single':
+      return 'Single Trip';
+    case 'tour':
+      return 'Tour';
+    case 'outsourced':
+      return 'Outsourced';
+    case 'priority': // For backwards compatibility with existing data
+      return 'Single Trip';
+    default:
+      return 'Single Trip';
+  }
+};
+
+// Helper function to get booking type color
+const getBookingTypeColor = (type) => {
+  switch (type) {
+    case 'single':
+    case 'priority': // For backwards compatibility
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'badge-blue' };
+    case 'tour':
+      return { bg: '#10b981', border: '#047857', badge: 'badge-green' };
+    case 'outsourced':
+      return { bg: '#f59e0b', border: '#d97706', badge: 'badge-yellow' };
+    default:
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'badge-blue' };
+  }
+};
+
 export default function Schedule() {
   // State for selected booking (for calendar card popup)
   const [selectedCalendarBooking, setSelectedCalendarBooking] = useState(null);
@@ -84,8 +115,14 @@ export default function Schedule() {
     vehicle: "",
     partner: "", // For outsourced bookings
     status: "pending",
-    type: "priority", // New field for Priority vs Outsourced
-    price: 45 // Default price field
+    type: "single", // New field: "single", "tour", "outsourced"
+    price: 45, // Default price field
+    tourStartDate: "", // For tour bookings
+    tourEndDate: "", // For tour bookings
+    hasReturn: false, // Whether this booking has a return trip
+    returnPickup: "", // Return pickup address
+    returnDate: "", // Return date
+    returnTime: "" // Return time
   });
 
   const handleSubmit = (e) => {
@@ -107,8 +144,14 @@ export default function Schedule() {
       vehicle: "",
       partner: "",
       status: "pending",
-      type: "priority",
-      price: 45
+      type: "single",
+      price: 45,
+      tourStartDate: "",
+      tourEndDate: "",
+      hasReturn: false,
+      returnPickup: "",
+      returnDate: "",
+      returnTime: ""
     });
   };
 
@@ -171,8 +214,8 @@ export default function Schedule() {
       end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
       resource: booking,
       style: {
-        backgroundColor: booking.type === 'priority' ? '#3b82f6' : '#f59e0b',
-        borderColor: booking.type === 'priority' ? '#1d4ed8' : '#d97706',
+        backgroundColor: getBookingTypeColor(booking.type).bg,
+        borderColor: getBookingTypeColor(booking.type).border,
         color: 'white'
       }
     }));
@@ -245,10 +288,8 @@ export default function Schedule() {
               }`}>
                 {booking.status}
               </span>
-              <span className={`badge badge-animated ${
-                booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-              }`}>
-                {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+              <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                {getBookingTypeDisplay(booking.type)}
               </span>
             </div>
           </div>
@@ -575,10 +616,8 @@ export default function Schedule() {
                           {formatCurrency(booking.price || 45)}
                         </td>
                         <td>
-                          <span className={`badge badge-animated ${
-                            booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-                          }`}>
-                            {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                          <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                            {getBookingTypeDisplay(booking.type)}
                           </span>
                         </td>
                         <td>
@@ -745,7 +784,7 @@ export default function Schedule() {
                     <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarBooking.vehicle}</span>
                   </div>
                   <div className="flex gap-2 mb-4">
-                    <span className="text-xs"><span className="font-medium">Type:</span> {selectedCalendarBooking.type === 'priority' ? 'Priority' : 'Outsourced'}</span>
+                    <span className="text-xs"><span className="font-medium">Type:</span> {getBookingTypeDisplay(selectedCalendarBooking.type)}</span>
                     <span className="text-xs"><span className="font-medium">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}</span>
                   </div>
                   {/* Action buttons */}
@@ -800,8 +839,14 @@ export default function Schedule() {
                     vehicle: "",
                     partner: "",
                     status: "pending",
-                    type: "priority",
-                    price: 45
+                    type: "single",
+                    price: 45,
+                    tourStartDate: "",
+                    tourEndDate: "",
+                    hasReturn: false,
+                    returnPickup: "",
+                    returnDate: "",
+                    returnTime: ""
                   });
                 }}
                 className="btn-close"
@@ -814,7 +859,73 @@ export default function Schedule() {
             {/* Scrollable Body */}
             <div className="modal-body">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                {/* Booking Type - Radio buttons */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Booking Type</label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bookingType"
+                        value="single"
+                        checked={formData.type === 'single'}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Single Trip</span>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bookingType"
+                        value="tour"
+                        checked={formData.type === 'tour'}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Tour</span>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bookingType"
+                        value="outsourced"
+                        checked={formData.type === 'outsourced'}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Outsourced</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Tour Date Fields - Show for tour bookings */}
+                {formData.type === 'tour' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Tour Start Date</label>
+                      <input
+                        type="date"
+                        value={formData.tourStartDate}
+                        onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Tour End Date</label>
+                      <input
+                        type="date"
+                        value={formData.tourEndDate}
+                        onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block mb-1">Customer</label>
                     <input
@@ -825,13 +936,15 @@ export default function Schedule() {
                       required
                     />
                   </div>
-                  {formData.type === 'priority' && (
+                  {/* Driver field - Show for single trip and tour, hide for outsourced */}
+                  {(formData.type === 'single' || formData.type === 'tour') && (
                     <div>
                       <label className="block mb-1">Driver</label>
                       <select
                         value={formData.driver}
                         onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                        required={formData.type === 'priority'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.type === 'single' || formData.type === 'tour'}
                       >
                         <option value="">Select Driver</option>
                         {drivers.map(driver => (
@@ -840,6 +953,7 @@ export default function Schedule() {
                       </select>
                     </div>
                   )}
+                  {/* Partner field - Show for outsourced */}
                   {formData.type === 'outsourced' && (
                     <div>
                       <label className="block mb-1">Partner/External Provider</label>
@@ -853,6 +967,7 @@ export default function Schedule() {
                     </div>
                   )}
                 </div>
+
                 <div>
                   <label className="block mb-1">Pickup Location</label>
                   <input
@@ -863,6 +978,7 @@ export default function Schedule() {
                     required
                   />
                 </div>
+
                 <div>
                   <label className="block mb-1">Destination</label>
                   <input
@@ -873,34 +989,95 @@ export default function Schedule() {
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                {/* Pickup Date and Time */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block mb-1">Date</label>
+                    <label className="block mb-1">Pickup Date</label>
                     <input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block mb-1">Time</label>
+                    <label className="block mb-1">Pickup Time</label>
                     <input
                       type="time"
                       value={formData.time}
                       onChange={(e) => setFormData({...formData, time: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {formData.type === 'priority' && (
+
+                {/* Return Trip Toggle */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.hasReturn}
+                        onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm font-medium text-gray-700">Return Trip</span>
+                    </label>
+                  </div>
+
+                  {/* Return Trip Fields */}
+                  {formData.hasReturn && (
+                    <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div>
+                        <label className="block mb-1 text-sm font-medium text-gray-700">Return Pickup Address</label>
+                        <input
+                          type="text"
+                          value={formData.returnPickup}
+                          onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          placeholder="Enter return pickup location"
+                          required={formData.hasReturn}
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block mb-1 text-sm font-medium text-gray-700">Return Date</label>
+                          <input
+                            type="date"
+                            value={formData.returnDate}
+                            onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required={formData.hasReturn}
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-sm font-medium text-gray-700">Return Time</label>
+                          <input
+                            type="time"
+                            value={formData.returnTime}
+                            onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required={formData.hasReturn}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Vehicle field - Show for single trip and tour, hide for outsourced */}
+                  {(formData.type === 'single' || formData.type === 'tour') && (
                     <div>
                       <label className="block mb-1">Vehicle</label>
                       <select
                         value={formData.vehicle}
                         onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                        required={formData.type === 'priority'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.type === 'single' || formData.type === 'tour'}
                       >
                         <option value="">Select Vehicle</option>
                         {fleet && fleet.map(vehicle => (
@@ -911,16 +1088,6 @@ export default function Schedule() {
                       </select>
                     </div>
                   )}
-                  <div>
-                    <label className="block mb-1">Booking Type</label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                    >
-                      <option value="priority">Priority Transfers</option>
-                      <option value="outsourced">Outsourced/Partner</option>
-                    </select>
-                  </div>
                   <div>
                     <label className="block mb-1">Price (€)</label>
                     <input
@@ -934,11 +1101,13 @@ export default function Schedule() {
                     />
                   </div>
                 </div>
+
                 <div>
                   <label className="block mb-1">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="pending">Pending</option>
                     <option value="confirmed">Confirmed</option>
@@ -966,8 +1135,14 @@ export default function Schedule() {
                     vehicle: "",
                     partner: "",
                     status: "pending",
-                    type: "priority",
-                    price: 45
+                    type: "single",
+                    price: 45,
+                    tourStartDate: "",
+                    tourEndDate: "",
+                    hasReturn: false,
+                    returnPickup: "",
+                    returnDate: "",
+                    returnTime: ""
                   });
                 }}
                 className="btn btn-outline btn-action"
