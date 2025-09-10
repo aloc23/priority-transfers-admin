@@ -480,22 +480,34 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
         </div>
       </div>
 
-        {/* Enhanced Booking Modal */}
+        {/* Enhanced Booking Modal with Improved Layout */}
         {showBookingModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden border border-white/20">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-8 py-6 text-white">
+          <div className="modal-backdrop">
+            <div className="modal-container">
+              {/* Sticky Header */}
+              <div className="modal-header bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0">
                 <h2 className="text-2xl font-bold flex items-center gap-3">
                   <PlusIcon className="w-6 h-6" />
                   Create New Booking
                 </h2>
-                <p className="text-blue-100 mt-1 text-sm">Fill in the details for your new booking</p>
+                <button
+                  type="button"
+                  onClick={() => setShowBookingModal(false)}
+                  className="btn-close text-white hover:text-blue-100 hover:bg-white/10"
+                  aria-label="Close modal"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Header Subtitle */}
+              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 pb-4">
+                <p className="text-blue-100 text-sm">Fill in the details for your new booking</p>
               </div>
               
-              {/* Modal Content */}
-              <div className="max-h-[calc(95vh-120px)] overflow-y-auto">
-                <form onSubmit={handleBookingSubmit} className="p-8 space-y-6">
+              {/* Scrollable Body */}
+              <div className="modal-body">
+                <form onSubmit={handleBookingSubmit} className="space-y-6">
                   {/* Booking Type Selection */}
                   <div className="space-y-4">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -802,12 +814,12 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                 </form>
               </div>
               
-              {/* Modal Footer */}
-              <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 flex gap-4">
+              {/* Sticky Footer */}
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setShowBookingModal(false)}
-                  className="flex-1 px-6 py-3 text-slate-600 hover:text-slate-800 transition-colors font-medium rounded-lg hover:bg-white/50"
+                  className="flex-1 px-6 py-3 text-slate-600 hover:text-slate-800 transition-colors font-medium rounded-lg hover:bg-slate-100"
                 >
                   Cancel
                 </button>

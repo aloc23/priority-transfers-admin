@@ -779,172 +779,208 @@ export default function Schedule() {
       {/* Modal */}
       {showModal && (
         <div className="modal-backdrop">
-          <div className="modal">
-            <h2 className="text-xl font-bold mb-4">
-              {editingBooking ? "Edit Booking" : "New Booking"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="modal-container">
+            {/* Sticky Header */}
+            <div className="modal-header">
+              <h2 className="text-xl font-bold">
+                {editingBooking ? "Edit Booking" : "New Booking"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingBooking(null);
+                  setFormData({
+                    customer: "",
+                    pickup: "",
+                    destination: "",
+                    date: "",
+                    time: "",
+                    driver: "",
+                    vehicle: "",
+                    partner: "",
+                    status: "pending",
+                    type: "priority",
+                    price: 45
+                  });
+                }}
+                className="btn-close"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="modal-body">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1">Customer</label>
+                    <input
+                      type="text"
+                      value={formData.customer}
+                      onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                      className="input-animated"
+                      required
+                    />
+                  </div>
+                  {formData.type === 'priority' && (
+                    <div>
+                      <label className="block mb-1">Driver</label>
+                      <select
+                        value={formData.driver}
+                        onChange={(e) => setFormData({...formData, driver: e.target.value})}
+                        required={formData.type === 'priority'}
+                      >
+                        <option value="">Select Driver</option>
+                        {drivers.map(driver => (
+                          <option key={driver.id} value={driver.name}>{driver.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {formData.type === 'outsourced' && (
+                    <div>
+                      <label className="block mb-1">Partner/External Provider</label>
+                      <input
+                        type="text"
+                        value={formData.partner || ''}
+                        onChange={(e) => setFormData({...formData, partner: e.target.value})}
+                        className="input-animated"
+                        placeholder="Enter partner company name"
+                      />
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <label className="block mb-1">Customer</label>
+                  <label className="block mb-1">Pickup Location</label>
                   <input
                     type="text"
-                    value={formData.customer}
-                    onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                    value={formData.pickup}
+                    onChange={(e) => setFormData({...formData, pickup: e.target.value})}
                     className="input-animated"
                     required
                   />
                 </div>
-                {formData.type === 'priority' && (
+                <div>
+                  <label className="block mb-1">Destination</label>
+                  <input
+                    type="text"
+                    value={formData.destination}
+                    onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                    className="input-animated"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block mb-1">Driver</label>
-                    <select
-                      value={formData.driver}
-                      onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      required={formData.type === 'priority'}
-                    >
-                      <option value="">Select Driver</option>
-                      {drivers.map(driver => (
-                        <option key={driver.id} value={driver.name}>{driver.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {formData.type === 'outsourced' && (
-                  <div>
-                    <label className="block mb-1">Partner/External Provider</label>
+                    <label className="block mb-1">Date</label>
                     <input
-                      type="text"
-                      value={formData.partner || ''}
-                      onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="input-animated"
-                      placeholder="Enter partner company name"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      required
                     />
                   </div>
-                )}
-              </div>
-              <div>
-                <label className="block mb-1">Pickup Location</label>
-                <input
-                  type="text"
-                  value={formData.pickup}
-                  onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                  className="input-animated"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1">Destination</label>
-                <input
-                  type="text"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                  className="input-animated"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1">Time</label>
-                  <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({...formData, time: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {formData.type === 'priority' && (
                   <div>
-                    <label className="block mb-1">Vehicle</label>
+                    <label className="block mb-1">Time</label>
+                    <input
+                      type="time"
+                      value={formData.time}
+                      onChange={(e) => setFormData({...formData, time: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {formData.type === 'priority' && (
+                    <div>
+                      <label className="block mb-1">Vehicle</label>
+                      <select
+                        value={formData.vehicle}
+                        onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
+                        required={formData.type === 'priority'}
+                      >
+                        <option value="">Select Vehicle</option>
+                        {fleet && fleet.map(vehicle => (
+                          <option key={vehicle.id} value={vehicle.name}>
+                            {vehicle.name} ({vehicle.type})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block mb-1">Booking Type</label>
                     <select
-                      value={formData.vehicle}
-                      onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                      required={formData.type === 'priority'}
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
                     >
-                      <option value="">Select Vehicle</option>
-                      {fleet && fleet.map(vehicle => (
-                        <option key={vehicle.id} value={vehicle.name}>
-                          {vehicle.name} ({vehicle.type})
-                        </option>
-                      ))}
+                      <option value="priority">Priority Transfers</option>
+                      <option value="outsourced">Outsourced/Partner</option>
                     </select>
                   </div>
-                )}
+                  <div>
+                    <label className="block mb-1">Price (€)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                      className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
+                      placeholder="Enter price..."
+                    />
+                  </div>
+                </div>
                 <div>
-                  <label className="block mb-1">Booking Type</label>
+                  <label className="block mb-1">Status</label>
                   <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
                   >
-                    <option value="priority">Priority Transfers</option>
-                    <option value="outsourced">Outsourced/Partner</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block mb-1">Price (€)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                    className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
-                    placeholder="Enter price..."
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary btn-action">
-                  {editingBooking ? "Update" : "Create"} Booking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingBooking(null);
-                    setFormData({
-                      customer: "",
-                      pickup: "",
-                      destination: "",
-                      date: "",
-                      time: "",
-                      driver: "",
-                      vehicle: "",
-                      partner: "",
-                      status: "pending",
-                      type: "priority",
-                      price: 45
-                    });
-                  }}
-                  className="btn btn-outline btn-action"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
+
+            {/* Sticky Footer */}
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingBooking(null);
+                  setFormData({
+                    customer: "",
+                    pickup: "",
+                    destination: "",
+                    date: "",
+                    time: "",
+                    driver: "",
+                    vehicle: "",
+                    partner: "",
+                    status: "pending",
+                    type: "priority",
+                    price: 45
+                  });
+                }}
+                className="btn btn-outline btn-action"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="btn btn-primary btn-action"
+              >
+                {editingBooking ? "Update" : "Create"} Booking
+              </button>
+            </div>
           </div>
         </div>
       )}
