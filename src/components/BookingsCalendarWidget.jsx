@@ -576,7 +576,7 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                             : 'text-slate-600 hover:text-slate-800'
                         }`}
                       >
-                        Single Trip
+                        Transfer
                       </button>
                       <button
                         type="button"
@@ -719,26 +719,53 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
-                          <input
-                            type="date"
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            value={bookingForm.date}
-                            onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Time</label>
-                          <input
-                            type="time"
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            value={bookingForm.time}
-                            onChange={(e) => setBookingForm({ ...bookingForm, time: e.target.value })}
-                            required
-                          />
-                        </div>
+                        {bookingForm.tripType === 'tour' ? (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Tour Start Date</label>
+                              <input
+                                type="date"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                value={bookingForm.date}
+                                onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Tour End Date</label>
+                              <input
+                                type="date"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                value={bookingForm.tourEndDate || ''}
+                                onChange={(e) => setBookingForm({ ...bookingForm, tourEndDate: e.target.value })}
+                                required
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Pickup Date</label>
+                              <input
+                                type="date"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                value={bookingForm.date}
+                                onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Time</label>
+                              <input
+                                type="time"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                value={bookingForm.time}
+                                onChange={(e) => setBookingForm({ ...bookingForm, time: e.target.value })}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -774,20 +801,37 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
                         <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                         Internal Assignment
                       </h3>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Driver</label>
-                        <select
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                          value={bookingForm.driver}
-                          onChange={(e) => setBookingForm({ ...bookingForm, driver: e.target.value })}
-                        >
-                          <option value="">Select Driver (Optional)</option>
-                          {drivers.map((driver) => (
-                            <option key={driver.id} value={driver.name}>
-                              {driver.name} - {driver.status}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Driver</label>
+                          <select
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                            value={bookingForm.driver}
+                            onChange={(e) => setBookingForm({ ...bookingForm, driver: e.target.value })}
+                          >
+                            <option value="">Select Driver (Optional)</option>
+                            {drivers.map((driver) => (
+                              <option key={driver.id} value={driver.name}>
+                                {driver.name} - {driver.status}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Vehicle</label>
+                          <select
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                            value={bookingForm.vehicle || ''}
+                            onChange={(e) => setBookingForm({ ...bookingForm, vehicle: e.target.value })}
+                          >
+                            <option value="">Select Vehicle (Optional)</option>
+                            {fleet.map((vehicle) => (
+                              <option key={vehicle.id} value={vehicle.id}>
+                                {vehicle.name} - {vehicle.type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   )}
