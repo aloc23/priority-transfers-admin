@@ -391,6 +391,33 @@ label {
   box-shadow: 0 20px 32px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* Enhanced Modal with sticky header and footer */
+.modal-improved {
+  @apply bg-white rounded-2xl w-full max-w-2xl border border-slate-200 max-h-[90vh] flex flex-col;
+  box-shadow: 0 20px 32px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  @apply sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center rounded-t-2xl;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.modal-body {
+  @apply flex-1 overflow-y-auto px-6 py-4;
+  max-height: calc(90vh - 128px); /* Account for header and footer */
+}
+
+.modal-footer {
+  @apply sticky bottom-0 z-10 bg-white border-t border-slate-200 px-6 py-4 flex gap-2 rounded-b-2xl;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.modal-close-btn {
+  @apply p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
 /* Modern Calendar styling with professional palette */
 .rbc-calendar {
   @apply bg-white rounded-xl border border-slate-200;
@@ -570,6 +597,20 @@ label {
   /* Better mobile navigation */
   .sidebar-mobile {
     @apply w-full max-w-xs;
+  }
+  
+  /* Mobile modal improvements */
+  .modal-improved, .modal {
+    @apply mx-2 max-w-none;
+    max-height: 90vh;
+  }
+  
+  .modal-body {
+    max-height: calc(90vh - 120px); /* Smaller header/footer on mobile */
+  }
+  
+  .modal-header, .modal-footer {
+    @apply px-4 py-3;
   }
   
   /* Improved touch targets for mobile */

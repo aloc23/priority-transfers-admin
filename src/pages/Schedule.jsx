@@ -779,11 +779,45 @@ export default function Schedule() {
       {/* Modal */}
       {showModal && (
         <div className="modal-backdrop">
-          <div className="modal">
-            <h2 className="text-xl font-bold mb-4">
-              {editingBooking ? "Edit Booking" : "New Booking"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="modal-improved">
+            {/* Sticky Header */}
+            <div className="modal-header">
+              <h2 className="text-xl font-bold text-slate-800">
+                {editingBooking ? "Edit Booking" : "New Booking"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingBooking(null);
+                  setFormData({
+                    customer: "",
+                    pickup: "",
+                    destination: "",
+                    date: "",
+                    time: "",
+                    driver: "",
+                    vehicle: "",
+                    partner: "",
+                    status: "pending",
+                    type: "priority",
+                    price: 45
+                  });
+                }}
+                className="modal-close-btn"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Form with Scrollable Body and Sticky Footer */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+              {/* Scrollable Body */}
+              <div className="modal-body">
+                <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1">Customer</label>
@@ -916,7 +950,11 @@ export default function Schedule() {
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
-              <div className="flex gap-2 pt-4">
+                </div> {/* End space-y-4 */}
+              </div> {/* End modal-body */}
+              
+              {/* Sticky Footer */}
+              <div className="modal-footer">
                 <button type="submit" className="btn btn-primary btn-action">
                   {editingBooking ? "Update" : "Create"} Booking
                 </button>
