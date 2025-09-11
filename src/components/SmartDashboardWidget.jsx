@@ -11,6 +11,7 @@ import React, { useState, useMemo } from "react";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { calculateKPIs } from '../utils/kpi';
+import BookingModal from './BookingModal';
 
 // Helper for date formatting
 function formatDate(date) {
@@ -97,31 +98,14 @@ export default function SmartDashboardWidget({ onBookClick }) {
 
   // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [bookingForm, setBookingForm] = useState({
-    pickup: "",
-    date: formatDate(selectedDate),
-    time: "09:00",
-    driver: "",
-    vehicleId: "",
-  });
 
-  // Handle booking creation
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
-    addBooking(bookingForm);
+  // Handle booking modal
+  const openBookingModal = () => {
+    setShowBookingModal(true);
+  };
+
+  const closeBookingModal = () => {
     setShowBookingModal(false);
-    setBookingForm({
-      customer: "",
-      pickup: "",
-      destination: "",
-      date: formatDate(selectedDate),
-      time: "09:00",
-      driver: "",
-      vehicleId: "",
-      status: "pending",
-      type: "priority",
-      price: 0
-    });
   };
 
   return (
@@ -148,39 +132,35 @@ export default function SmartDashboardWidget({ onBookClick }) {
           </div>
         </div>
         {/* Book Action Button (global booking, improved style) */}
-  {/* Button moved to beside Fleet & Driver Status header below */}
-        {/* Booking Modal */}
-        {showBookingModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-              <h2 className="text-lg font-bold mb-4">Check Availability for {formatDate(selectedDate)}</h2>
-              <form onSubmit={handleBookingSubmit} className="space-y-3">
-                <input type="text" className="input input-bordered w-full" placeholder="Pickup" value={bookingForm.pickup} onChange={e => setBookingForm({ ...bookingForm, pickup: e.target.value })} required />
-                <input type="time" className="input input-bordered w-full" value={bookingForm.time} onChange={e => setBookingForm({ ...bookingForm, time: e.target.value })} required />
-                <select className="input input-bordered w-full" value={bookingForm.vehicleId} onChange={e => setBookingForm({ ...bookingForm, vehicleId: e.target.value })} required>
-                  <option value="">Select Vehicle</option>
-                  {fleetStatus.map(f => (
-                    <option key={f.id} value={f.id} disabled={f.isBusy}>{f.name || f.model} {f.isBusy ? '(Busy)' : '(Available)'}</option>
-                  ))}
-                </select>
-                <select className="input input-bordered w-full" value={bookingForm.driver} onChange={e => setBookingForm({ ...bookingForm, driver: e.target.value })} required>
-                  <option value="">Select Driver</option>
-                  {drivers.map(d => (
-                    <option key={d.id} value={d.name}>{d.name}</option>
-                  ))}
-                </select>
-                <div className="flex gap-2 pt-4 justify-end">
-                  <button type="submit" className="btn btn-primary btn-action">
-                    Check Availability
-                  </button>
-                  <button type="button" className="btn btn-outline btn-action" onClick={() => setShowBookingModal(false)}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
+        <div className="px-6 pb-4">
+          <button
+            onClick={openBookingModal}
+            className="w-full group relative inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50 overflow-hidden"
+          >
+            {/* Animated background overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            {/* Content */}
+            <div className="relative z-10 flex items-center gap-2">
+              <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="text-sm font-bold tracking-wide">Book Now</span>
             </div>
-          </div>
-        )}
+            
+            {/* Shine effect */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+            </div>
+          </button>
+        </div>
+        {/* Booking Modal */}
+        <BookingModal 
+          isOpen={showBookingModal}
+          onClose={closeBookingModal}
+          initialDate={formatDateInput(selectedDate)}
+          initialTime="09:00"
+        />
         {/* Scrolling Calendar Bar with week navigation, no booking label */}
         {/* Unified Fleet & Driver Status header, checker, and calendar as a card */}
         <div className="px-4 pt-2 pb-0">

@@ -11,8 +11,40 @@ import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } f
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import ToggleSwitch from "../components/ToggleSwitch";
+import BookingModal from "../components/BookingModal";
 
 const localizer = momentLocalizer(moment);
+
+// Helper function to get booking type display
+const getBookingTypeDisplay = (type) => {
+  switch (type) {
+    case 'single':
+      return 'Single Trip';
+    case 'tour':
+      return 'Tour';
+    case 'outsourced':
+      return 'Outsourced';
+    case 'priority': // For backwards compatibility with existing data
+      return 'Single Trip';
+    default:
+      return 'Single Trip';
+  }
+};
+
+// Helper function to get booking type color
+const getBookingTypeColor = (type) => {
+  switch (type) {
+    case 'single':
+    case 'priority': // For backwards compatibility
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'badge-blue' };
+    case 'tour':
+      return { bg: '#10b981', border: '#047857', badge: 'badge-green' };
+    case 'outsourced':
+      return { bg: '#f59e0b', border: '#d97706', badge: 'badge-yellow' };
+    default:
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'badge-blue' };
+  }
+};
 
 export default function Schedule() {
   // State for selected booking (for calendar card popup)
@@ -74,48 +106,21 @@ export default function Schedule() {
   }, [bookings, invoices]);
 
   const [selectedCombinedStatus, setSelectedCombinedStatus] = useState(null);
-  const [formData, setFormData] = useState({
-    customer: "",
-    pickup: "",
-    destination: "",
-    date: "",
-    time: "",
-    driver: "",
-    vehicle: "",
-    partner: "", // For outsourced bookings
-    status: "pending",
-    type: "priority", // New field for Priority vs Outsourced
-    price: 45 // Default price field
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingBooking) {
-      updateBooking(editingBooking.id, formData);
-    } else {
-      addBooking(formData);
-    }
-    setShowModal(false);
-    setEditingBooking(null);
-    setFormData({
-      customer: "",
-      pickup: "",
-      destination: "",
-      date: "",
-      time: "",
-      driver: "",
-      vehicle: "",
-      partner: "",
-      status: "pending",
-      type: "priority",
-      price: 45
-    });
-  };
+  const [initialDate, setInitialDate] = useState('');
+  const [initialTime, setInitialTime] = useState('');
 
   const handleEdit = (booking) => {
     setEditingBooking(booking);
-    setFormData(booking);
+    setInitialDate('');
+    setInitialTime('');
     setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingBooking(null);
+    setInitialDate('');
+    setInitialTime('');
   };
 
   const handleDelete = (id) => {
@@ -171,8 +176,8 @@ export default function Schedule() {
       end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
       resource: booking,
       style: {
-        backgroundColor: booking.type === 'priority' ? '#3b82f6' : '#f59e0b',
-        borderColor: booking.type === 'priority' ? '#1d4ed8' : '#d97706',
+        backgroundColor: getBookingTypeColor(booking.type).bg,
+        borderColor: getBookingTypeColor(booking.type).border,
         color: 'white'
       }
     }));
@@ -185,11 +190,9 @@ export default function Schedule() {
   const handleSelectSlot = ({ start }) => {
     const date = moment(start).format('YYYY-MM-DD');
     const time = moment(start).format('HH:mm');
-    setFormData({
-      ...formData,
-      date,
-      time
-    });
+    setInitialDate(date);
+    setInitialTime(time);
+    setEditingBooking(null);
     setShowModal(true);
   };
 
@@ -245,10 +248,8 @@ export default function Schedule() {
               }`}>
                 {booking.status}
               </span>
-              <span className={`badge badge-animated ${
-                booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-              }`}>
-                {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+              <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                {getBookingTypeDisplay(booking.type)}
               </span>
             </div>
           </div>
@@ -575,10 +576,8 @@ export default function Schedule() {
                           {formatCurrency(booking.price || 45)}
                         </td>
                         <td>
-                          <span className={`badge badge-animated ${
-                            booking.type === 'priority' ? 'badge-blue' : 'badge-yellow'
-                          }`}>
-                            {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                          <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                            {getBookingTypeDisplay(booking.type)}
                           </span>
                         </td>
                         <td>
@@ -745,7 +744,7 @@ export default function Schedule() {
                     <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarBooking.vehicle}</span>
                   </div>
                   <div className="flex gap-2 mb-4">
-                    <span className="text-xs"><span className="font-medium">Type:</span> {selectedCalendarBooking.type === 'priority' ? 'Priority' : 'Outsourced'}</span>
+                    <span className="text-xs"><span className="font-medium">Type:</span> {getBookingTypeDisplay(selectedCalendarBooking.type)}</span>
                     <span className="text-xs"><span className="font-medium">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}</span>
                   </div>
                   {/* Action buttons */}
@@ -776,178 +775,14 @@ export default function Schedule() {
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <h2 className="text-xl font-bold mb-4">
-              {editingBooking ? "Edit Booking" : "New Booking"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Customer</label>
-                  <input
-                    type="text"
-                    value={formData.customer}
-                    onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    className="input-animated"
-                    required
-                  />
-                </div>
-                {formData.type === 'priority' && (
-                  <div>
-                    <label className="block mb-1">Driver</label>
-                    <select
-                      value={formData.driver}
-                      onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      required={formData.type === 'priority'}
-                    >
-                      <option value="">Select Driver</option>
-                      {drivers.map(driver => (
-                        <option key={driver.id} value={driver.name}>{driver.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {formData.type === 'outsourced' && (
-                  <div>
-                    <label className="block mb-1">Partner/External Provider</label>
-                    <input
-                      type="text"
-                      value={formData.partner || ''}
-                      onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="input-animated"
-                      placeholder="Enter partner company name"
-                    />
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block mb-1">Pickup Location</label>
-                <input
-                  type="text"
-                  value={formData.pickup}
-                  onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                  className="input-animated"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1">Destination</label>
-                <input
-                  type="text"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                  className="input-animated"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1">Time</label>
-                  <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({...formData, time: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {formData.type === 'priority' && (
-                  <div>
-                    <label className="block mb-1">Vehicle</label>
-                    <select
-                      value={formData.vehicle}
-                      onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                      required={formData.type === 'priority'}
-                    >
-                      <option value="">Select Vehicle</option>
-                      {fleet && fleet.map(vehicle => (
-                        <option key={vehicle.id} value={vehicle.name}>
-                          {vehicle.name} ({vehicle.type})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="block mb-1">Booking Type</label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  >
-                    <option value="priority">Priority Transfers</option>
-                    <option value="outsourced">Outsourced/Partner</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1">Price (€)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                    className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
-                    placeholder="Enter price..."
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <button type="submit" className="btn btn-primary btn-action">
-                  {editingBooking ? "Update" : "Create"} Booking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingBooking(null);
-                    setFormData({
-                      customer: "",
-                      pickup: "",
-                      destination: "",
-                      date: "",
-                      time: "",
-                      driver: "",
-                      vehicle: "",
-                      partner: "",
-                      status: "pending",
-                      type: "priority",
-                      price: 45
-                    });
-                  }}
-                  className="btn btn-outline btn-action"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* New Portal-based Booking Modal */}
+      <BookingModal 
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        editingBooking={editingBooking}
+        initialDate={initialDate}
+        initialTime={initialTime}
+      />
     </div>
   );
 }

@@ -41,16 +41,24 @@ This application is configured for GitHub Pages deployment using the `/docs` fol
    ```bash
    npm run build
    ```
+   This generates optimized assets in the `docs/` folder with the correct base path `/priority-transfers-admin/`.
 
-2. **Configure GitHub Pages**:
-   - Push your changes to the main branch
+2. **Commit the built assets**:
+   ```bash
+   git add .
+   git commit -m "Update build assets"
+   git push origin main
+   ```
+   **Important**: The assets in `docs/assets/` must be committed to the repository for GitHub Pages to serve them correctly.
+
+3. **Configure GitHub Pages**:
    - Navigate to your repository settings on GitHub
    - Select "Pages" from the left sidebar
    - Under "Source", select "Deploy from a branch"
    - Choose "main" branch and "/docs" folder
    - Click "Save"
 
-3. **Access your application**:
+4. **Access your application**:
    - Your application will be available at: `https://[username].github.io/[repository-name]/`
    - Example: `https://aloc23.github.io/priority-transfers-admin/`
 
