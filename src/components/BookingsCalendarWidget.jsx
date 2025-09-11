@@ -84,6 +84,7 @@ export default function BookingsCalendarWidget(props) {
 
   // Expose modal open handler globally for BookNowButton
   window.__openBookingModal = openBookingModal;
+  window.__openBookingModalWithDate = openBookingModalWithDate;
 
   // Context value for global modal control (required by consumer)
   const bookNowContextValue = {
