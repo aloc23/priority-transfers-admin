@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Build outputs (keep docs/ for GitHub Pages deployment)
 build/
+docs/assets/
 
 # Environment variables
 .env

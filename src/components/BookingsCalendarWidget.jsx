@@ -8,6 +8,7 @@ import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import BookingModal from './BookingModal';
 
 // Context for Book Now button (provides openModal and openModalWithDate)
 export const BookNowContext = createContext({ openModal: () => {}, openModalWithDate: (date) => {} });
@@ -42,63 +43,64 @@ BookingsCalendarWidget.BookNowContext = BookNowContext;
 
 const localizer = momentLocalizer(moment);
 
-export default function BookingsCalendarWidget({ showBookingModal, setShowBookingModal, bookingForm, setBookingForm, ...props }) {
-  const { bookings, drivers, partners, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData, addBooking } = useAppStore();
+export default function BookingsCalendarWidget(props) {
+  const { bookings, drivers, partners, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const navigate = useNavigate();
+  
+  // Internal modal state
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [initialDate, setInitialDate] = useState('');
+  const [initialTime, setInitialTime] = useState('');
+  
   // State management
   const [selectedDate, setSelectedDate] = useState(null); // Start with no date selected
   const [selectedStatus, setSelectedStatus] = useState(null); // 'confirmed', 'pending', 'upcoming'
   const [calendarView, setCalendarView] = useState('month');
 
-  // Handle Book Now button click - open form directly instead of navigating
-
-  // Expose modal open handler globally for BookNowButton
-  window.__openBookingModal = () => setShowBookingModal(true);
-
-  // Helper to open modal with a specific date
-  const openBookingModalWithDate = (date) => {
-    setBookingForm((form) => ({ ...form, date: moment(date).format('YYYY-MM-DD') }));
+  // Modal management functions
+  const openBookingModal = () => {
+    setEditingBooking(null);
+    setInitialDate('');
+    setInitialTime('');
     setShowBookingModal(true);
   };
 
-  // Context value for global modal control (required by consumer)
-  const bookNowContextValue = {
-    openModal: () => setShowBookingModal(true),
-    openModalWithDate: (date) => {
-      setBookingForm((form) => ({ ...form, date: moment(date).format('YYYY-MM-DD') }));
-      setShowBookingModal(true);
-    }
+  const openBookingModalWithDate = (date) => {
+    setEditingBooking(null);
+    setInitialDate(moment(date).format('YYYY-MM-DD'));
+    setInitialTime(moment(date).format('HH:mm'));
+    setShowBookingModal(true);
   };
 
-  // Handle booking form submission
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
-    addBooking(bookingForm);
+  const closeBookingModal = () => {
     setShowBookingModal(false);
-    // Reset form
-    setBookingForm({
-      customer: '',
-      pickup: '',
-      destination: '',
-      date: moment().format('YYYY-MM-DD'),
-      time: '09:00',
-      driver: '',
-      vehicleId: '',
-      status: 'pending',
-      type: 'priority',
-      price: 45,
-      // Reset new enhanced fields
-      bookingType: 'internal',
-      tripType: 'single',
-      returnTrip: false,
-      returnPickup: '',
-      returnDestination: '',
-      returnDate: '',
-      returnTime: '',
-      partnerId: ''
-    });
+    setEditingBooking(null);
+    setInitialDate('');
+    setInitialTime('');
+  };
+
+  // Expose modal open handler globally for BookNowButton
+  window.__openBookingModal = openBookingModal;
+
+  // Context value for global modal control (required by consumer)
+  const bookNowContextValue = {
+    openModal: openBookingModal,
+    openModalWithDate: openBookingModalWithDate
+  };
+
+  // Handle calendar slot selection
+  const handleSelectSlot = ({ start }) => {
+    openBookingModalWithDate(start);
+  };
+
+  const handleSelectEvent = (event) => {
+    setEditingBooking(event.resource);
+    setInitialDate('');
+    setInitialTime('');
+    setShowBookingModal(true);
   };
 
   // Combine booking and invoice status like in Dashboard.jsx
@@ -480,391 +482,15 @@ export default function BookingsCalendarWidget({ showBookingModal, setShowBookin
         </div>
       </div>
 
-        {/* Enhanced Booking Modal with Improved Layout */}
-        {showBookingModal && (
-          <div className="fixed inset-0 bg-white/40 backdrop-blur-xl flex items-center justify-center">
-            <div className="modal-container">
-              {/* Simplified Header */}
-              <div className="modal-header">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  <PlusIcon className="w-5 h-5" />
-                  Create New Booking
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowBookingModal(false)}
-                  className="btn-close"
-                  aria-label="Close modal"
-                >
-                  ×
-                </button>
-              </div>
-              
-              {/* Scrollable Body */}
-              <div className="modal-body">
-                <form onSubmit={handleBookingSubmit} className="space-y-6">
-                  {/* Booking Type Selection */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">
-                      Booking Type
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setBookingForm({ ...bookingForm, bookingType: 'internal' })}
-                        className={`p-3 rounded-lg border-2 transition-all text-left ${
-                          bookingForm.bookingType === 'internal'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            bookingForm.bookingType === 'internal' ? 'bg-blue-500' : 'bg-gray-300'
-                          }`}></div>
-                          <div>
-                            <div className="font-medium text-slate-800">Internal</div>
-                            <div className="text-xs text-slate-600">Use company fleet</div>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBookingForm({ ...bookingForm, bookingType: 'outsourced' })}
-                        className={`p-3 rounded-lg border-2 transition-all text-left ${
-                          bookingForm.bookingType === 'outsourced'
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            bookingForm.bookingType === 'outsourced' ? 'bg-purple-500' : 'bg-gray-300'
-                          }`}></div>
-                          <div>
-                            <div className="font-medium text-slate-800">Outsourced</div>
-                            <div className="text-xs text-slate-600">External partner</div>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Trip Type Selection */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">
-                      Trip Type
-                    </h3>
-                    <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => setBookingForm({ ...bookingForm, tripType: 'single', returnTrip: false })}
-                        className={`flex-1 py-2 px-3 rounded-md font-medium transition ${
-                          bookingForm.tripType === 'single'
-                            ? 'bg-white text-slate-800 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-800'
-                        }`}
-                      >
-                        Transfer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBookingForm({ ...bookingForm, tripType: 'tour', returnTrip: false })}
-                        className={`flex-1 py-2 px-3 rounded-md font-medium transition ${
-                          bookingForm.tripType === 'tour'
-                            ? 'bg-white text-slate-800 shadow-sm'
-                            : 'text-slate-600 hover:text-slate-800'
-                        }`}
-                      >
-                        Tour
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Return Trip Option for Transfers */}
-                  {bookingForm.tripType === 'single' && (
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={bookingForm.returnTrip}
-                          onChange={(e) => {
-                            const returnTrip = e.target.checked;
-                            setBookingForm({ 
-                              ...bookingForm, 
-                              returnTrip,
-                              returnPickup: returnTrip ? bookingForm.destination : '',
-                              returnDestination: returnTrip ? bookingForm.pickup : ''
-                            });
-                          }}
-                          className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
-                        />
-                        <span className="font-medium text-amber-800">Add return trip</span>
-                      </label>
-                      {bookingForm.returnTrip && (
-                        <div className="space-y-4 mt-4 pt-4 border-t border-amber-200">
-                          <h4 className="font-medium text-amber-800">Return Trip Details</h4>
-                          <div className="grid grid-cols-1 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-amber-700 mb-1">Return Pickup</label>
-                              <input
-                                type="text"
-                                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80"
-                                value={bookingForm.returnPickup}
-                                onChange={(e) => setBookingForm({ ...bookingForm, returnPickup: e.target.value })}
-                                placeholder="Auto-filled from destination"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-amber-700 mb-1">Return Destination</label>
-                              <input
-                                type="text"
-                                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80"
-                                value={bookingForm.returnDestination}
-                                onChange={(e) => setBookingForm({ ...bookingForm, returnDestination: e.target.value })}
-                                placeholder="Auto-filled from pickup"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-sm font-medium text-amber-700 mb-1">Return Date</label>
-                                <input
-                                  type="date"
-                                  className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80"
-                                  value={bookingForm.returnDate}
-                                  onChange={(e) => setBookingForm({ ...bookingForm, returnDate: e.target.value })}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-amber-700 mb-1">Return Time</label>
-                                <input
-                                  type="time"
-                                  className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80"
-                                  value={bookingForm.returnTime}
-                                  onChange={(e) => setBookingForm({ ...bookingForm, returnTime: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Basic Booking Information */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">
-                      Booking Details
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Customer</label>
-                        <input
-                          type="text"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          value={bookingForm.customer}
-                          onChange={(e) => setBookingForm({ ...bookingForm, customer: e.target.value })}
-                          placeholder="Enter customer name"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Pickup Location</label>
-                          <input
-                            type="text"
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            value={bookingForm.pickup}
-                            onChange={(e) => {
-                              const pickup = e.target.value;
-                              setBookingForm({ 
-                                ...bookingForm, 
-                                pickup,
-                                returnDestination: bookingForm.returnTrip ? pickup : bookingForm.returnDestination
-                              });
-                            }}
-                            placeholder="Enter pickup address"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Destination</label>
-                          <input
-                            type="text"
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            value={bookingForm.destination}
-                            onChange={(e) => {
-                              const destination = e.target.value;
-                              setBookingForm({ 
-                                ...bookingForm, 
-                                destination,
-                                returnPickup: bookingForm.returnTrip ? destination : bookingForm.returnPickup
-                              });
-                            }}
-                            placeholder="Enter destination address"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {bookingForm.tripType === 'tour' ? (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">Tour Start Date</label>
-                              <input
-                                type="date"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                value={bookingForm.date}
-                                onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">Tour End Date</label>
-                              <input
-                                type="date"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                value={bookingForm.tourEndDate || ''}
-                                onChange={(e) => setBookingForm({ ...bookingForm, tourEndDate: e.target.value })}
-                                required
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">Pickup Date</label>
-                              <input
-                                type="date"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                value={bookingForm.date}
-                                onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">Time</label>
-                              <input
-                                type="time"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                value={bookingForm.time}
-                                onChange={(e) => setBookingForm({ ...bookingForm, time: e.target.value })}
-                                required
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Partner Selection for Outsourced Bookings */}
-                  {bookingForm.bookingType === 'outsourced' ? (
-                    <div className="space-y-4">
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                        Partner Assignment
-                      </h3>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Select Partner</label>
-                        <select
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                          value={bookingForm.partnerId}
-                          onChange={(e) => setBookingForm({ ...bookingForm, partnerId: e.target.value })}
-                          required
-                        >
-                          <option value="">Choose a partner...</option>
-                          {partners.map((partner) => (
-                            <option key={partner.id} value={partner.id}>
-                              {partner.name} - {partner.contact}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Internal Driver & Vehicle Selection */
-                    <div className="space-y-4">
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                        Internal Assignment
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Driver</label>
-                          <select
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            value={bookingForm.driver}
-                            onChange={(e) => setBookingForm({ ...bookingForm, driver: e.target.value })}
-                          >
-                            <option value="">Select Driver (Optional)</option>
-                            {drivers.map((driver) => (
-                              <option key={driver.id} value={driver.name}>
-                                {driver.name} - {driver.status}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">Vehicle</label>
-                          <select
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            value={bookingForm.vehicle || ''}
-                            onChange={(e) => setBookingForm({ ...bookingForm, vehicle: e.target.value })}
-                          >
-                            <option value="">Select Vehicle (Optional)</option>
-                            {fleet.map((vehicle) => (
-                              <option key={vehicle.id} value={vehicle.id}>
-                                {vehicle.name} - {vehicle.type}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pricing */}
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      Pricing
-                    </h3>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Price (€)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                        value={bookingForm.price}
-                        onChange={(e) => setBookingForm({ ...bookingForm, price: parseFloat(e.target.value) || 0 })}
-                        required
-                      />
-                    </div>
-                  </div>
-                </form>
-              </div>
-              
-              {/* Sticky Footer */}
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setShowBookingModal(false)}
-                  className="flex-1 px-6 py-3 text-slate-600 hover:text-slate-800 transition-colors font-medium rounded-lg hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBookingSubmit}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                >
-                  Create Booking
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* New Portal-based Booking Modal */}
+        <BookingModal 
+          isOpen={showBookingModal}
+          onClose={closeBookingModal}
+          editingBooking={editingBooking}
+          initialDate={initialDate}
+          initialTime={initialTime}
+          title="Create New Booking"
+        />
         </div>
       </div>
     </BookNowContext.Provider>

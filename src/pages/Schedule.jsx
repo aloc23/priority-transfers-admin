@@ -11,6 +11,7 @@ import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } f
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import ToggleSwitch from "../components/ToggleSwitch";
+import BookingModal from "../components/BookingModal";
 
 const localizer = momentLocalizer(moment);
 
@@ -105,60 +106,21 @@ export default function Schedule() {
   }, [bookings, invoices]);
 
   const [selectedCombinedStatus, setSelectedCombinedStatus] = useState(null);
-  const [formData, setFormData] = useState({
-    customer: "",
-    pickup: "",
-    destination: "",
-    date: "",
-    time: "",
-    driver: "",
-    vehicle: "",
-    partner: "", // For outsourced bookings
-    status: "pending",
-    type: "single", // New field: "single", "tour", "outsourced"
-    price: 45, // Default price field
-    tourStartDate: "", // For tour bookings
-    tourEndDate: "", // For tour bookings
-    hasReturn: false, // Whether this booking has a return trip
-    returnPickup: "", // Return pickup address
-    returnDate: "", // Return date
-    returnTime: "" // Return time
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingBooking) {
-      updateBooking(editingBooking.id, formData);
-    } else {
-      addBooking(formData);
-    }
-    setShowModal(false);
-    setEditingBooking(null);
-    setFormData({
-      customer: "",
-      pickup: "",
-      destination: "",
-      date: "",
-      time: "",
-      driver: "",
-      vehicle: "",
-      partner: "",
-      status: "pending",
-      type: "single",
-      price: 45,
-      tourStartDate: "",
-      tourEndDate: "",
-      hasReturn: false,
-      returnPickup: "",
-      returnDate: "",
-      returnTime: ""
-    });
-  };
+  const [initialDate, setInitialDate] = useState('');
+  const [initialTime, setInitialTime] = useState('');
 
   const handleEdit = (booking) => {
     setEditingBooking(booking);
-    setFormData(booking);
+    setInitialDate('');
+    setInitialTime('');
     setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingBooking(null);
+    setInitialDate('');
+    setInitialTime('');
   };
 
   const handleDelete = (id) => {
@@ -228,11 +190,9 @@ export default function Schedule() {
   const handleSelectSlot = ({ start }) => {
     const date = moment(start).format('YYYY-MM-DD');
     const time = moment(start).format('HH:mm');
-    setFormData({
-      ...formData,
-      date,
-      time
-    });
+    setInitialDate(date);
+    setInitialTime(time);
+    setEditingBooking(null);
     setShowModal(true);
   };
 
@@ -815,350 +775,14 @@ export default function Schedule() {
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-xl flex items-center justify-center">
-          <div className="modal-container">
-            {/* Sticky Header */}
-            <div className="modal-header">
-              <h2 className="text-xl font-bold">
-                {editingBooking ? "Edit Booking" : "New Booking"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingBooking(null);
-                  setFormData({
-                    customer: "",
-                    pickup: "",
-                    destination: "",
-                    date: "",
-                    time: "",
-                    driver: "",
-                    vehicle: "",
-                    partner: "",
-                    status: "pending",
-                    type: "single",
-                    price: 45,
-                    tourStartDate: "",
-                    tourEndDate: "",
-                    hasReturn: false,
-                    returnPickup: "",
-                    returnDate: "",
-                    returnTime: ""
-                  });
-                }}
-                className="btn-close"
-                aria-label="Close modal"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Scrollable Body */}
-            <div className="modal-body">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Booking Type - Radio buttons */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Booking Type</label>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="bookingType"
-                        value="single"
-                        checked={formData.type === 'single'}
-                        onChange={(e) => setFormData({...formData, type: e.target.value})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Single Trip</span>
-                    </label>
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="bookingType"
-                        value="tour"
-                        checked={formData.type === 'tour'}
-                        onChange={(e) => setFormData({...formData, type: e.target.value})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Tour</span>
-                    </label>
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="bookingType"
-                        value="outsourced"
-                        checked={formData.type === 'outsourced'}
-                        onChange={(e) => setFormData({...formData, type: e.target.value})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Outsourced</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Tour Date Fields - Show for tour bookings */}
-                {formData.type === 'tour' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">Tour Start Date</label>
-                      <input
-                        type="date"
-                        value={formData.tourStartDate}
-                        onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required={formData.type === 'tour'}
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">Tour End Date</label>
-                      <input
-                        type="date"
-                        value={formData.tourEndDate}
-                        onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required={formData.type === 'tour'}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-1">Customer</label>
-                    <input
-                      type="text"
-                      value={formData.customer}
-                      onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                      className="input-animated"
-                      required
-                    />
-                  </div>
-                  {/* Driver field - Show for single trip and tour, hide for outsourced */}
-                  {(formData.type === 'single' || formData.type === 'tour') && (
-                    <div>
-                      <label className="block mb-1">Driver</label>
-                      <select
-                        value={formData.driver}
-                        onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required={formData.type === 'single' || formData.type === 'tour'}
-                      >
-                        <option value="">Select Driver</option>
-                        {drivers.map(driver => (
-                          <option key={driver.id} value={driver.name}>{driver.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  {/* Partner field - Show for outsourced */}
-                  {formData.type === 'outsourced' && (
-                    <div>
-                      <label className="block mb-1">Partner/External Provider</label>
-                      <input
-                        type="text"
-                        value={formData.partner || ''}
-                        onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                        className="input-animated"
-                        placeholder="Enter partner company name"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block mb-1">Pickup Location</label>
-                  <input
-                    type="text"
-                    value={formData.pickup}
-                    onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                    className="input-animated"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1">Destination</label>
-                  <input
-                    type="text"
-                    value={formData.destination}
-                    onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                    className="input-animated"
-                    required
-                  />
-                </div>
-
-                {/* Pickup Date and Time */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-1">Pickup Date</label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1">Pickup Time</label>
-                    <input
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData({...formData, time: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Return Trip Toggle */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.hasReturn}
-                        onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm font-medium text-gray-700">Return Trip</span>
-                    </label>
-                  </div>
-
-                  {/* Return Trip Fields */}
-                  {formData.hasReturn && (
-                    <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div>
-                        <label className="block mb-1 text-sm font-medium text-gray-700">Return Pickup Address</label>
-                        <input
-                          type="text"
-                          value={formData.returnPickup}
-                          onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Enter return pickup location"
-                          required={formData.hasReturn}
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block mb-1 text-sm font-medium text-gray-700">Return Date</label>
-                          <input
-                            type="date"
-                            value={formData.returnDate}
-                            onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            required={formData.hasReturn}
-                          />
-                        </div>
-                        <div>
-                          <label className="block mb-1 text-sm font-medium text-gray-700">Return Time</label>
-                          <input
-                            type="time"
-                            value={formData.returnTime}
-                            onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            required={formData.hasReturn}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Vehicle field - Show for single trip and tour, hide for outsourced */}
-                  {(formData.type === 'single' || formData.type === 'tour') && (
-                    <div>
-                      <label className="block mb-1">Vehicle</label>
-                      <select
-                        value={formData.vehicle}
-                        onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required={formData.type === 'single' || formData.type === 'tour'}
-                      >
-                        <option value="">Select Vehicle</option>
-                        {fleet && fleet.map(vehicle => (
-                          <option key={vehicle.id} value={vehicle.name}>
-                            {vehicle.name} ({vehicle.type})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <div>
-                    <label className="block mb-1">Price (€)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                      className="input-animated transition-all duration-200 hover:border-purple-400 focus:border-purple-500"
-                      placeholder="Enter price..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </form>
-            </div>
-
-            {/* Sticky Footer */}
-            <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingBooking(null);
-                  setFormData({
-                    customer: "",
-                    pickup: "",
-                    destination: "",
-                    date: "",
-                    time: "",
-                    driver: "",
-                    vehicle: "",
-                    partner: "",
-                    status: "pending",
-                    type: "single",
-                    price: 45,
-                    tourStartDate: "",
-                    tourEndDate: "",
-                    hasReturn: false,
-                    returnPickup: "",
-                    returnDate: "",
-                    returnTime: ""
-                  });
-                }}
-                className="btn btn-outline btn-action"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="btn btn-primary btn-action"
-              >
-                {editingBooking ? "Update" : "Create"} Booking
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* New Portal-based Booking Modal */}
+      <BookingModal 
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        editingBooking={editingBooking}
+        initialDate={initialDate}
+        initialTime={initialTime}
+      />
     </div>
   );
 }
