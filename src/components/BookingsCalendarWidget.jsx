@@ -155,7 +155,13 @@ export default function BookingsCalendarWidget(props) {
     // Only apply date filter if no status filter is selected
     else if (selectedDate) {
       const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
-      filtered = filtered.filter(booking => booking.date === selectedDateStr);
+      filtered = filtered.filter(booking => {
+        // Check main booking date
+        const matchesPickupDate = booking.date === selectedDateStr;
+        // Check return date if it exists
+        const matchesReturnDate = booking.hasReturn && booking.returnDate === selectedDateStr;
+        return matchesPickupDate || matchesReturnDate;
+      });
     }
 
     return filtered;
@@ -163,24 +169,53 @@ export default function BookingsCalendarWidget(props) {
 
   // Convert bookings to calendar events
   const calendarEvents = useMemo(() => {
-    return upcomingBookings.map(booking => {
-      // Use ISO format for date and time
+    const events = [];
+    
+    upcomingBookings.forEach(booking => {
+      // Main booking event (pickup)
       const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
       const endDate = moment(startDate).add(2, 'hours').toDate();
       
-      return {
-        id: booking.id,
+      events.push({
+        id: `${booking.id}-pickup`,
         title: `${booking.customer} - ${booking.pickup}`,
         start: startDate,
         end: endDate,
-        resource: booking,
+        resource: { ...booking, isReturn: false },
         style: {
           backgroundColor: booking.status === 'confirmed' ? '#10b981' : '#f59e0b',
           borderColor: booking.status === 'confirmed' ? '#059669' : '#d97706',
-          color: 'white'
+          color: 'white',
+          fontSize: '12px',
+          fontWeight: 'bold'
         }
-      };
+      });
+      
+      // Return trip event if it exists
+      if (booking.hasReturn && booking.returnDate && booking.returnTime) {
+        const returnStartDate = moment(`${booking.returnDate} ${booking.returnTime}`, 'YYYY-MM-DD HH:mm').toDate();
+        const returnEndDate = moment(returnStartDate).add(2, 'hours').toDate();
+        
+        events.push({
+          id: `${booking.id}-return`,
+          title: `${booking.customer} - Return Trip`,
+          start: returnStartDate,
+          end: returnEndDate,
+          resource: { ...booking, isReturn: true },
+          style: {
+            backgroundColor: booking.status === 'confirmed' ? '#0891b2' : '#ea580c',
+            borderColor: booking.status === 'confirmed' ? '#0e7490' : '#c2410c',
+            color: 'white',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            borderStyle: 'dashed',
+            borderWidth: '2px'
+          }
+        });
+      }
     });
+    
+    return events;
   }, [upcomingBookings]);
 
   // Handle pill click - single filter logic
@@ -313,8 +348,8 @@ export default function BookingsCalendarWidget(props) {
 
         {/* Main Content Area with Enhanced Glassmorphism */}
         <div className={`p-6 pt-4 ${isMobile ? 'space-y-8' : 'grid grid-cols-5 gap-8'}`}>
-        {/* Calendar Section (Left Side) with Enhanced Styling */}
-        <div className={`${isMobile ? '' : 'col-span-2'} relative`}>
+        {/* Calendar Section (Left Side) with Enhanced Styling - Increased width */}
+        <div className={`${isMobile ? '' : 'col-span-3'} relative`}>
           <div className="bg-gradient-to-br from-white/80 via-slate-50/60 to-white/80 rounded-2xl p-5 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
             {/* Calendar header background */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-indigo-50/10 pointer-events-none"></div>
@@ -346,7 +381,7 @@ export default function BookingsCalendarWidget(props) {
                 </div>
               </div>
 
-              <div style={{ height: isMobile ? '350px' : '450px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
+              <div style={{ height: isMobile ? '350px' : '550px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
                 <Calendar
                   localizer={localizer}
                   events={calendarEvents}
@@ -365,7 +400,7 @@ export default function BookingsCalendarWidget(props) {
                   popup
                   style={{
                     fontSize: isMobile ? '13px' : '15px',
-                    minHeight: isMobile ? '350px' : '450px'
+                    minHeight: isMobile ? '350px' : '550px'
                   }}
                 />
               </div>
@@ -373,8 +408,8 @@ export default function BookingsCalendarWidget(props) {
           </div>
         </div>
 
-        {/* Bookings List (Right Side) with Enhanced Design */}
-        <div className={`${isMobile ? '' : 'col-span-3'} relative`}>
+        {/* Bookings List (Right Side) with Enhanced Design - Reduced width */}
+        <div className={`${isMobile ? '' : 'col-span-2'} relative`}>
           <div className="bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-50/80 rounded-2xl p-5 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
             {/* Background pattern */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/10 via-transparent to-purple-50/10 pointer-events-none"></div>
@@ -458,6 +493,21 @@ export default function BookingsCalendarWidget(props) {
                             <div><span className="font-semibold text-slate-700">Date:</span> {booking.date}</div>
                             <div><span className="font-semibold text-slate-700">Time:</span> {booking.time}</div>
                           </div>
+                          {/* Show return trip info if it exists and selected date matches return date */}
+                          {booking.hasReturn && booking.returnDate && selectedDate && 
+                           moment(selectedDate).format('YYYY-MM-DD') === booking.returnDate && (
+                            <div className="mt-3 p-3 bg-cyan-50/80 rounded-lg border border-cyan-200/50">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-cyan-800 mb-1">
+                                <span className="w-2 h-2 bg-cyan-500 rounded-full"></span>
+                                Return Trip
+                              </div>
+                              <div className="text-xs text-cyan-700">
+                                <div><span className="font-semibold">Return Date:</span> {booking.returnDate}</div>
+                                <div><span className="font-semibold">Return Time:</span> {booking.returnTime}</div>
+                                {booking.returnPickup && <div><span className="font-semibold">From:</span> {booking.returnPickup}</div>}
+                              </div>
+                            </div>
+                          )}
                           <div className="text-xs"><span className="font-semibold text-slate-700">Driver:</span> {booking.driver || 'Unassigned'}</div>
                         </div>
                         {actions.length > 0 && (
