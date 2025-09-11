@@ -142,63 +142,71 @@ export default function BookingModal({
 
           {/* Scrollable Body */}
           <div className="modal-body">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Booking Type - Radio buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Booking Type - Radio buttons with enhanced styling */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Trip Type */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Trip Type</label>
+                <div className="space-y-4">
+                  <label className="block text-sm font-bold text-gray-800 mb-3">Trip Type</label>
                   <div className="flex flex-col gap-3">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="tripType"
-                        value="single"
-                        checked={formData.type === 'single'}
-                        onChange={(e) => setFormData({...formData, type: e.target.value})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Single Trip</span>
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="radio"
+                          name="tripType"
+                          value="single"
+                          checked={formData.type === 'single'}
+                          onChange={(e) => setFormData({...formData, type: e.target.value})}
+                          className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Single Trip</span>
                     </label>
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="tripType"
-                        value="tour"
-                        checked={formData.type === 'tour'}
-                        onChange={(e) => setFormData({...formData, type: e.target.value})}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Tour</span>
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="radio"
+                          name="tripType"
+                          value="tour"
+                          checked={formData.type === 'tour'}
+                          onChange={(e) => setFormData({...formData, type: e.target.value})}
+                          className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Tour</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Service Source */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Service Source</label>
+                <div className="space-y-4">
+                  <label className="block text-sm font-bold text-gray-800 mb-3">Service Source</label>
                   <div className="flex flex-col gap-3">
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="serviceSource"
-                        value="internal"
-                        checked={formData.source === 'internal'}
-                        onChange={(e) => setFormData({...formData, source: e.target.value})}
-                        className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Internal</span>
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="radio"
+                          name="serviceSource"
+                          value="internal"
+                          checked={formData.source === 'internal'}
+                          onChange={(e) => setFormData({...formData, source: e.target.value})}
+                          className="w-5 h-5 text-emerald-600 bg-white border-2 border-gray-300 focus:ring-emerald-500 focus:ring-2"
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-emerald-600 transition-colors">Internal</span>
                     </label>
-                    <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="serviceSource"
-                        value="outsourced"
-                        checked={formData.source === 'outsourced'}
-                        onChange={(e) => setFormData({...formData, source: e.target.value})}
-                        className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 focus:ring-orange-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Outsourced</span>
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="radio"
+                          name="serviceSource"
+                          value="outsourced"
+                          checked={formData.source === 'outsourced'}
+                          onChange={(e) => setFormData({...formData, source: e.target.value})}
+                          className="w-5 h-5 text-orange-600 bg-white border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">Outsourced</span>
                     </label>
                   </div>
                 </div>
@@ -206,49 +214,50 @@ export default function BookingModal({
 
               {/* Tour Date Fields - Show for tour bookings */}
               {formData.type === 'tour' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-700">Tour Start Date</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Tour Start Date</label>
                     <input
                       type="date"
                       value={formData.tourStartDate}
                       onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                       required={formData.type === 'tour'}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-700">Tour End Date</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Tour End Date</label>
                     <input
                       type="date"
                       value={formData.tourEndDate}
                       onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                       required={formData.type === 'tour'}
                     />
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block mb-1">Customer</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Customer</label>
                   <input
                     type="text"
                     value={formData.customer}
                     onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    className="input-animated"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                    placeholder="Enter customer name..."
                     required
                   />
                 </div>
                 {/* Driver field - Show for Internal bookings only */}
                 {formData.source === 'internal' && (
                   <div>
-                    <label className="block mb-1">Driver</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Driver</label>
                     <select
                       value={formData.driver}
                       onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
                       required={formData.source === 'internal'}
                     >
                       <option value="">Select Driver</option>
@@ -261,61 +270,65 @@ export default function BookingModal({
                 {/* Partner field - Show for Outsourced bookings only */}
                 {formData.source === 'outsourced' && (
                   <div>
-                    <label className="block mb-1">Partner/External Provider</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Partner/External Provider</label>
                     <input
                       type="text"
                       value={formData.partner || ''}
                       onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="input-animated"
-                      placeholder="Enter partner company name"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                      placeholder="Enter partner company name..."
                       required={formData.source === 'outsourced'}
                     />
                   </div>
                 )}
               </div>
 
-              <div>
-                <label className="block mb-1">Pickup Location</label>
-                <input
-                  type="text"
-                  value={formData.pickup}
-                  onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                  className="input-animated"
-                  required
-                />
-              </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Location</label>
+                  <input
+                    type="text"
+                    value={formData.pickup}
+                    onChange={(e) => setFormData({...formData, pickup: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                    placeholder="Enter pickup location..."
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block mb-1">Destination</label>
-                <input
-                  type="text"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                  className="input-animated"
-                  required
-                />
+                <div>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Destination</label>
+                  <input
+                    type="text"
+                    value={formData.destination}
+                    onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                    placeholder="Enter destination..."
+                    required
+                  />
+                </div>
               </div>
 
               {/* Pickup Date and Time - Hide for Tours */}
               {formData.type === 'single' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block mb-1">Pickup Date</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Date</label>
                     <input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
                       required={formData.type === 'single'}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1">Pickup Time</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Time</label>
                     <input
                       type="time"
                       value={formData.time}
                       onChange={(e) => setFormData({...formData, time: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
                       required={formData.type === 'single'}
                     />
                   </div>
@@ -325,11 +338,11 @@ export default function BookingModal({
               {/* Vehicle field - Show for Internal bookings only */}
               {formData.source === 'internal' && (
                 <div>
-                  <label className="block mb-1">Vehicle</label>
+                  <label className="block mb-2 text-sm font-bold text-gray-800">Vehicle</label>
                   <select
                     value={formData.vehicle}
                     onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
                     required={formData.source === 'internal'}
                   >
                     <option value="">Select Vehicle</option>
@@ -341,45 +354,47 @@ export default function BookingModal({
               )}
 
               {/* Return Trip Fields */}
-              <div className="space-y-4">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.hasReturn}
-                    onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">This booking has a return trip</span>
+              <div className="space-y-6">
+                <label className="flex items-center space-x-3 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasReturn}
+                      onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
+                      className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">This booking has a return trip</span>
                 </label>
 
                 {formData.hasReturn && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 rounded-xl border-2 border-emerald-200/50 shadow-inner">
                     <div className="sm:col-span-2">
-                      <label className="block mb-1 text-sm font-medium text-gray-700">Return Pickup Location</label>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
                       <input
                         type="text"
                         value={formData.returnPickup}
                         onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="Usually the original destination"
+                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                        placeholder="Usually the original destination..."
                       />
                     </div>
                     <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">Return Date</label>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Date</label>
                       <input
                         type="date"
                         value={formData.returnDate}
                         onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                       />
                     </div>
                     <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">Return Time</label>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Time</label>
                       <input
                         type="time"
                         value={formData.returnTime}
                         onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                       />
                     </div>
                   </div>
@@ -389,31 +404,20 @@ export default function BookingModal({
               {/* Price */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1">Price ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter price..."
-                  />
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Price (€)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">€</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                      className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                      placeholder="45.00"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
               </div>
             </form>
           </div>
