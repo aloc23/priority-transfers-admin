@@ -214,7 +214,9 @@ export function AppStoreProvider({ children }) {
         status: "confirmed",
         driver: "Mike Johnson",
         vehicle: "Toyota Camry",
-        type: "priority"
+        type: "priority",
+        pickupCompleted: false,
+        returnCompleted: false
       },
       {
         id: 2,
@@ -226,7 +228,9 @@ export function AppStoreProvider({ children }) {
         status: "pending",
         driver: "Sarah Wilson",
         vehicle: "Honda Accord",
-        type: "outsourced"
+        type: "outsourced",
+        pickupCompleted: false,
+        returnCompleted: false
       }
     ];
     setBookings(sampleBookings);
@@ -620,7 +624,10 @@ export function AppStoreProvider({ children }) {
         ...booking, 
         id: Date.now(), 
         type: booking.type || "priority",
-        status: "pending" // Force all new bookings to pending status
+        status: "pending", // Force all new bookings to pending status
+        // Add completion tracking for pickup and return legs
+        pickupCompleted: false,
+        returnCompleted: false
       };
       const updatedBookings = [...bookings, newBooking];
       setBookings(updatedBookings);

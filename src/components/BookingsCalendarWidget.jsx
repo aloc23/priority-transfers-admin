@@ -190,11 +190,14 @@ export default function BookingsCalendarWidget(props) {
     return filtered;
   }, [bookings, selectedDate, selectedStatus]);
 
-  // Convert bookings to calendar events
+  // Convert bookings to calendar events - ONLY show confirmed bookings
   const calendarEvents = useMemo(() => {
     const events = [];
     
-    upcomingBookings.forEach(booking => {
+    // Filter to only show confirmed bookings on the calendar
+    const confirmedBookings = bookings.filter(booking => booking.status === 'confirmed');
+    
+    confirmedBookings.forEach(booking => {
       if (booking.type === 'tour') {
         // Tour bookings: render as block spanning from start to end date
         if (booking.tourStartDate && booking.tourEndDate) {
@@ -208,8 +211,8 @@ export default function BookingsCalendarWidget(props) {
             end: endDate,
             resource: { ...booking, isTour: true },
             style: {
-              backgroundColor: booking.status === 'confirmed' ? '#10b981' : '#f59e0b',
-              borderColor: booking.status === 'confirmed' ? '#047857' : '#d97706',
+              backgroundColor: '#10b981', // Only confirmed tours appear on calendar
+              borderColor: '#047857',
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
@@ -217,7 +220,7 @@ export default function BookingsCalendarWidget(props) {
           });
         }
       } else {
-        // Transfer bookings: render only on pickup date
+        // Transfer bookings: render pickup leg
         if (booking.date) {
           const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           const endDate = moment(startDate).add(2, 'hours').toDate();
@@ -227,17 +230,17 @@ export default function BookingsCalendarWidget(props) {
             title: `Transfer: ${booking.customer} - ${booking.pickup}`,
             start: startDate,
             end: endDate,
-            resource: { ...booking, isReturn: false },
+            resource: { ...booking, isReturn: false, legType: 'pickup' },
             style: {
-              backgroundColor: booking.status === 'confirmed' ? '#3b82f6' : '#f59e0b',
-              borderColor: booking.status === 'confirmed' ? '#1d4ed8' : '#d97706',
+              backgroundColor: '#3b82f6', // Only confirmed transfers appear on calendar
+              borderColor: '#1d4ed8',
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
             }
           });
           
-          // Return bookings: render on both pickup and return dates (unified booking)
+          // Return bookings: render return leg for confirmed bookings
           if (booking.hasReturn && booking.returnDate && booking.returnTime) {
             const returnStartDate = moment(`${booking.returnDate} ${booking.returnTime}`, 'YYYY-MM-DD HH:mm').toDate();
             const returnEndDate = moment(returnStartDate).add(2, 'hours').toDate();
@@ -247,10 +250,10 @@ export default function BookingsCalendarWidget(props) {
               title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination}`,
               start: returnStartDate,
               end: returnEndDate,
-              resource: { ...booking, isReturn: true },
+              resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
-                backgroundColor: booking.status === 'confirmed' ? '#0891b2' : '#ea580c',
-                borderColor: booking.status === 'confirmed' ? '#0e7490' : '#c2410c',
+                backgroundColor: '#0891b2',
+                borderColor: '#0e7490',
                 color: 'white',
                 fontSize: '12px',
                 fontWeight: 'bold',
@@ -264,7 +267,7 @@ export default function BookingsCalendarWidget(props) {
     });
     
     return events;
-  }, [upcomingBookings]);
+  }, [bookings]); // Changed from upcomingBookings to all bookings, but filtered to confirmed only
 
   // Handle pill click - single filter logic
   const handleStatusFilter = (status) => {
