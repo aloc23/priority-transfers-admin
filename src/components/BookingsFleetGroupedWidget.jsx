@@ -1,5 +1,5 @@
 // BookingsFleetGroupedWidget: Combined Bookings & Calendar with Fleet & Driver Status
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import BookingsCalendarWidget, { BookNowButton } from './BookingsCalendarWidget';
 import FleetDriverChecker from './FleetDriverChecker';
 import { CalendarIcon, VehicleIcon } from './Icons';
@@ -11,9 +11,32 @@ const BookNowContext = BookingsCalendarWidget.BookNowContext || createContext({ 
 
 export default function BookingsFleetGroupedWidget({ compact = false }) {
   const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' or 'fleet'
+  const bookingsCalendarRef = useRef(null);
+
+  // Provide context value that will be accessible to BookNowButton
+  const contextValue = {
+    openModal: () => {
+      // Set the active tab to bookings and trigger the modal
+      setActiveTab('bookings');
+      // Use a small delay to ensure the calendar widget is rendered
+      setTimeout(() => {
+        if (window.__openBookingModal) {
+          window.__openBookingModal();
+        }
+      }, 50);
+    },
+    openModalWithDate: (date) => {
+      setActiveTab('bookings');
+      setTimeout(() => {
+        if (window.__openBookingModalWithDate) {
+          window.__openBookingModalWithDate(date);
+        }
+      }, 50);
+    }
+  };
 
   return (
-    <BookNowContext.Provider value={{}}>
+    <BookNowContext.Provider value={contextValue}>
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-4 md:p-5">
         {/* Header Row: Tabs + Book Now button */}
         <div className="flex flex-row items-center gap-2 mb-3 flex-nowrap min-w-0">
