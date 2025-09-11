@@ -28,6 +28,14 @@ export function AppStoreProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
   const [estimations, setEstimations] = useState([]);
+  
+  // Global calendar and filter state for synchronization between dashboard and schedule
+  const [globalCalendarState, setGlobalCalendarState] = useState({
+    selectedDate: null,
+    selectedStatus: null,
+    selectedDriver: '',
+    currentView: 'month'
+  });
 
   // Safe localStorage utility functions
   const safeLocalStorage = {
@@ -214,7 +222,9 @@ export function AppStoreProvider({ children }) {
         status: "confirmed",
         driver: "Mike Johnson",
         vehicle: "Toyota Camry",
-        type: "priority"
+        type: "priority",
+        pickupCompleted: false,
+        returnCompleted: false
       },
       {
         id: 2,
@@ -226,7 +236,9 @@ export function AppStoreProvider({ children }) {
         status: "pending",
         driver: "Sarah Wilson",
         vehicle: "Honda Accord",
-        type: "outsourced"
+        type: "outsourced",
+        pickupCompleted: false,
+        returnCompleted: false
       }
     ];
     setBookings(sampleBookings);
@@ -620,7 +632,10 @@ export function AppStoreProvider({ children }) {
         ...booking, 
         id: Date.now(), 
         type: booking.type || "priority",
-        status: "pending" // Force all new bookings to pending status
+        status: "pending", // Force all new bookings to pending status
+        // Add completion tracking for pickup and return legs
+        pickupCompleted: false,
+        returnCompleted: false
       };
       const updatedBookings = [...bookings, newBooking];
       setBookings(updatedBookings);
@@ -1644,6 +1659,20 @@ export function AppStoreProvider({ children }) {
     }
   };
 
+  // Global calendar state management functions
+  const updateGlobalCalendarState = (updates) => {
+    setGlobalCalendarState(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetGlobalCalendarFilters = () => {
+    setGlobalCalendarState({
+      selectedDate: null,
+      selectedStatus: null,
+      selectedDriver: '',
+      currentView: 'month'
+    });
+  };
+
   const convertEstimationToBooking = (estimationId) => {
     try {
       const estimation = estimations.find(e => e.id === estimationId);
@@ -1702,6 +1731,7 @@ export function AppStoreProvider({ children }) {
     expenses,
     income,
     estimations,
+    globalCalendarState,
     login,
     logout,
     addBooking,
@@ -1748,7 +1778,9 @@ export function AppStoreProvider({ children }) {
     addEstimation,
     updateEstimation,
     deleteEstimation,
-    convertEstimationToBooking
+    convertEstimationToBooking,
+    updateGlobalCalendarState,
+    resetGlobalCalendarFilters
   };
 
   return (

@@ -49,16 +49,18 @@ const getBookingTypeColor = (type) => {
 export default function Schedule() {
   // State for selected booking (for calendar card popup)
   const [selectedCalendarBooking, setSelectedCalendarBooking] = useState(null);
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser, globalCalendarState, updateGlobalCalendarState } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
-  const [filterDriver, setFilterDriver] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [highlightedBooking, setHighlightedBooking] = useState(null);
+
+  // Use global calendar state instead of local state  
+  const { selectedDate, selectedStatus, selectedDriver } = globalCalendarState;
+  const filterStatus = selectedStatus === null ? 'all' : selectedStatus;
 
   // Booking status counts for tabs
   const statusCounts = useMemo(() => {
@@ -158,29 +160,57 @@ export default function Schedule() {
   // Memoize filtered bookings for performance
   const filteredBookings = useMemo(() => {
     let result = bookings;
-    if (filterDriver) {
-      result = result.filter(booking => booking.driver === filterDriver);
+    if (selectedDriver) {
+      result = result.filter(booking => booking.driver === selectedDriver);
     }
     if (filterStatus !== 'all') {
       result = result.filter(booking => booking.status === filterStatus);
     }
     return result;
-  }, [bookings, filterDriver, filterStatus]);
+  }, [bookings, selectedDriver, filterStatus]);
 
-  // Memoize calendar events for performance
+  // Memoize calendar events for performance - ONLY show confirmed bookings
   const calendarEvents = useMemo(() => {
-    return filteredBookings.map(booking => ({
-      id: booking.id,
-      title: `${booking.customer} - ${booking.pickup} → ${booking.destination}`,
-      start: moment(`${booking.date} ${booking.time}`).toDate(),
-      end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
-      resource: booking,
-      style: {
-        backgroundColor: getBookingTypeColor(booking.type).bg,
-        borderColor: getBookingTypeColor(booking.type).border,
-        color: 'white'
+    // Filter to only include confirmed bookings for calendar display
+    const confirmedBookings = filteredBookings.filter(booking => booking.status === 'confirmed');
+    
+    const events = [];
+    
+    confirmedBookings.forEach(booking => {
+      // Add pickup event
+      events.push({
+        id: `${booking.id}-pickup`,
+        title: `${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+        start: moment(`${booking.date} ${booking.time}`).toDate(),
+        end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
+        resource: { ...booking, isReturn: false, legType: 'pickup' },
+        style: {
+          backgroundColor: getBookingTypeColor(booking.type).bg,
+          borderColor: getBookingTypeColor(booking.type).border,
+          color: 'white'
+        }
+      });
+      
+      // Add return event if applicable
+      if (booking.hasReturn && booking.returnDate && booking.returnTime) {
+        events.push({
+          id: `${booking.id}-return`,
+          title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
+          start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
+          end: moment(`${booking.returnDate} ${booking.returnTime}`).add(1, 'hour').toDate(),
+          resource: { ...booking, isReturn: true, legType: 'return' },
+          style: {
+            backgroundColor: getBookingTypeColor(booking.type).bg,
+            borderColor: getBookingTypeColor(booking.type).border,
+            color: 'white',
+            borderStyle: 'dashed', // Distinguish return trips visually
+            borderWidth: '2px'
+          }
+        });
       }
-    }));
+    });
+    
+    return events;
   }, [filteredBookings]);
 
   const handleSelectEvent = (event) => {
@@ -200,34 +230,50 @@ export default function Schedule() {
   const renderMobileCard = (booking) => {
     // Find related invoice if exists
     const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
-    let nextAction = null;
-    let actionHandler = null;
-    let actionLabel = '';
-    let actionColor = '';
+    const actions = [];
     
-    // Determine next action (best practice workflow)
+    // Determine available actions based on booking status and completion states
     if (booking.status === 'pending') {
-      nextAction = 'confirm';
-      actionLabel = 'Confirm';
-      actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
-      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+      actions.push({
+        label: 'Confirm',
+        handler: () => updateBooking(booking.id, { ...booking, status: 'confirmed' }),
+        color: 'btn bg-yellow-500 text-white hover:bg-yellow-600'
+      });
     } else if (booking.status === 'confirmed') {
-      nextAction = 'complete';
-      actionLabel = 'Mark as Complete';
-      actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
-      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+      // For confirmed bookings, show pickup and return completion actions
+      if (!booking.pickupCompleted) {
+        actions.push({
+          label: 'Complete Pickup',
+          handler: () => updateBooking(booking.id, { ...booking, pickupCompleted: true }),
+          color: 'btn bg-blue-600 text-white hover:bg-blue-700'
+        });
+      } else if (booking.hasReturn && !booking.returnCompleted) {
+        // Only show return completion if pickup is complete
+        actions.push({
+          label: 'Complete Return',
+          handler: () => updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' }),
+          color: 'btn bg-green-600 text-white hover:bg-green-700'
+        });
+      } else if (!booking.hasReturn) {
+        // For single trips, complete the entire booking when pickup is done
+        actions.push({
+          label: 'Mark as Complete',
+          handler: () => updateBooking(booking.id, { ...booking, status: 'completed' }),
+          color: 'btn bg-green-600 text-white hover:bg-green-700'
+        });
+      }
     } else if (booking.status === 'completed' && !relatedInvoice) {
-      nextAction = 'invoice';
-      actionLabel = 'Generate Invoice';
-      actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
-      actionHandler = () => generateInvoiceFromBooking(booking);
+      actions.push({
+        label: 'Generate Invoice',
+        handler: () => generateInvoiceFromBooking(booking),
+        color: 'btn bg-orange-500 text-white hover:bg-orange-600'
+      });
     } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
-      nextAction = 'paid';
-      actionLabel = 'Mark as Paid';
-      actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
-      actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
-    } else if (relatedInvoice && relatedInvoice.status === 'paid') {
-      nextAction = 'none';
+      actions.push({
+        label: 'Mark as Paid',
+        handler: () => markInvoiceAsPaid(relatedInvoice.id),
+        color: 'btn bg-green-600 text-white hover:bg-green-700'
+      });
     }
 
     return (
@@ -251,6 +297,23 @@ export default function Schedule() {
               <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
                 {getBookingTypeDisplay(booking.type)}
               </span>
+              {/* Show completion status for confirmed bookings */}
+              {booking.status === 'confirmed' && (
+                <div className="flex items-center gap-1 text-xs">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    booking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    Pickup {booking.pickupCompleted ? '✓' : '○'}
+                  </span>
+                  {booking.hasReturn && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      booking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      Return {booking.returnCompleted ? '✓' : '○'}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="text-right">
@@ -274,6 +337,16 @@ export default function Schedule() {
             <div className="text-sm">
               <span className="font-medium text-slate-600">Vehicle:</span> {booking.vehicle}
             </div>
+            {/* Show return trip info if exists */}
+            {booking.hasReturn && booking.returnDate && (
+              <div className="text-sm pt-2 border-t border-gray-200">
+                <div className="font-medium text-slate-600 mb-1">Return Trip:</div>
+                <div className="text-xs text-slate-500">
+                  <div>Date: {booking.returnDate} at {booking.returnTime}</div>
+                  {booking.returnPickup && <div>From: {booking.returnPickup}</div>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -284,14 +357,15 @@ export default function Schedule() {
           >
             Edit
           </button>
-          {nextAction !== 'none' && (
+          {actions.map((action, idx) => (
             <button
-              onClick={() => handleActionWithScroll(actionHandler, booking.id)}
-              className={`${actionColor} btn-action px-3 py-2 text-sm flex-1`}
+              key={idx}
+              onClick={() => handleActionWithScroll(action.handler, booking.id)}
+              className={`${action.color} btn-action px-3 py-2 text-sm flex-1`}
             >
-              {actionLabel}
+              {action.label}
             </button>
-          )}
+          ))}
           <button
             onClick={() => handleDelete(booking.id)}
             className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-3 py-2 text-sm"
@@ -366,7 +440,7 @@ export default function Schedule() {
               : 'bg-gradient-to-r from-slate-200 to-slate-100'
           }))}
           selectedStatus={filterStatus}
-          onStatusClick={setFilterStatus}
+          onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
           cardClassName="backdrop-blur-md bg-white/80 border border-slate-200 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-200 group"
           countClassName="text-2xl font-extrabold text-slate-900 drop-shadow-sm"
           labelClassName="text-xs font-bold text-slate-700 uppercase tracking-wider"
@@ -381,7 +455,7 @@ export default function Schedule() {
           {statusTabs.map((tab) => (
             <button 
               key={tab.id}
-              onClick={() => setFilterStatus(tab.id)} 
+              onClick={() => updateGlobalCalendarState({ selectedStatus: tab.id === 'all' ? null : tab.id })} 
               className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
                 filterStatus === tab.id 
                   ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
@@ -433,8 +507,8 @@ export default function Schedule() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                   <select
-                    value={filterDriver}
-                    onChange={(e) => setFilterDriver(e.target.value)}
+                    value={selectedDriver}
+                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                     className="border rounded px-2 py-1"
                   >
                     <option value="">All Drivers</option>
@@ -489,8 +563,8 @@ export default function Schedule() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                   <select
-                    value={filterDriver}
-                    onChange={(e) => setFilterDriver(e.target.value)}
+                    value={selectedDriver}
+                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                     className="border rounded px-2 py-1"
                   >
                     <option value="">All Drivers</option>
@@ -529,36 +603,52 @@ export default function Schedule() {
                 </thead>
                 <tbody>
                   {filteredBookings.map((booking) => {
-                    // ...existing code...
                     // Find related invoice if exists
                     const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
-                    let nextAction = null;
-                    let actionHandler = null;
-                    let actionLabel = '';
-                    let actionColor = '';
-                    // Determine next action (best practice workflow)
+                    const actions = [];
+                    
+                    // Determine available actions based on booking status and completion states
                     if (booking.status === 'pending') {
-                      nextAction = 'confirm';
-                      actionLabel = 'Confirm';
-                      actionColor = 'btn bg-yellow-500 text-white hover:bg-yellow-600';
-                      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'confirmed' });
+                      actions.push({
+                        label: 'Confirm',
+                        handler: () => updateBooking(booking.id, { ...booking, status: 'confirmed' }),
+                        color: 'btn bg-yellow-500 text-white hover:bg-yellow-600'
+                      });
                     } else if (booking.status === 'confirmed') {
-                      nextAction = 'complete';
-                      actionLabel = 'Mark as Complete';
-                      actionColor = 'btn bg-blue-600 text-white hover:bg-blue-700';
-                      actionHandler = () => updateBooking(booking.id, { ...booking, status: 'completed' });
+                      // For confirmed bookings, show pickup and return completion actions
+                      if (!booking.pickupCompleted) {
+                        actions.push({
+                          label: 'Complete Pickup',
+                          handler: () => updateBooking(booking.id, { ...booking, pickupCompleted: true }),
+                          color: 'btn bg-blue-600 text-white hover:bg-blue-700'
+                        });
+                      } else if (booking.hasReturn && !booking.returnCompleted) {
+                        // Only show return completion if pickup is complete
+                        actions.push({
+                          label: 'Complete Return',
+                          handler: () => updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' }),
+                          color: 'btn bg-green-600 text-white hover:bg-green-700'
+                        });
+                      } else if (!booking.hasReturn) {
+                        // For single trips, complete the entire booking when pickup is done
+                        actions.push({
+                          label: 'Mark as Complete',
+                          handler: () => updateBooking(booking.id, { ...booking, status: 'completed' }),
+                          color: 'btn bg-green-600 text-white hover:bg-green-700'
+                        });
+                      }
                     } else if (booking.status === 'completed' && !relatedInvoice) {
-                      nextAction = 'invoice';
-                      actionLabel = 'Generate Invoice';
-                      actionColor = 'btn bg-orange-500 text-white hover:bg-orange-600';
-                      actionHandler = () => generateInvoiceFromBooking(booking);
+                      actions.push({
+                        label: 'Generate Invoice',
+                        handler: () => generateInvoiceFromBooking(booking),
+                        color: 'btn bg-orange-500 text-white hover:bg-orange-600'
+                      });
                     } else if (relatedInvoice && (relatedInvoice.status === 'pending' || relatedInvoice.status === 'sent')) {
-                      nextAction = 'paid';
-                      actionLabel = 'Mark as Paid';
-                      actionColor = 'btn bg-green-600 text-white hover:bg-green-700';
-                      actionHandler = () => markInvoiceAsPaid(relatedInvoice.id);
-                    } else if (relatedInvoice && relatedInvoice.status === 'paid') {
-                      nextAction = 'none';
+                      actions.push({
+                        label: 'Mark as Paid',
+                        handler: () => markInvoiceAsPaid(relatedInvoice.id),
+                        color: 'btn bg-green-600 text-white hover:bg-green-700'
+                      });
                     }
                     return (
                       <tr 
@@ -581,17 +671,36 @@ export default function Schedule() {
                           </span>
                         </td>
                         <td>
-                          <span className={`badge badge-animated ${
-                            booking.status === 'confirmed' ? 'badge-green' :
-                            booking.status === 'pending' ? 'badge-yellow' :
-                            booking.status === 'completed' ? 'badge-blue' :
-                            'badge-red'
-                          }`}>
-                            {booking.status}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`badge badge-animated ${
+                              booking.status === 'confirmed' ? 'badge-green' :
+                              booking.status === 'pending' ? 'badge-yellow' :
+                              booking.status === 'completed' ? 'badge-blue' :
+                              'badge-red'
+                            }`}>
+                              {booking.status}
+                            </span>
+                            {/* Show completion status for confirmed bookings */}
+                            {booking.status === 'confirmed' && (
+                              <div className="flex gap-1 text-xs">
+                                <span className={`px-1 py-0.5 rounded text-xs ${
+                                  booking.pickupCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  P{booking.pickupCompleted ? '✓' : '○'}
+                                </span>
+                                {booking.hasReturn && (
+                                  <span className={`px-1 py-0.5 rounded text-xs ${
+                                    booking.returnCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    R{booking.returnCompleted ? '✓' : '○'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-wrap">
                             <button
                               onClick={() => handleEdit(booking)}
                               className="btn btn-outline btn-action px-2 py-1 text-xs"
@@ -599,15 +708,16 @@ export default function Schedule() {
                             >
                               Edit
                             </button>
-                            {nextAction !== 'none' && (
+                            {actions.map((action, idx) => (
                               <button
-                                onClick={() => handleActionWithScroll(actionHandler, booking.id)}
-                                className={`${actionColor} btn-action px-2 py-1 text-xs`}
-                                title={actionLabel}
+                                key={idx}
+                                onClick={() => handleActionWithScroll(action.handler, booking.id)}
+                                className={`${action.color} btn-action px-2 py-1 text-xs`}
+                                title={action.label}
                               >
-                                {actionLabel}
+                                {action.label}
                               </button>
-                            )}
+                            ))}
                             <button
                               onClick={() => handleDelete(booking.id)}
                               className="btn bg-red-600 text-white hover:bg-red-700 btn-action px-2 py-1 text-xs"
@@ -651,8 +761,8 @@ export default function Schedule() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                 <select
-                  value={filterDriver}
-                  onChange={(e) => setFilterDriver(e.target.value)}
+                  value={selectedDriver}
+                  onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                   className="border rounded px-2 py-1"
                 >
                   <option value="">All Drivers</option>
@@ -743,28 +853,94 @@ export default function Schedule() {
                     <span className="text-xs"><span className="font-medium">Driver:</span> {selectedCalendarBooking.driver}</span>
                     <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarBooking.vehicle}</span>
                   </div>
+                  {/* Show completion status for confirmed bookings */}
+                  {selectedCalendarBooking.status === 'confirmed' && (
+                    <div className="flex gap-2 mb-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full font-medium ${
+                        selectedCalendarBooking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        Pickup {selectedCalendarBooking.pickupCompleted ? '✓' : '○'}
+                      </span>
+                      {selectedCalendarBooking.hasReturn && (
+                        <span className={`px-2 py-1 rounded-full font-medium ${
+                          selectedCalendarBooking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          Return {selectedCalendarBooking.returnCompleted ? '✓' : '○'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Show return trip info if this is a return leg */}
+                  {selectedCalendarBooking.legType === 'return' && selectedCalendarBooking.returnDate && (
+                    <div className="mb-2 p-2 bg-cyan-50 rounded-lg border border-cyan-200">
+                      <div className="text-xs font-semibold text-cyan-800 mb-1">Return Trip Details</div>
+                      <div className="text-xs text-cyan-700">
+                        <div>Return Date: {selectedCalendarBooking.returnDate} at {selectedCalendarBooking.returnTime}</div>
+                        {selectedCalendarBooking.returnPickup && <div>From: {selectedCalendarBooking.returnPickup}</div>}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-2 mb-4">
                     <span className="text-xs"><span className="font-medium">Type:</span> {getBookingTypeDisplay(selectedCalendarBooking.type)}</span>
                     <span className="text-xs"><span className="font-medium">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}</span>
                   </div>
                   {/* Action buttons */}
                   <div className="flex gap-2 mt-2">
-                    {/* Render action button based on status */}
+                    {/* Render action button based on status and completion state */}
                     {(() => {
                       const status = selectedCalendarBooking.status;
                       const inv = invoices.find(inv => inv.bookingId === selectedCalendarBooking.id);
+                      const actions = [];
+                      
                       if (status === 'pending') {
-                        return <button className="btn btn-success flex-1" onClick={() => { updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'confirmed' }); setSelectedCalendarBooking(null); }}>Confirm</button>;
+                        actions.push(
+                          <button key="confirm" className="btn btn-success flex-1" onClick={() => { 
+                            updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'confirmed' }); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Confirm</button>
+                        );
                       } else if (status === 'confirmed') {
-                        return <button className="btn btn-primary flex-1" onClick={() => { updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); setSelectedCalendarBooking(null); }}>Mark as Complete</button>;
+                        if (!selectedCalendarBooking.pickupCompleted) {
+                          actions.push(
+                            <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
+                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
+                              setSelectedCalendarBooking(null); 
+                            }}>Complete Pickup</button>
+                          );
+                        } else if (selectedCalendarBooking.hasReturn && !selectedCalendarBooking.returnCompleted) {
+                          actions.push(
+                            <button key="return" className="btn btn-success flex-1" onClick={() => { 
+                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
+                              setSelectedCalendarBooking(null); 
+                            }}>Complete Return</button>
+                          );
+                        } else if (!selectedCalendarBooking.hasReturn) {
+                          actions.push(
+                            <button key="complete" className="btn btn-success flex-1" onClick={() => { 
+                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); 
+                              setSelectedCalendarBooking(null); 
+                            }}>Mark as Complete</button>
+                          );
+                        }
                       } else if (status === 'completed' && !inv) {
-                        return <button className="btn btn-warning flex-1" onClick={() => { generateInvoiceFromBooking(selectedCalendarBooking); setSelectedCalendarBooking(null); }}>Generate Invoice</button>;
+                        actions.push(
+                          <button key="invoice" className="btn btn-warning flex-1" onClick={() => { 
+                            generateInvoiceFromBooking(selectedCalendarBooking); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Generate Invoice</button>
+                        );
                       } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                        return <button className="btn btn-success flex-1" onClick={() => { markInvoiceAsPaid(inv.id); setSelectedCalendarBooking(null); }}>Mark as Paid</button>;
+                        actions.push(
+                          <button key="paid" className="btn btn-success flex-1" onClick={() => { 
+                            markInvoiceAsPaid(inv.id); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Mark as Paid</button>
+                        );
                       } else if (inv && inv.status === 'paid') {
-                        return <span className="btn btn-disabled flex-1">Paid</span>;
+                        actions.push(<span key="paid-status" className="btn btn-disabled flex-1">Paid</span>);
                       }
-                      return null;
+                      
+                      return actions;
                     })()}
                     <button className="btn btn-outline flex-1" onClick={() => setSelectedCalendarBooking(null)}>Close</button>
                   </div>
