@@ -12,65 +12,8 @@ const BookNowContext = BookingsCalendarWidget.BookNowContext || createContext({ 
 export default function BookingsFleetGroupedWidget({ compact = false }) {
   const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' or 'fleet'
 
-  // Modal state and handlers (moved up)
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [bookingForm, setBookingForm] = useState({
-    customer: '',
-    pickup: '',
-    destination: '',
-    date: moment().format('YYYY-MM-DD'),
-    time: '09:00',
-    driver: '',
-    vehicleId: '',
-    status: 'pending',
-    type: 'priority',
-    price: 45,
-    // New enhanced fields
-    bookingType: 'internal', // 'internal' | 'outsourced'
-    tripType: 'single', // 'single' | 'tour'
-    returnTrip: false,
-    returnPickup: '',
-    returnDestination: '',
-    returnDate: '',
-    returnTime: '',
-    partnerId: ''
-  });
-
-  const openBookingModalDefault = () => {
-    setBookingForm({
-      customer: '',
-      pickup: '',
-      destination: '',
-      date: moment().format('YYYY-MM-DD'),
-      time: '09:00',
-      driver: '',
-      vehicleId: '',
-      status: 'pending',
-      type: 'priority',
-      price: 45,
-      // New enhanced fields
-      bookingType: 'internal',
-      tripType: 'single',
-      returnTrip: false,
-      returnPickup: '',
-      returnDestination: '',
-      returnDate: '',
-      returnTime: '',
-      partnerId: ''
-    });
-    setShowBookingModal(true);
-  };
-  const openBookingModalWithDate = (date) => {
-    setBookingForm((form) => ({ ...form, date: moment(date).format('YYYY-MM-DD') }));
-    setShowBookingModal(true);
-  };
-  const bookNowContextValue = {
-    openModal: openBookingModalDefault,
-    openModalWithDate: openBookingModalWithDate
-  };
-
   return (
-    <BookNowContext.Provider value={bookNowContextValue}>
+    <BookNowContext.Provider value={{}}>
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-4 md:p-5">
         {/* Header Row: Tabs + Book Now button */}
         <div className="flex flex-row items-center gap-2 mb-3 flex-nowrap min-w-0">
@@ -100,10 +43,6 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
             <div className="p-0 md:-m-5">
               <BookingsCalendarWidget 
                 showStatusPillsInHeader={false}
-                showBookingModal={showBookingModal}
-                setShowBookingModal={setShowBookingModal}
-                bookingForm={bookingForm}
-                setBookingForm={setBookingForm}
               />
             </div>
           )}
