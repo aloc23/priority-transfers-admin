@@ -10,6 +10,35 @@ import { CalendarIcon, TableIcon, TodayIcon, BookingIcon, ChevronLeftIcon, Chevr
 
 const localizer = momentLocalizer(moment);
 
+// Helper function to get booking type display
+const getBookingTypeDisplay = (booking) => {
+  // Handle new type/source system
+  if (booking.source === 'outsourced') return 'Outsourced';
+  if (booking.type === 'tour') return 'Tour';
+  if (booking.type === 'single') return 'Transfer';
+  
+  // Handle legacy types
+  if (booking.type === 'priority') return 'Transfer';
+  if (booking.type === 'outsourced') return 'Outsourced';
+  
+  return 'Transfer';
+};
+
+// Helper function to get booking type color
+const getBookingTypeColor = (booking) => {
+  const display = getBookingTypeDisplay(booking);
+  switch (display) {
+    case 'Transfer':
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'bg-blue-100 text-blue-800' };
+    case 'Tour':
+      return { bg: '#10b981', border: '#047857', badge: 'bg-green-100 text-green-800' };
+    case 'Outsourced':
+      return { bg: '#f59e0b', border: '#d97706', badge: 'bg-yellow-100 text-yellow-800' };
+    default:
+      return { bg: '#3b82f6', border: '#1d4ed8', badge: 'bg-blue-100 text-blue-800' };
+  }
+};
+
 export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showViewModeSelector = true, calendarOnly = false }) {
   const { bookings, drivers } = useAppStore();
   const { isMobile } = useResponsive();
@@ -48,8 +77,8 @@ export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showV
         end: endDate,
         resource: booking,
         style: {
-          backgroundColor: booking.type === 'priority' ? '#3b82f6' : '#f59e0b',
-          borderColor: booking.type === 'priority' ? '#1d4ed8' : '#d97706',
+          backgroundColor: getBookingTypeColor(booking).bg,
+          borderColor: getBookingTypeColor(booking).border,
           color: 'white'
         }
       };
@@ -111,12 +140,8 @@ export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showV
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      booking.type === 'priority' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {booking.type === 'priority' ? 'Priority' : 'Outsourced'}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBookingTypeColor(booking).badge}`}>
+                      {getBookingTypeDisplay(booking)}
                     </span>
                   </div>
                 </div>

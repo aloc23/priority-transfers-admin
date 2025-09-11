@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
 import ModalPortal from './ModalPortal';
@@ -11,7 +12,7 @@ export default function BookingModal({
   initialTime = '',
   title = null 
 }) {
-  const { addBooking, updateBooking, customers, drivers, partners } = useAppStore();
+  const { addBooking, updateBooking, customers, drivers, partners, bookings } = useAppStore();
   const { fleet } = useFleet();
 
   const [formData, setFormData] = useState({
@@ -29,11 +30,122 @@ export default function BookingModal({
     price: 45,
     tourStartDate: "",
     tourEndDate: "",
+    tourPickupTime: "",
+    tourReturnPickupTime: "",
     hasReturn: false,
     returnPickup: "",
     returnDate: "",
     returnTime: ""
   });
+
+  const [conflicts, setConflicts] = useState({
+    driver: [],
+    vehicle: []
+  });
+
+  // Conflict detection function
+  const checkForConflicts = (currentFormData) => {
+    const newConflicts = { driver: [], vehicle: [] };
+    
+    if (currentFormData.source !== 'internal') {
+      setConflicts(newConflicts);
+      return newConflicts;
+    }
+
+    // Get time ranges for the current booking
+    const getBookingTimeRanges = (booking) => {
+      const ranges = [];
+      
+      if (booking.type === 'tour') {
+        if (booking.tourStartDate && booking.tourEndDate) {
+          ranges.push({
+            startDate: booking.tourStartDate,
+            endDate: booking.tourEndDate,
+            startTime: booking.tourPickupTime || '09:00',
+            endTime: booking.tourReturnPickupTime || '17:00'
+          });
+        }
+      } else {
+        if (booking.date) {
+          const startTime = booking.time || '09:00';
+          const endTime = moment(startTime, 'HH:mm').add(2, 'hours').format('HH:mm');
+          ranges.push({
+            startDate: booking.date,
+            endDate: booking.date,
+            startTime,
+            endTime
+          });
+        }
+        
+        if (booking.hasReturn && booking.returnDate) {
+          const startTime = booking.returnTime || '09:00';
+          const endTime = moment(startTime, 'HH:mm').add(2, 'hours').format('HH:mm');
+          ranges.push({
+            startDate: booking.returnDate,
+            endDate: booking.returnDate,
+            startTime,
+            endTime
+          });
+        }
+      }
+      
+      return ranges;
+    };
+
+    // Check if two time ranges overlap
+    const rangesOverlap = (range1, range2) => {
+      const start1 = moment(`${range1.startDate} ${range1.startTime}`);
+      const end1 = moment(`${range1.endDate} ${range1.endTime}`);
+      const start2 = moment(`${range2.startDate} ${range2.startTime}`);
+      const end2 = moment(`${range2.endDate} ${range2.endTime}`);
+      
+      return start1.isBefore(end2) && start2.isBefore(end1);
+    };
+
+    const currentRanges = getBookingTimeRanges(currentFormData);
+    
+    // Check all existing bookings for conflicts
+    bookings.forEach(booking => {
+      // Skip the booking we're editing
+      if (editingBooking && booking.id === editingBooking.id) return;
+      
+      // Skip cancelled bookings
+      if (booking.status === 'cancelled') return;
+      
+      // Skip bookings that don't have drivers or vehicles assigned
+      if (booking.source !== 'internal') return;
+      
+      const existingRanges = getBookingTimeRanges(booking);
+      
+      // Check for overlaps between current booking and existing booking
+      currentRanges.forEach(currentRange => {
+        existingRanges.forEach(existingRange => {
+          if (rangesOverlap(currentRange, existingRange)) {
+            // Driver conflict
+            if (currentFormData.driver && booking.driver === currentFormData.driver) {
+              newConflicts.driver.push({
+                booking,
+                conflictDate: existingRange.startDate,
+                conflictTime: existingRange.startTime
+              });
+            }
+            
+            // Vehicle conflict
+            if (currentFormData.vehicle && booking.vehicle === currentFormData.vehicle) {
+              newConflicts.vehicle.push({
+                booking,
+                conflictDate: existingRange.startDate,
+                conflictTime: existingRange.startTime
+              });
+            }
+          }
+        });
+      });
+    });
+    
+    setConflicts(newConflicts);
+    return newConflicts;
+  };
 
   // Initialize form data when editing or when modal opens
   useEffect(() => {
@@ -70,6 +182,8 @@ export default function BookingModal({
         price: 45,
         tourStartDate: "",
         tourEndDate: "",
+        tourPickupTime: "",
+        tourReturnPickupTime: "",
         hasReturn: false,
         returnPickup: "",
         returnDate: "",
@@ -78,8 +192,23 @@ export default function BookingModal({
     }
   }, [editingBooking, initialDate, initialTime, isOpen]);
 
+  // Check for conflicts when relevant form data changes
+  useEffect(() => {
+    if (isOpen) {
+      checkForConflicts(formData);
+    }
+  }, [formData.driver, formData.vehicle, formData.date, formData.time, formData.returnDate, formData.returnTime, formData.tourStartDate, formData.tourEndDate, formData.tourPickupTime, formData.tourReturnPickupTime, formData.type, formData.source, formData.hasReturn, isOpen]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Check for conflicts before submitting
+    const currentConflicts = checkForConflicts(formData);
+    const hasConflicts = currentConflicts.driver.length > 0 || currentConflicts.vehicle.length > 0;
+    
+    if (hasConflicts && !window.confirm('There are conflicting assignments. Do you want to proceed anyway?')) {
+      return;
+    }
     
     // Create submission data with legacy compatibility
     const submissionData = {
@@ -113,6 +242,8 @@ export default function BookingModal({
       price: 45,
       tourStartDate: "",
       tourEndDate: "",
+      tourPickupTime: "",
+      tourReturnPickupTime: "",
       hasReturn: false,
       returnPickup: "",
       returnDate: "",
@@ -160,7 +291,7 @@ export default function BookingModal({
                           className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Single Trip</span>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Transfer</span>
                     </label>
                     <label className="flex items-center space-x-3 cursor-pointer group">
                       <div className="relative">
@@ -214,26 +345,50 @@ export default function BookingModal({
 
               {/* Tour Date Fields - Show for tour bookings */}
               {formData.type === 'tour' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
-                  <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Tour Start Date</label>
-                    <input
-                      type="date"
-                      value={formData.tourStartDate}
-                      onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
-                      className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                      required={formData.type === 'tour'}
-                    />
+                <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Tour Start Date</label>
+                      <input
+                        type="date"
+                        value={formData.tourStartDate}
+                        onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
+                        className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Tour End Date</label>
+                      <input
+                        type="date"
+                        value={formData.tourEndDate}
+                        onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
+                        className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Tour End Date</label>
-                    <input
-                      type="date"
-                      value={formData.tourEndDate}
-                      onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
-                      className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                      required={formData.type === 'tour'}
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Pick Up Time</label>
+                      <input
+                        type="time"
+                        value={formData.tourPickupTime}
+                        onChange={(e) => setFormData({...formData, tourPickupTime: e.target.value})}
+                        className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Pick Up Time</label>
+                      <input
+                        type="time"
+                        value={formData.tourReturnPickupTime}
+                        onChange={(e) => setFormData({...formData, tourReturnPickupTime: e.target.value})}
+                        className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'tour'}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -257,7 +412,7 @@ export default function BookingModal({
                     <select
                       value={formData.driver}
                       onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 ${conflicts.driver.length > 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
                       required={formData.source === 'internal'}
                     >
                       <option value="">Select Driver</option>
@@ -265,6 +420,16 @@ export default function BookingModal({
                         <option key={driver.id} value={driver.name}>{driver.name}</option>
                       ))}
                     </select>
+                    {conflicts.driver.length > 0 && (
+                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm font-bold text-red-800 mb-2">⚠️ Driver Conflict Detected</p>
+                        {conflicts.driver.map((conflict, index) => (
+                          <p key={index} className="text-xs text-red-600">
+                            {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* Partner field - Show for Outsourced bookings only */}
@@ -323,7 +488,7 @@ export default function BookingModal({
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Time</label>
+                    <label className="block mb-2 text-sm font-bold text-gray-800">Pick Up Time</label>
                     <input
                       type="time"
                       value={formData.time}
@@ -342,7 +507,7 @@ export default function BookingModal({
                   <select
                     value={formData.vehicle}
                     onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 ${conflicts.vehicle.length > 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
                     required={formData.source === 'internal'}
                   >
                     <option value="">Select Vehicle</option>
@@ -350,56 +515,68 @@ export default function BookingModal({
                       <option key={vehicle.id} value={vehicle.name}>{vehicle.name}</option>
                     ))}
                   </select>
+                  {conflicts.vehicle.length > 0 && (
+                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm font-bold text-red-800 mb-2">⚠️ Vehicle Conflict Detected</p>
+                      {conflicts.vehicle.map((conflict, index) => (
+                        <p key={index} className="text-xs text-red-600">
+                          {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Return Trip Fields */}
-              <div className="space-y-6">
-                <label className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={formData.hasReturn}
-                      onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
-                      className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">This booking has a return trip</span>
-                </label>
+              {/* Return Trip Fields - Only show for single/transfer trips */}
+              {formData.type === 'single' && (
+                <div className="space-y-6">
+                  <label className="flex items-center space-x-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formData.hasReturn}
+                        onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
+                        className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">This booking has a return trip</span>
+                  </label>
 
-                {formData.hasReturn && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 rounded-xl border-2 border-emerald-200/50 shadow-inner">
-                    <div className="sm:col-span-2">
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
-                      <input
-                        type="text"
-                        value={formData.returnPickup}
-                        onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
-                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                        placeholder="Usually the original destination..."
-                      />
+                  {formData.hasReturn && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 rounded-xl border-2 border-emerald-200/50 shadow-inner">
+                      <div className="sm:col-span-2">
+                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
+                        <input
+                          type="text"
+                          value={formData.returnPickup}
+                          onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
+                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                          placeholder="Usually the original destination..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Date</label>
+                        <input
+                          type="date"
+                          value={formData.returnDate}
+                          onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
+                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Time</label>
+                        <input
+                          type="time"
+                          value={formData.returnTime}
+                          onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
+                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Date</label>
-                      <input
-                        type="date"
-                        value={formData.returnDate}
-                        onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
-                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Time</label>
-                      <input
-                        type="time"
-                        value={formData.returnTime}
-                        onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
-                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Price */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
