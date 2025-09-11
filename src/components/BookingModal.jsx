@@ -24,7 +24,8 @@ export default function BookingModal({
     vehicle: "",
     partner: "",
     status: "pending",
-    type: "single",
+    type: "single", // "single" or "tour"
+    source: "internal", // "internal" or "outsourced"
     price: 45,
     tourStartDate: "",
     tourEndDate: "",
@@ -37,7 +38,22 @@ export default function BookingModal({
   // Initialize form data when editing or when modal opens
   useEffect(() => {
     if (editingBooking) {
-      setFormData({ ...editingBooking });
+      // Handle backwards compatibility when loading existing bookings
+      let type, source;
+      if (editingBooking.type === 'outsourced') {
+        // If the old type was 'outsourced', default to single trip + outsourced
+        type = editingBooking.source === 'tour' ? 'tour' : 'single'; // Check if we have new source info
+        source = 'outsourced';
+      } else {
+        type = editingBooking.type === 'tour' ? 'tour' : 'single';
+        source = editingBooking.source || 'internal'; // Default to internal if not specified
+      }
+      
+      setFormData({ 
+        ...editingBooking,
+        type,
+        source
+      });
     } else {
       setFormData({
         customer: "",
@@ -50,6 +66,7 @@ export default function BookingModal({
         partner: "",
         status: "pending",
         type: "single",
+        source: "internal",
         price: 45,
         tourStartDate: "",
         tourEndDate: "",
@@ -63,10 +80,19 @@ export default function BookingModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Create submission data with legacy compatibility
+    const submissionData = {
+      ...formData,
+      // For backwards compatibility, map to the old single type field
+      // Keep the new fields for future use
+      type: formData.source === 'outsourced' ? 'outsourced' : formData.type
+    };
+    
     if (editingBooking) {
-      updateBooking(editingBooking.id, formData);
+      updateBooking(editingBooking.id, submissionData);
     } else {
-      addBooking(formData);
+      addBooking(submissionData);
     }
     onClose();
   };
@@ -83,6 +109,7 @@ export default function BookingModal({
       partner: "",
       status: "pending",
       type: "single",
+      source: "internal",
       price: 45,
       tourStartDate: "",
       tourEndDate: "",
@@ -117,42 +144,63 @@ export default function BookingModal({
           <div className="modal-body">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Booking Type - Radio buttons */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Booking Type</label>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="bookingType"
-                      value="single"
-                      checked={formData.type === 'single'}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Single Trip</span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="bookingType"
-                      value="tour"
-                      checked={formData.type === 'tour'}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Tour</span>
-                  </label>
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="bookingType"
-                      value="outsourced"
-                      checked={formData.type === 'outsourced'}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Outsourced</span>
-                  </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Trip Type */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Trip Type</label>
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="tripType"
+                        value="single"
+                        checked={formData.type === 'single'}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Single Trip</span>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="tripType"
+                        value="tour"
+                        checked={formData.type === 'tour'}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Tour</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Service Source */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Service Source</label>
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="serviceSource"
+                        value="internal"
+                        checked={formData.source === 'internal'}
+                        onChange={(e) => setFormData({...formData, source: e.target.value})}
+                        className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Internal</span>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="serviceSource"
+                        value="outsourced"
+                        checked={formData.source === 'outsourced'}
+                        onChange={(e) => setFormData({...formData, source: e.target.value})}
+                        className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 focus:ring-orange-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Outsourced</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -193,15 +241,15 @@ export default function BookingModal({
                     required
                   />
                 </div>
-                {/* Driver field - Show for single trip and tour, hide for outsourced */}
-                {(formData.type === 'single' || formData.type === 'tour') && (
+                {/* Driver field - Show for Internal bookings only */}
+                {formData.source === 'internal' && (
                   <div>
                     <label className="block mb-1">Driver</label>
                     <select
                       value={formData.driver}
                       onChange={(e) => setFormData({...formData, driver: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required={formData.type === 'single' || formData.type === 'tour'}
+                      required={formData.source === 'internal'}
                     >
                       <option value="">Select Driver</option>
                       {drivers.map(driver => (
@@ -210,8 +258,8 @@ export default function BookingModal({
                     </select>
                   </div>
                 )}
-                {/* Partner field - Show for outsourced */}
-                {formData.type === 'outsourced' && (
+                {/* Partner field - Show for Outsourced bookings only */}
+                {formData.source === 'outsourced' && (
                   <div>
                     <label className="block mb-1">Partner/External Provider</label>
                     <input
@@ -220,6 +268,7 @@ export default function BookingModal({
                       onChange={(e) => setFormData({...formData, partner: e.target.value})}
                       className="input-animated"
                       placeholder="Enter partner company name"
+                      required={formData.source === 'outsourced'}
                     />
                   </div>
                 )}
@@ -247,39 +296,41 @@ export default function BookingModal({
                 />
               </div>
 
-              {/* Pickup Date and Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Pickup Date</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
+              {/* Pickup Date and Time - Hide for Tours */}
+              {formData.type === 'single' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1">Pickup Date</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required={formData.type === 'single'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1">Pickup Time</label>
+                    <input
+                      type="time"
+                      value={formData.time}
+                      onChange={(e) => setFormData({...formData, time: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required={formData.type === 'single'}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block mb-1">Pickup Time</label>
-                  <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({...formData, time: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Vehicle field - Show for single trip and tour, hide for outsourced */}
-              {(formData.type === 'single' || formData.type === 'tour') && (
+              {/* Vehicle field - Show for Internal bookings only */}
+              {formData.source === 'internal' && (
                 <div>
                   <label className="block mb-1">Vehicle</label>
                   <select
                     value={formData.vehicle}
                     onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required={formData.type === 'single' || formData.type === 'tour'}
+                    required={formData.source === 'internal'}
                   >
                     <option value="">Select Vehicle</option>
                     {fleet.map(vehicle => (
