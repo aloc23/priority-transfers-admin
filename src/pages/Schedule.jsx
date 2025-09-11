@@ -817,7 +817,7 @@ export default function Schedule() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-white/40 backdrop-blur-xl flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-xl flex items-center justify-center">
           <div className="modal-container">
             {/* Sticky Header */}
             <div className="modal-header">
