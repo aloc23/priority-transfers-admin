@@ -44,7 +44,7 @@ BookingsCalendarWidget.BookNowContext = BookNowContext;
 const localizer = momentLocalizer(moment);
 
 export default function BookingsCalendarWidget(props) {
-  const { bookings, drivers, partners, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData } = useAppStore();
+  const { bookings, drivers, partners, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData, globalCalendarState, updateGlobalCalendarState } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const navigate = useNavigate();
@@ -55,10 +55,8 @@ export default function BookingsCalendarWidget(props) {
   const [initialDate, setInitialDate] = useState('');
   const [initialTime, setInitialTime] = useState('');
   
-  // State management
-  const [selectedDate, setSelectedDate] = useState(null); // Start with no date selected
-  const [selectedStatus, setSelectedStatus] = useState(null); // 'confirmed', 'pending', 'upcoming'
-  const [calendarView, setCalendarView] = useState('month');
+  // Use global state instead of local state
+  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
 
   // Modal management functions
   const openBookingModal = () => {
@@ -144,6 +142,11 @@ export default function BookingsCalendarWidget(props) {
   const filteredBookings = useMemo(() => {
     let filtered = [...bookings];
 
+    // Driver filter
+    if (selectedDriver) {
+      filtered = filtered.filter(booking => booking.driver === selectedDriver);
+    }
+
     // Status filter takes priority if selected
     if (selectedStatus) {
       if (selectedStatus === 'confirmed') {
@@ -188,7 +191,7 @@ export default function BookingsCalendarWidget(props) {
     }
 
     return filtered;
-  }, [bookings, selectedDate, selectedStatus]);
+  }, [bookings, selectedDate, selectedStatus, selectedDriver]);
 
   // Convert bookings to calendar events - ONLY show confirmed bookings
   const calendarEvents = useMemo(() => {
@@ -269,29 +272,33 @@ export default function BookingsCalendarWidget(props) {
     return events;
   }, [bookings]); // Changed from upcomingBookings to all bookings, but filtered to confirmed only
 
-  // Handle pill click - single filter logic
+  // Handle pill click - single filter logic with global state
   const handleStatusFilter = (status) => {
     if (selectedStatus === status) {
       // Deselect if same status clicked
-      setSelectedStatus(null);
+      updateGlobalCalendarState({ selectedStatus: null });
     } else {
       // Select new status and clear date filter
-      setSelectedStatus(status);
-      setSelectedDate(null);
+      updateGlobalCalendarState({ 
+        selectedStatus: status,
+        selectedDate: null
+      });
     }
   };
 
-  // Handle date selection from calendar - single filter logic
+  // Handle date selection from calendar - single filter logic with global state
   const handleCalendarDateSelect = (date) => {
-    setSelectedDate(date);
-    setSelectedStatus(null);
+    updateGlobalCalendarState({ 
+      selectedDate: date,
+      selectedStatus: null
+    });
   };
 
-  // Navigate calendar
+  // Navigate calendar with global state
   const navigateCalendar = (direction) => {
     const newDate = moment(selectedDate);
     newDate.add(direction === 'next' ? 1 : -1, 'month');
-    setSelectedDate(newDate.toDate());
+    updateGlobalCalendarState({ selectedDate: newDate.toDate() });
   };
 
   // Get available actions for a booking
@@ -416,7 +423,7 @@ export default function BookingsCalendarWidget(props) {
                     <ChevronLeftIcon className="w-4 h-4 text-slate-600" />
                   </button>
                   <button
-                    onClick={() => setSelectedDate(new Date())}
+                    onClick={() => updateGlobalCalendarState({ selectedDate: new Date() })}
                     className="px-3 py-2 text-xs font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-lg hover:shadow-xl transform hover:scale-105 backdrop-blur-sm"
                     aria-label="Today"
                   >
@@ -438,11 +445,11 @@ export default function BookingsCalendarWidget(props) {
                   events={calendarEvents}
                   startAccessor="start"
                   endAccessor="end"
-                  view={calendarView}
+                  view={currentView}
                   date={selectedDate || new Date()}
-                  onNavigate={setSelectedDate}
+                  onNavigate={(date) => updateGlobalCalendarState({ selectedDate: date })}
                   onSelectSlot={({ start }) => handleCalendarDateSelect(start)}
-                  onView={setCalendarView}
+                  onView={(view) => updateGlobalCalendarState({ currentView: view })}
                   views={['month']}
                   eventPropGetter={(event) => ({
                     style: event.style
@@ -507,8 +514,10 @@ export default function BookingsCalendarWidget(props) {
                     {selectedStatus || selectedDate ? (
                       <button
                         onClick={() => {
-                          setSelectedStatus(null);
-                          setSelectedDate(null);
+                          updateGlobalCalendarState({
+                            selectedStatus: null,
+                            selectedDate: null
+                          });
                         }}
                         className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-blue-300/50 rounded-md px-2 py-1 transition-colors duration-200"
                       >

@@ -49,16 +49,18 @@ const getBookingTypeColor = (type) => {
 export default function Schedule() {
   // State for selected booking (for calendar card popup)
   const [selectedCalendarBooking, setSelectedCalendarBooking] = useState(null);
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser } = useAppStore();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser, globalCalendarState, updateGlobalCalendarState } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
-  const [filterDriver, setFilterDriver] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [highlightedBooking, setHighlightedBooking] = useState(null);
+
+  // Use global calendar state instead of local state  
+  const { selectedDate, selectedStatus, selectedDriver } = globalCalendarState;
+  const filterStatus = selectedStatus === null ? 'all' : selectedStatus;
 
   // Booking status counts for tabs
   const statusCounts = useMemo(() => {
@@ -158,14 +160,14 @@ export default function Schedule() {
   // Memoize filtered bookings for performance
   const filteredBookings = useMemo(() => {
     let result = bookings;
-    if (filterDriver) {
-      result = result.filter(booking => booking.driver === filterDriver);
+    if (selectedDriver) {
+      result = result.filter(booking => booking.driver === selectedDriver);
     }
     if (filterStatus !== 'all') {
       result = result.filter(booking => booking.status === filterStatus);
     }
     return result;
-  }, [bookings, filterDriver, filterStatus]);
+  }, [bookings, selectedDriver, filterStatus]);
 
   // Memoize calendar events for performance - ONLY show confirmed bookings
   const calendarEvents = useMemo(() => {
@@ -438,7 +440,7 @@ export default function Schedule() {
               : 'bg-gradient-to-r from-slate-200 to-slate-100'
           }))}
           selectedStatus={filterStatus}
-          onStatusClick={setFilterStatus}
+          onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
           cardClassName="backdrop-blur-md bg-white/80 border border-slate-200 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-200 group"
           countClassName="text-2xl font-extrabold text-slate-900 drop-shadow-sm"
           labelClassName="text-xs font-bold text-slate-700 uppercase tracking-wider"
@@ -453,7 +455,7 @@ export default function Schedule() {
           {statusTabs.map((tab) => (
             <button 
               key={tab.id}
-              onClick={() => setFilterStatus(tab.id)} 
+              onClick={() => updateGlobalCalendarState({ selectedStatus: tab.id === 'all' ? null : tab.id })} 
               className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
                 filterStatus === tab.id 
                   ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
@@ -505,8 +507,8 @@ export default function Schedule() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                   <select
-                    value={filterDriver}
-                    onChange={(e) => setFilterDriver(e.target.value)}
+                    value={selectedDriver}
+                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                     className="border rounded px-2 py-1"
                   >
                     <option value="">All Drivers</option>
@@ -561,8 +563,8 @@ export default function Schedule() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                   <select
-                    value={filterDriver}
-                    onChange={(e) => setFilterDriver(e.target.value)}
+                    value={selectedDriver}
+                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                     className="border rounded px-2 py-1"
                   >
                     <option value="">All Drivers</option>
@@ -759,8 +761,8 @@ export default function Schedule() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
                 <select
-                  value={filterDriver}
-                  onChange={(e) => setFilterDriver(e.target.value)}
+                  value={selectedDriver}
+                  onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
                   className="border rounded px-2 py-1"
                 >
                   <option value="">All Drivers</option>

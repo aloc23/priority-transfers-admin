@@ -28,6 +28,14 @@ export function AppStoreProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
   const [estimations, setEstimations] = useState([]);
+  
+  // Global calendar and filter state for synchronization between dashboard and schedule
+  const [globalCalendarState, setGlobalCalendarState] = useState({
+    selectedDate: null,
+    selectedStatus: null,
+    selectedDriver: '',
+    currentView: 'month'
+  });
 
   // Safe localStorage utility functions
   const safeLocalStorage = {
@@ -1651,6 +1659,20 @@ export function AppStoreProvider({ children }) {
     }
   };
 
+  // Global calendar state management functions
+  const updateGlobalCalendarState = (updates) => {
+    setGlobalCalendarState(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetGlobalCalendarFilters = () => {
+    setGlobalCalendarState({
+      selectedDate: null,
+      selectedStatus: null,
+      selectedDriver: '',
+      currentView: 'month'
+    });
+  };
+
   const convertEstimationToBooking = (estimationId) => {
     try {
       const estimation = estimations.find(e => e.id === estimationId);
@@ -1709,6 +1731,7 @@ export function AppStoreProvider({ children }) {
     expenses,
     income,
     estimations,
+    globalCalendarState,
     login,
     logout,
     addBooking,
@@ -1755,7 +1778,9 @@ export function AppStoreProvider({ children }) {
     addEstimation,
     updateEstimation,
     deleteEstimation,
-    convertEstimationToBooking
+    convertEstimationToBooking,
+    updateGlobalCalendarState,
+    resetGlobalCalendarFilters
   };
 
   return (
