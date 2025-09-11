@@ -19,15 +19,15 @@ const localizer = momentLocalizer(moment);
 const getBookingTypeDisplay = (type) => {
   switch (type) {
     case 'single':
-      return 'Single Trip';
+      return 'Transfer';
     case 'tour':
       return 'Tour';
     case 'outsourced':
       return 'Outsourced';
     case 'priority': // For backwards compatibility with existing data
-      return 'Single Trip';
+      return 'Transfer';
     default:
-      return 'Single Trip';
+      return 'Transfer';
   }
 };
 

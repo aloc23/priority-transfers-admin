@@ -129,8 +129,14 @@ export default function BookingsCalendarWidget(props) {
   const upcomingBookings = useMemo(() => {
     const today = moment().startOf('day');
     return bookings.filter(booking => {
-      const bookingDate = moment(booking.date, 'YYYY-MM-DD');
-      return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      if (booking.type === 'tour' && booking.tourStartDate) {
+        const bookingDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      } else if (booking.date) {
+        const bookingDate = moment(booking.date, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      }
+      return false;
     });
   }, [bookings]);
 
@@ -147,7 +153,14 @@ export default function BookingsCalendarWidget(props) {
       } else if (selectedStatus === 'upcoming') {
         const today = moment().startOf('day');
         filtered = filtered.filter(booking => {
-          const bookingDate = moment(booking.date, 'YYYY-MM-DD');
+          let bookingDate;
+          if (booking.type === 'tour' && booking.tourStartDate) {
+            bookingDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+          } else if (booking.date) {
+            bookingDate = moment(booking.date, 'YYYY-MM-DD');
+          } else {
+            return false;
+          }
           return bookingDate.isSameOrAfter(today) && booking.status === 'confirmed';
         });
       }
@@ -156,11 +169,21 @@ export default function BookingsCalendarWidget(props) {
     else if (selectedDate) {
       const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
       filtered = filtered.filter(booking => {
-        // Check main booking date
-        const matchesPickupDate = booking.date === selectedDateStr;
-        // Check return date if it exists
-        const matchesReturnDate = booking.hasReturn && booking.returnDate === selectedDateStr;
-        return matchesPickupDate || matchesReturnDate;
+        if (booking.type === 'tour') {
+          // Tour bookings: check if selected date falls between start and end dates
+          if (booking.tourStartDate && booking.tourEndDate) {
+            const startDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+            const endDate = moment(booking.tourEndDate, 'YYYY-MM-DD');
+            const selectedMoment = moment(selectedDateStr, 'YYYY-MM-DD');
+            return selectedMoment.isBetween(startDate, endDate, 'day', '[]');
+          }
+          return false;
+        } else {
+          // Transfer bookings: check pickup date and return date if exists
+          const matchesPickupDate = booking.date === selectedDateStr;
+          const matchesReturnDate = booking.hasReturn && booking.returnDate === selectedDateStr;
+          return matchesPickupDate || matchesReturnDate;
+        }
       });
     }
 
@@ -172,46 +195,71 @@ export default function BookingsCalendarWidget(props) {
     const events = [];
     
     upcomingBookings.forEach(booking => {
-      // Main booking event (pickup)
-      const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
-      const endDate = moment(startDate).add(2, 'hours').toDate();
-      
-      events.push({
-        id: `${booking.id}-pickup`,
-        title: `${booking.customer} - ${booking.pickup}`,
-        start: startDate,
-        end: endDate,
-        resource: { ...booking, isReturn: false },
-        style: {
-          backgroundColor: booking.status === 'confirmed' ? '#10b981' : '#f59e0b',
-          borderColor: booking.status === 'confirmed' ? '#059669' : '#d97706',
-          color: 'white',
-          fontSize: '12px',
-          fontWeight: 'bold'
+      if (booking.type === 'tour') {
+        // Tour bookings: render as block spanning from start to end date
+        if (booking.tourStartDate && booking.tourEndDate) {
+          const startDate = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          const endDate = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '17:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          
+          events.push({
+            id: `${booking.id}-tour`,
+            title: `Tour: ${booking.customer} - ${booking.pickup}`,
+            start: startDate,
+            end: endDate,
+            resource: { ...booking, isTour: true },
+            style: {
+              backgroundColor: booking.status === 'confirmed' ? '#10b981' : '#f59e0b',
+              borderColor: booking.status === 'confirmed' ? '#047857' : '#d97706',
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }
+          });
         }
-      });
-      
-      // Return trip event if it exists
-      if (booking.hasReturn && booking.returnDate && booking.returnTime) {
-        const returnStartDate = moment(`${booking.returnDate} ${booking.returnTime}`, 'YYYY-MM-DD HH:mm').toDate();
-        const returnEndDate = moment(returnStartDate).add(2, 'hours').toDate();
-        
-        events.push({
-          id: `${booking.id}-return`,
-          title: `${booking.customer} - Return Trip`,
-          start: returnStartDate,
-          end: returnEndDate,
-          resource: { ...booking, isReturn: true },
-          style: {
-            backgroundColor: booking.status === 'confirmed' ? '#0891b2' : '#ea580c',
-            borderColor: booking.status === 'confirmed' ? '#0e7490' : '#c2410c',
-            color: 'white',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            borderStyle: 'dashed',
-            borderWidth: '2px'
+      } else {
+        // Transfer bookings: render only on pickup date
+        if (booking.date) {
+          const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          const endDate = moment(startDate).add(2, 'hours').toDate();
+          
+          events.push({
+            id: `${booking.id}-pickup`,
+            title: `Transfer: ${booking.customer} - ${booking.pickup}`,
+            start: startDate,
+            end: endDate,
+            resource: { ...booking, isReturn: false },
+            style: {
+              backgroundColor: booking.status === 'confirmed' ? '#3b82f6' : '#f59e0b',
+              borderColor: booking.status === 'confirmed' ? '#1d4ed8' : '#d97706',
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }
+          });
+          
+          // Return bookings: render on both pickup and return dates (unified booking)
+          if (booking.hasReturn && booking.returnDate && booking.returnTime) {
+            const returnStartDate = moment(`${booking.returnDate} ${booking.returnTime}`, 'YYYY-MM-DD HH:mm').toDate();
+            const returnEndDate = moment(returnStartDate).add(2, 'hours').toDate();
+            
+            events.push({
+              id: `${booking.id}-return`,
+              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination}`,
+              start: returnStartDate,
+              end: returnEndDate,
+              resource: { ...booking, isReturn: true },
+              style: {
+                backgroundColor: booking.status === 'confirmed' ? '#0891b2' : '#ea580c',
+                borderColor: booking.status === 'confirmed' ? '#0e7490' : '#c2410c',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                borderStyle: 'dashed',
+                borderWidth: '2px'
+              }
+            });
           }
-        });
+        }
       }
     });
     
