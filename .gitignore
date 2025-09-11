@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs (keep docs/ for GitHub Pages deployment)
+# Build outputs (keep docs/ including assets for GitHub Pages deployment)
 build/
 
 # Environment variables
