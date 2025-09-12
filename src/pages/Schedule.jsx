@@ -180,29 +180,41 @@ export default function Schedule() {
     
     confirmedBookings.forEach(booking => {
       if (booking.type === 'tour') {
-        // Handle tour bookings with date ranges
+        // Handle tour bookings with date ranges - create continuous blocks
         if (booking.tourStartDate && booking.tourEndDate) {
           const tourStart = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '08:00'}`);
           const tourEnd = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '18:00'}`);
           
+          // Ensure the tour spans full days for proper continuous blocking
+          const startOfTour = tourStart.clone().startOf('day').add(8, 'hours');
+          const endOfTour = tourEnd.clone().startOf('day').add(18, 'hours');
+          
           events.push({
             id: `${booking.id}-tour`,
             title: `Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
-            start: tourStart.toDate(),
-            end: tourEnd.toDate(),
-            allDay: tourStart.clone().startOf('day').isSame(tourEnd.clone().startOf('day')) ? false : true,
+            start: startOfTour.toDate(),
+            end: endOfTour.toDate(),
+            allDay: false, // Keep as timed event for better visibility
             resource: { ...booking, legType: 'tour' },
             style: {
-              backgroundColor: getBookingTypeColor(booking.type).bg,
-              borderColor: getBookingTypeColor(booking.type).border,
+              backgroundColor: booking.source === 'outsourced' || booking.type === 'outsourced' ? 
+                '#f97316' : '#10b981', // Orange for outsourced, emerald for internal tours
+              borderColor: booking.source === 'outsourced' || booking.type === 'outsourced' ? 
+                '#ea580c' : '#047857',
               color: 'white',
-              fontWeight: 'bold'
+              fontWeight: '600',
+              fontSize: '12px',
+              borderRadius: '6px',
+              border: '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }
           });
         }
       } else {
         // Handle single/transfer bookings
         if (booking.date && booking.time) {
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          
           events.push({
             id: `${booking.id}-pickup`,
             title: `${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
@@ -210,13 +222,18 @@ export default function Schedule() {
             end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
             resource: { ...booking, isReturn: false, legType: 'pickup' },
             style: {
-              backgroundColor: getBookingTypeColor(booking.type).bg,
-              borderColor: getBookingTypeColor(booking.type).border,
-              color: 'white'
+              backgroundColor: isOutsourced ? '#f97316' : '#3b82f6', // Orange for outsourced, blue for internal
+              borderColor: isOutsourced ? '#ea580c' : '#1d4ed8',
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '12px',
+              borderRadius: '6px',
+              border: '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }
           });
           
-          // Add return event if applicable
+          // Add return event if applicable with enhanced styling
           if (booking.hasReturn && booking.returnDate && booking.returnTime) {
             events.push({
               id: `${booking.id}-return`,
@@ -225,11 +242,14 @@ export default function Schedule() {
               end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
               resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
-                backgroundColor: getBookingTypeColor(booking.type).bg,
-                borderColor: getBookingTypeColor(booking.type).border,
+                backgroundColor: isOutsourced ? '#f97316' : '#3b82f6',
+                borderColor: isOutsourced ? '#ea580c' : '#1d4ed8',
                 color: 'white',
-                borderStyle: 'dashed', // Distinguish return trips visually
-                borderWidth: '2px'
+                fontWeight: '600',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: '2px dashed', // Dashed border for return trips
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }
             });
           }
@@ -313,30 +333,74 @@ export default function Schedule() {
           <div>
             <h3 className="font-semibold text-lg text-slate-800 mb-1">{booking.customer}</h3>
             <div className="flex items-center gap-2 mb-2">
-              <span className={`badge badge-animated ${
-                booking.status === 'confirmed' ? 'badge-green' :
-                booking.status === 'pending' ? 'badge-yellow' :
-                booking.status === 'completed' ? 'badge-blue' :
-                'badge-red'
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                'bg-red-50 text-red-700 border-red-200'
               }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  booking.status === 'confirmed' ? 'bg-emerald-500' :
+                  booking.status === 'pending' ? 'bg-amber-500' :
+                  booking.status === 'completed' ? 'bg-blue-500' :
+                  'bg-red-500'
+                }`}></span>
                 {booking.status}
               </span>
-              <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                booking.type === 'tour' ? 'bg-green-50 text-green-700 border-green-200' :
+                booking.type === 'outsourced' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                'bg-blue-50 text-blue-700 border-blue-200'
+              }`}>
+                {booking.type === 'tour' && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+                {booking.type === 'outsourced' && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                  </svg>
+                )}
+                {(booking.type === 'single' || !booking.type) && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 12l2 2 4-4M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8Z"/>
+                  </svg>
+                )}
                 {getBookingTypeDisplay(booking.type)}
               </span>
               {/* Show completion status for confirmed bookings */}
               {booking.status === 'confirmed' && (
-                <div className="flex items-center gap-1 text-xs">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    booking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm border ${
+                    booking.pickupCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                   }`}>
-                    Pickup {booking.pickupCompleted ? '✓' : '○'}
+                    {booking.pickupCompleted ? (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                      </svg>
+                    )}
+                    Pickup
                   </span>
                   {booking.hasReturn && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      booking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm border ${
+                      booking.returnCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                     }`}>
-                      Return {booking.returnCompleted ? '✓' : '○'}
+                      {booking.returnCompleted ? (
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                      )}
+                      Return
                     </span>
                   )}
                 </div>
@@ -696,33 +760,77 @@ export default function Schedule() {
                           {formatCurrency(booking.price || 45)}
                         </td>
                         <td>
-                          <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                            booking.type === 'tour' ? 'bg-green-50 text-green-700 border-green-200' :
+                            booking.type === 'outsourced' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}>
+                            {booking.type === 'tour' && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            )}
+                            {booking.type === 'outsourced' && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                              </svg>
+                            )}
+                            {(booking.type === 'single' || !booking.type) && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M9 12l2 2 4-4M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8Z"/>
+                              </svg>
+                            )}
                             {getBookingTypeDisplay(booking.type)}
                           </span>
                         </td>
                         <td>
                           <div className="flex flex-col gap-1">
-                            <span className={`badge badge-animated ${
-                              booking.status === 'confirmed' ? 'badge-green' :
-                              booking.status === 'pending' ? 'badge-yellow' :
-                              booking.status === 'completed' ? 'badge-blue' :
-                              'badge-red'
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                              booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-red-50 text-red-700 border-red-200'
                             }`}>
+                              <span className={`w-2 h-2 rounded-full ${
+                                booking.status === 'confirmed' ? 'bg-emerald-500' :
+                                booking.status === 'pending' ? 'bg-amber-500' :
+                                booking.status === 'completed' ? 'bg-blue-500' :
+                                'bg-red-500'
+                              }`}></span>
                               {booking.status}
                             </span>
                             {/* Show completion status for confirmed bookings */}
                             {booking.status === 'confirmed' && (
                               <div className="flex gap-1 text-xs">
-                                <span className={`px-1 py-0.5 rounded text-xs ${
-                                  booking.pickupCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium border ${
+                                  booking.pickupCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                                 }`}>
-                                  P{booking.pickupCompleted ? '✓' : '○'}
+                                  {booking.pickupCompleted ? (
+                                    <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                      <polyline points="20,6 9,17 4,12"/>
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <circle cx="12" cy="12" r="10"/>
+                                    </svg>
+                                  )}
+                                  P
                                 </span>
                                 {booking.hasReturn && (
-                                  <span className={`px-1 py-0.5 rounded text-xs ${
-                                    booking.returnCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                  <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium border ${
+                                    booking.returnCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                                   }`}>
-                                    R{booking.returnCompleted ? '✓' : '○'}
+                                    {booking.returnCompleted ? (
+                                      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <polyline points="20,6 9,17 4,12"/>
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                      </svg>
+                                    )}
+                                    R
                                   </span>
                                 )}
                               </div>

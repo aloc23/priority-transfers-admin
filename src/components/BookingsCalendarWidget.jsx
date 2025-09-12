@@ -241,7 +241,7 @@ export default function BookingsCalendarWidget(props) {
           const endDate = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '17:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           
           const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
-          const typePrefix = isOutsourced ? '🚐 Outsourced Tour' : 'Tour';
+          const typePrefix = isOutsourced ? 'Outsourced Tour' : 'Tour';
           
           events.push({
             id: `${booking.id}-tour`,
@@ -264,7 +264,7 @@ export default function BookingsCalendarWidget(props) {
           const endDate = moment(startDate).add(2, 'hours').toDate();
           
           const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
-          const typePrefix = isOutsourced ? '🚐 Outsourced' : 'Transfer';
+          const typePrefix = isOutsourced ? 'Outsourced' : 'Transfer';
           
           events.push({
             id: `${booking.id}-pickup`,
@@ -624,8 +624,11 @@ export default function BookingsCalendarWidget(props) {
                           <div className="flex items-center gap-3 flex-1 truncate">
                             {/* Outsourced indicator */}
                             {(booking.source === 'outsourced' || booking.type === 'outsourced') && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50 shadow-sm">
-                                🚐 Partner
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50 shadow-sm">
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                                </svg>
+                                Partner
                               </span>
                             )}
                             <span className="font-bold text-slate-800 truncate text-base">{booking.customer || booking.customerName}</span>
