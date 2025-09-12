@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
@@ -34,8 +34,10 @@ export default function Dashboard() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [showKPIModal, setShowKPIModal] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleKPIClick = (kpi) => {
     setSelectedKPI(kpi);
@@ -149,6 +151,78 @@ export default function Dashboard() {
     const item = expenses[idx];
     deleteExpense(item.id);
   }
+
+  // File upload handler for expenses
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      let expensesToAdd = [];
+
+      if (file.name.endsWith('.csv')) {
+        // Simple CSV parsing
+        const lines = text.split('\n').slice(1); // Skip header
+        expensesToAdd = lines
+          .filter(line => line.trim())
+          .map(line => {
+            const [date, description, amount] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+            return {
+              date: date || new Date().toISOString().split('T')[0],
+              description: description || 'Uploaded expense',
+              amount: parseFloat(amount) || 0
+            };
+          })
+          .filter(expense => expense.amount > 0);
+      } else if (file.name.endsWith('.txt')) {
+        // Simple text parsing - look for patterns like "Date: ... Description: ... Amount: ..."
+        const lines = text.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+          const dateMatch = line.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/);
+          const amountMatch = line.match(/(\d+\.?\d*)/);
+          const description = line.replace(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/, '').replace(/(\d+\.?\d*)/, '').trim();
+          
+          if (amountMatch) {
+            expensesToAdd.push({
+              date: dateMatch ? dateMatch[0] : new Date().toISOString().split('T')[0],
+              description: description || 'Uploaded expense',
+              amount: parseFloat(amountMatch[0]) || 0
+            });
+          }
+        }
+      } else {
+        // For other file types (PDF, Excel), show a simple dialog
+        const description = prompt('Enter expense description:') || 'Uploaded expense';
+        const amount = prompt('Enter expense amount:');
+        if (amount && !isNaN(amount)) {
+          expensesToAdd = [{
+            date: new Date().toISOString().split('T')[0],
+            description: description,
+            amount: parseFloat(amount)
+          }];
+        }
+      }
+
+      // Add all parsed expenses
+      for (const expense of expensesToAdd) {
+        addExpense(expense);
+      }
+
+      if (expensesToAdd.length > 0) {
+        alert(`Successfully uploaded ${expensesToAdd.length} expense(s)`);
+      } else {
+        alert('No valid expense data found in file');
+      }
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert('Error processing file. Please check the format and try again.');
+    } finally {
+      // Reset file input
+      event.target.value = '';
+    }
+  };
 
   const dashboardTabs = [
     { id: 'overview', label: 'Overview' },
@@ -361,7 +435,22 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold">All Expenses</h3>
-                  <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>Add Expense</button>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".csv,.xlsx,.xls,.pdf"
+                      style={{ display: 'none' }}
+                    />
+                    <button 
+                      className="btn btn-outline" 
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Upload
+                    </button>
+                    <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>Add Expense</button>
+                  </div>
                 </div>
                 <table className="w-full text-sm bg-gradient-to-r from-red-50 to-red-100 rounded shadow">
                   <thead>

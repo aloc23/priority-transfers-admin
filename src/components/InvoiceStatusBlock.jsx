@@ -156,18 +156,44 @@ export default function InvoiceStatusBlock({
 
   // Handle Edit Invoice
   const handleEditInvoice = (invoiceId) => {
-    // This would typically open an invoice editing modal or navigate to edit page
-    console.log('Edit invoice:', invoiceId);
-    // For now, we'll use the basic modal approach
-    setShowModal(true);
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice && updateInvoice) {
+      // For now, we'll prompt for basic updates since there's no full invoice edit modal
+      const newAmount = prompt(`Edit invoice amount (current: €${invoice.amount}):`, invoice.amount);
+      const newDescription = prompt(`Edit invoice description (current: ${invoice.description || 'N/A'}):`, invoice.description || '');
+      
+      if (newAmount !== null || newDescription !== null) {
+        const updates = {};
+        if (newAmount !== null && !isNaN(newAmount) && newAmount !== invoice.amount.toString()) {
+          updates.amount = parseFloat(newAmount);
+        }
+        if (newDescription !== null && newDescription !== invoice.description) {
+          updates.description = newDescription;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          updateInvoice(invoiceId, updates);
+        }
+      }
+    }
   };
 
   // Handle View Invoice
   const handleViewInvoice = (invoiceId) => {
-    // This would typically open an invoice viewing modal or navigate to view page
-    console.log('View invoice:', invoiceId);
-    // For now, we'll use the basic modal approach
-    setShowModal(true);
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      const invoiceDetails = `
+Invoice #${invoice.id}
+Customer: ${invoice.customer}
+Amount: €${invoice.amount}
+Date: ${invoice.date}
+Status: ${invoice.status}
+${invoice.description ? `Description: ${invoice.description}` : ''}
+${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
+      `.trim();
+      
+      alert(invoiceDetails);
+    }
   };
 
   // Filter invoices if showing list
