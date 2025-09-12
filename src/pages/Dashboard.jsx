@@ -22,7 +22,6 @@ import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
 import BookingsFleetGroupedWidget from "../components/BookingsFleetGroupedWidget";
-import ResourceStatusBlock from "../components/ResourceStatusBlock";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -197,9 +196,6 @@ export default function Dashboard() {
       {/* Overview Tab Content - New Structure */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Enhanced Resource Status Block */}
-          <ResourceStatusBlock compact={true} />
-
           {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
           <BookingsFleetGroupedWidget compact={true} />
 

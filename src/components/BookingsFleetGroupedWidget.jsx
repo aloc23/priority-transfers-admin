@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import BookingsCalendarWidget, { BookNowButton } from './BookingsCalendarWidget';
 import FleetDriverChecker from './FleetDriverChecker';
+import ResourceStatusBlock from './ResourceStatusBlock';
 import { CalendarIcon, VehicleIcon } from './Icons';
 import { createContext } from 'react';
 import moment from 'moment';
@@ -70,8 +71,16 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
             </div>
           )}
           {activeTab === 'fleet' && (
-            <div className="p-0 md:-m-5">
-              <FleetDriverChecker compact={compact} />
+            <div className="space-y-6">
+              {/* Enhanced Resource Status Block */}
+              <div className="-mx-4 md:-mx-5">
+                <ResourceStatusBlock compact={true} />
+              </div>
+              
+              {/* Fleet & Driver Checker */}
+              <div className="-mx-4 md:-mx-5">
+                <FleetDriverChecker compact={compact} />
+              </div>
             </div>
           )}
         </div>
