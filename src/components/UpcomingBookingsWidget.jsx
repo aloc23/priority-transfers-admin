@@ -39,6 +39,40 @@ const getBookingTypeColor = (booking) => {
   }
 };
 
+// Driver color mapping for calendar events (consistent with BookingsCalendarWidget)
+const getDriverColor = (driverName, isOutsourced = false) => {
+  if (isOutsourced || !driverName) {
+    // Outsourced bookings use orange/amber color scheme
+    return {
+      backgroundColor: '#f59e0b',
+      borderColor: '#d97706'
+    };
+  }
+  
+  // Generate consistent colors for internal drivers
+  const colors = [
+    { backgroundColor: '#3b82f6', borderColor: '#1d4ed8' }, // Blue
+    { backgroundColor: '#10b981', borderColor: '#047857' }, // Emerald  
+    { backgroundColor: '#8b5cf6', borderColor: '#7c3aed' }, // Purple
+    { backgroundColor: '#f59e0b', borderColor: '#d97706' }, // Amber
+    { backgroundColor: '#ef4444', borderColor: '#dc2626' }, // Red
+    { backgroundColor: '#06b6d4', borderColor: '#0891b2' }, // Cyan
+    { backgroundColor: '#84cc16', borderColor: '#65a30d' }, // Lime
+    { backgroundColor: '#ec4899', borderColor: '#db2777' }, // Pink
+  ];
+  
+  // Hash driver name to get consistent color
+  let hash = 0;
+  for (let i = 0; i < driverName.length; i++) {
+    const char = driverName.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  const colorIndex = Math.abs(hash) % colors.length;
+  return colors[colorIndex];
+};
+
 export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showViewModeSelector = true, calendarOnly = false }) {
   const { bookings, drivers } = useAppStore();
   const { isMobile } = useResponsive();
@@ -66,23 +100,69 @@ export default function UpcomingBookingsWidget({ defaultViewMode = 'list', showV
   
   // Convert bookings to calendar events
   const calendarEvents = useMemo(() => {
-    return upcomingBookings.map(booking => {
-      const startDate = moment(`${booking.date} ${booking.time || '09:00'}`).toDate();
-      const endDate = moment(startDate).add(2, 'hours').toDate(); // Default 2-hour duration
-      
-      return {
-        id: booking.id,
-        title: `${booking.customer} - ${booking.pickup}`,
-        start: startDate,
-        end: endDate,
-        resource: booking,
-        style: {
-          backgroundColor: getBookingTypeColor(booking).bg,
-          borderColor: getBookingTypeColor(booking).border,
-          color: 'white'
+    const events = [];
+    
+    upcomingBookings.forEach(booking => {
+      if (booking.type === 'tour') {
+        // Tour bookings: render as block spanning from start to end date
+        if (booking.tourStartDate && booking.tourEndDate) {
+          const startDate = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          const endDate = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '17:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          
+          events.push({
+            id: `${booking.id}-tour`,
+            title: `Tour: ${booking.customer} - ${booking.pickup}`,
+            start: startDate,
+            end: endDate,
+            resource: { ...booking, isTour: true },
+            style: {
+              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+              color: 'white'
+            }
+          });
         }
-      };
+      } else {
+        // Transfer bookings: render pickup leg
+        if (booking.date) {
+          const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
+          const endDate = moment(startDate).add(2, 'hours').toDate();
+          
+          events.push({
+            id: `${booking.id}-pickup`,
+            title: `Transfer: ${booking.customer} - ${booking.pickup}`,
+            start: startDate,
+            end: endDate,
+            resource: { ...booking, isReturn: false, legType: 'pickup' },
+            style: {
+              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+              color: 'white'
+            }
+          });
+          
+          // Return bookings: render return leg
+          if (booking.hasReturn && booking.returnDate && booking.returnTime) {
+            const returnStartDate = moment(`${booking.returnDate} ${booking.returnTime}`, 'YYYY-MM-DD HH:mm').toDate();
+            const returnEndDate = moment(returnStartDate).add(2, 'hours').toDate();
+            
+            events.push({
+              id: `${booking.id}-return`,
+              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination}`,
+              start: returnStartDate,
+              end: returnEndDate,
+              resource: { ...booking, isReturn: true, legType: 'return' },
+              style: {
+                ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+                color: 'white',
+                borderStyle: 'dashed',
+                borderWidth: '2px'
+              }
+            });
+          }
+        }
+      }
     });
+    
+    return events;
   }, [upcomingBookings]);
   
   // Navigate calendar

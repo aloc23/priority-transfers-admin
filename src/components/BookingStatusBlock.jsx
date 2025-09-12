@@ -330,13 +330,35 @@ export default function BookingStatusBlock({
                       )}
                       {booking.status === 'confirmed' && (
                         <>
-                          <button
-                            onClick={() => markBookingCompleted(booking.id)}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                            title="Mark as Completed"
-                          >
-                            Complete
-                          </button>
+                          {/* Handle return transfer bookings with proper pickup/return completion */}
+                          {booking.hasReturn ? (
+                            !booking.pickupCompleted ? (
+                              <button
+                                onClick={() => updateBooking(booking.id, { ...booking, pickupCompleted: true })}
+                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                                title="Complete Pickup"
+                              >
+                                Complete Pickup
+                              </button>
+                            ) : !booking.returnCompleted ? (
+                              <button
+                                onClick={() => updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' })}
+                                className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                                title="Complete Return"
+                              >
+                                Complete Return
+                              </button>
+                            ) : null
+                          ) : (
+                            // Single trip - complete the entire booking
+                            <button
+                              onClick={() => updateBooking(booking.id, { ...booking, status: 'completed' })}
+                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              title="Mark as Completed"
+                            >
+                              Complete
+                            </button>
+                          )}
                           <button
                             onClick={() => deleteBooking(booking.id)}
                             className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"

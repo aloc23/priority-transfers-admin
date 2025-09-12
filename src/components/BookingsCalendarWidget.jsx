@@ -55,6 +55,9 @@ export default function BookingsCalendarWidget(props) {
   const [initialDate, setInitialDate] = useState('');
   const [initialTime, setInitialTime] = useState('');
   
+  // State for calendar event popup
+  const [selectedCalendarEvent, setSelectedCalendarEvent] = useState(null);
+  
   // Use global state instead of local state
   const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
 
@@ -90,16 +93,46 @@ export default function BookingsCalendarWidget(props) {
     openModalWithDate: openBookingModalWithDate
   };
 
-  // Handle calendar slot selection
+  // Driver color mapping for calendar events  
+  const getDriverColor = (driverName, isOutsourced = false) => {
+    if (isOutsourced || !driverName) {
+      // Outsourced bookings use orange/amber color scheme
+      return {
+        backgroundColor: '#f59e0b',
+        borderColor: '#d97706'
+      };
+    }
+    
+    // Generate consistent colors for internal drivers
+    const colors = [
+      { backgroundColor: '#3b82f6', borderColor: '#1d4ed8' }, // Blue
+      { backgroundColor: '#10b981', borderColor: '#047857' }, // Emerald  
+      { backgroundColor: '#8b5cf6', borderColor: '#7c3aed' }, // Purple
+      { backgroundColor: '#f59e0b', borderColor: '#d97706' }, // Amber
+      { backgroundColor: '#ef4444', borderColor: '#dc2626' }, // Red
+      { backgroundColor: '#06b6d4', borderColor: '#0891b2' }, // Cyan
+      { backgroundColor: '#84cc16', borderColor: '#65a30d' }, // Lime
+      { backgroundColor: '#ec4899', borderColor: '#db2777' }, // Pink
+    ];
+    
+    // Hash driver name to get consistent color
+    let hash = 0;
+    for (let i = 0; i < driverName.length; i++) {
+      const char = driverName.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    const colorIndex = Math.abs(hash) % colors.length;
+    return colors[colorIndex];
+  };
   const handleSelectSlot = ({ start }) => {
     openBookingModalWithDate(start);
   };
 
   const handleSelectEvent = (event) => {
-    setEditingBooking(event.resource);
-    setInitialDate('');
-    setInitialTime('');
-    setShowBookingModal(true);
+    // Set the selected calendar event for the popup
+    setSelectedCalendarEvent(event.resource);
   };
 
   // Combine booking and invoice status like in Dashboard.jsx
@@ -214,8 +247,7 @@ export default function BookingsCalendarWidget(props) {
             end: endDate,
             resource: { ...booking, isTour: true },
             style: {
-              backgroundColor: '#10b981', // Only confirmed tours appear on calendar
-              borderColor: '#047857',
+              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
@@ -235,8 +267,7 @@ export default function BookingsCalendarWidget(props) {
             end: endDate,
             resource: { ...booking, isReturn: false, legType: 'pickup' },
             style: {
-              backgroundColor: '#3b82f6', // Only confirmed transfers appear on calendar
-              borderColor: '#1d4ed8',
+              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
@@ -255,8 +286,7 @@ export default function BookingsCalendarWidget(props) {
               end: returnEndDate,
               resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
-                backgroundColor: '#0891b2',
-                borderColor: '#0e7490',
+                ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
                 color: 'white',
                 fontSize: '12px',
                 fontWeight: 'bold',
@@ -301,8 +331,8 @@ export default function BookingsCalendarWidget(props) {
     updateGlobalCalendarState({ selectedDate: newDate.toDate() });
   };
 
-  // Get available actions for a booking
-  const getBookingActions = (booking) => {
+  // Get available actions for a booking with proper pickup/return leg handling
+  const getBookingActions = (booking, legType = null) => {
     const inv = invoices.find(inv => inv.bookingId === booking.id);
     const actions = [];
     
@@ -318,16 +348,67 @@ export default function BookingsCalendarWidget(props) {
           refresh(); 
         } 
       });
+    } else if (booking.status === 'confirmed') {
+      // Handle return transfer bookings with pickup/return leg differentiation
+      if (booking.hasReturn) {
+        if (legType === 'pickup' && !booking.pickupCompleted) {
+          // Only show "Complete Pickup" for pickup leg when pickup not completed
+          actions.push({
+            label: 'Complete Pickup',
+            onClick: async () => {
+              await updateBooking(booking.id, { ...booking, pickupCompleted: true });
+              refresh();
+            }
+          });
+        } else if (legType === 'return') {
+          if (booking.pickupCompleted && !booking.returnCompleted) {
+            // Only show "Complete" for return leg when pickup is completed
+            actions.push({
+              label: 'Complete',
+              onClick: async () => {
+                await updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' });
+                refresh();
+              }
+            });
+          } else if (!booking.pickupCompleted) {
+            // Show message for return leg when pickup not completed
+            actions.push({
+              label: 'Waiting for pickup completion',
+              onClick: null, // No action - just informational
+              disabled: true,
+              type: 'info'
+            });
+          }
+        } else if (!legType && !booking.pickupCompleted) {
+          // Default action when no leg type specified (e.g., general booking view)
+          actions.push({
+            label: 'Complete Pickup',
+            onClick: async () => {
+              await updateBooking(booking.id, { ...booking, pickupCompleted: true });
+              refresh();
+            }
+          });
+        } else if (!legType && booking.pickupCompleted && !booking.returnCompleted) {
+          actions.push({
+            label: 'Complete Return',
+            onClick: async () => {
+              await updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' });
+              refresh();
+            }
+          });
+        }
+      } else {
+        // Single trip - complete the entire booking
+        actions.push({
+          label: 'Mark as Complete',
+          onClick: async () => {
+            await updateBooking(booking.id, { ...booking, status: 'completed' });
+            refresh();
+          }
+        });
+      }
     }
-    if (booking.status === 'confirmed') {
-      actions.push({ 
-        label: 'Complete', 
-        onClick: async () => { 
-          await updateBooking(booking.id, { ...booking, status: 'completed' }); 
-          refresh(); 
-        } 
-      });
-    }
+    
     if (booking.status === 'completed' && !inv) {
       actions.push({ 
         label: 'Generate Invoice', 
@@ -345,8 +426,8 @@ export default function BookingsCalendarWidget(props) {
           refresh(); 
         } 
       });
-  }
-  return actions;
+    }
+    return actions;
   };
 
   return (
@@ -449,6 +530,7 @@ export default function BookingsCalendarWidget(props) {
                   date={selectedDate || new Date()}
                   onNavigate={(date) => updateGlobalCalendarState({ selectedDate: date })}
                   onSelectSlot={({ start }) => handleCalendarDateSelect(start)}
+                  onSelectEvent={handleSelectEvent}
                   onView={(view) => updateGlobalCalendarState({ currentView: view })}
                   views={['month']}
                   eventPropGetter={(event) => ({
@@ -592,6 +674,104 @@ export default function BookingsCalendarWidget(props) {
           </div>
         </div>
       </div>
+
+        {/* Calendar Event Popup */}
+        {selectedCalendarEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" onClick={() => setSelectedCalendarEvent(null)}>
+            <div className="bg-white rounded-xl shadow-xl p-6 min-w-[320px] max-w-[90vw] relative" onClick={e => e.stopPropagation()}>
+              {/* Status badge */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-slate-100`} style={{
+                  background: selectedCalendarEvent.status === 'confirmed' ? '#10b981' : 
+                              selectedCalendarEvent.status === 'pending' ? '#f59e0b' : '#6b7280',
+                  color: 'white'
+                }}>
+                  {selectedCalendarEvent.status}
+                </span>
+                {selectedCalendarEvent.legType && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    selectedCalendarEvent.legType === 'pickup' ? 'bg-blue-100 text-blue-800' : 'bg-cyan-100 text-cyan-800'
+                  }`}>
+                    {selectedCalendarEvent.legType === 'pickup' ? 'Pickup' : 'Return'} Leg
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-lg font-bold text-slate-600">
+                  {selectedCalendarEvent.customer?.[0] || 'C'}
+                </div>
+                <div>
+                  <div className="font-semibold text-base">{selectedCalendarEvent.customer}</div>
+                  <div className="text-xs text-slate-500">
+                    {selectedCalendarEvent.legType === 'return' 
+                      ? `${selectedCalendarEvent.returnPickup || selectedCalendarEvent.destination} → ${selectedCalendarEvent.pickup}`
+                      : `${selectedCalendarEvent.pickup} → ${selectedCalendarEvent.destination}`
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-xs text-slate-500 mb-2">
+                <span className="font-medium">Date:</span> {
+                  selectedCalendarEvent.legType === 'return' 
+                    ? `${selectedCalendarEvent.returnDate} ${selectedCalendarEvent.returnTime}`
+                    : `${selectedCalendarEvent.date} ${selectedCalendarEvent.time}`
+                }
+              </div>
+              
+              <div className="flex gap-2 mb-2">
+                <span className="text-xs"><span className="font-medium">Driver:</span> {selectedCalendarEvent.driver || 'Unassigned'}</span>
+                <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarEvent.vehicle || 'N/A'}</span>
+              </div>
+              
+              {/* Show completion status for confirmed bookings */}
+              {selectedCalendarEvent.status === 'confirmed' && selectedCalendarEvent.hasReturn && (
+                <div className="flex gap-2 mb-2 text-xs">
+                  <span className={`px-2 py-1 rounded-full font-medium ${
+                    selectedCalendarEvent.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    Pickup {selectedCalendarEvent.pickupCompleted ? '✓' : '○'}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full font-medium ${
+                    selectedCalendarEvent.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    Return {selectedCalendarEvent.returnCompleted ? '✓' : '○'}
+                  </span>
+                </div>
+              )}
+              
+              {/* Action buttons */}
+              <div className="flex gap-2 mt-4">
+                {(() => {
+                  const actions = getBookingActions(selectedCalendarEvent, selectedCalendarEvent.legType);
+                  return actions.map((action, idx) => {
+                    if (action.disabled || action.type === 'info') {
+                      return (
+                        <div key={idx} className="btn btn-disabled flex-1 bg-yellow-100 text-yellow-800 cursor-not-allowed text-center py-2 rounded">
+                          {action.label}
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        key={idx}
+                        className="btn btn-primary flex-1"
+                        onClick={() => {
+                          if (action.onClick) action.onClick();
+                          setSelectedCalendarEvent(null);
+                        }}
+                      >
+                        {action.label}
+                      </button>
+                    );
+                  });
+                })()}
+                <button className="btn btn-outline flex-1" onClick={() => setSelectedCalendarEvent(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* New Portal-based Booking Modal */}
         <BookingModal 
