@@ -34,6 +34,7 @@ export default function BookingModal({
     tourReturnPickupTime: "",
     hasReturn: false,
     returnPickup: "",
+    returnDestination: "",
     returnDate: "",
     returnTime: ""
   });
@@ -186,11 +187,22 @@ export default function BookingModal({
         tourReturnPickupTime: "",
         hasReturn: false,
         returnPickup: "",
+        returnDestination: "",
         returnDate: "",
         returnTime: ""
       });
     }
   }, [editingBooking, initialDate, initialTime, isOpen]);
+
+  // Auto-fill return pickup with destination when return trip is enabled
+  useEffect(() => {
+    if (formData.hasReturn && formData.destination && !formData.returnPickup) {
+      setFormData(prev => ({
+        ...prev,
+        returnPickup: prev.destination
+      }));
+    }
+  }, [formData.hasReturn, formData.destination]);
 
   // Check for conflicts when relevant form data changes
   useEffect(() => {
@@ -677,15 +689,27 @@ export default function BookingModal({
 
                   {formData.hasReturn && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 rounded-xl border-2 border-emerald-200/50 shadow-inner">
-                      <div className="sm:col-span-2">
+                      <div>
                         <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
                         <input
                           type="text"
                           value={formData.returnPickup}
                           onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
                           className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                          placeholder="Usually the original destination..."
+                          placeholder="Where to pick up for return trip..."
                         />
+                        <p className="mt-1 text-xs text-gray-600">Auto-filled with destination</p>
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Destination</label>
+                        <input
+                          type="text"
+                          value={formData.returnDestination}
+                          onChange={(e) => setFormData({...formData, returnDestination: e.target.value})}
+                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                          placeholder="Final return destination..."
+                        />
+                        <p className="mt-1 text-xs text-gray-600">Where the return trip ends</p>
                       </div>
                       <div>
                         <label className="block mb-2 text-sm font-bold text-gray-800">Return Date</label>
@@ -695,6 +719,7 @@ export default function BookingModal({
                           onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
                           className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         />
+                        <p className="mt-1 text-xs text-gray-600">Date of the return trip</p>
                       </div>
                       <div>
                         <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Time</label>
@@ -704,6 +729,7 @@ export default function BookingModal({
                           onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
                           className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         />
+                        <p className="mt-1 text-xs text-gray-600">Time to pick up for return</p>
                       </div>
                     </div>
                   )}
