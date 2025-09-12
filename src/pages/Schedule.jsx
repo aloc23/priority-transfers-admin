@@ -185,7 +185,7 @@ export default function Schedule() {
           
           events.push({
             id: `${booking.id}-tour`,
-            title: `🚌 Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            title: `Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
             start: tourStart.toDate(),
             end: tourEnd.toDate(),
             allDay: tourStart.clone().startOf('day').isSame(tourEnd.clone().startOf('day')) ? false : true,

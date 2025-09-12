@@ -391,7 +391,7 @@ export default function BookingModal({
               {formData.type === 'tour' && (
                 <fieldset className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
                   <legend className="text-lg font-bold text-blue-900 mb-4">
-                    🚌 Tour Details
+                    Tour Details
                   </legend>
                   <p className="text-sm text-blue-700 mb-6 bg-blue-100/50 p-3 rounded-lg">
                     <strong>Tour bookings span multiple days.</strong> Specify the start and end dates along with pickup and return times.
@@ -511,7 +511,7 @@ export default function BookingModal({
                     </p>
                     {conflicts.driver.length > 0 && (
                       <div id="driver-conflicts" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert">
-                        <p className="text-sm font-bold text-red-800 mb-2">⚠️ Driver Conflict Detected</p>
+                        <p className="text-sm font-bold text-red-800 mb-2">Driver Conflict Detected</p>
                         {conflicts.driver.map((conflict, index) => (
                           <p key={index} className="text-xs text-red-600">
                             {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
@@ -546,7 +546,7 @@ export default function BookingModal({
 
               {/* Location Information */}
               <fieldset className="space-y-6">
-                <legend className="text-lg font-semibold text-gray-900 mb-4">📍 Location Details</legend>
+                <legend className="text-lg font-semibold text-gray-900 mb-4">Location Details</legend>
                 
                 <div>
                   <label htmlFor="pickup-location" className="block mb-2 text-sm font-bold text-gray-800">
@@ -586,7 +586,7 @@ export default function BookingModal({
               {/* Pickup Date and Time - Show for Transfer bookings only */}
               {formData.type === 'single' && (
                 <fieldset className="space-y-6 p-6 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 rounded-xl border-2 border-gray-200/50 shadow-inner">
-                  <legend className="text-lg font-bold text-gray-900 mb-4">🕒 Transfer Schedule</legend>
+                  <legend className="text-lg font-bold text-gray-900 mb-4">Transfer Schedule</legend>
                   <p className="text-sm text-gray-700 mb-6 bg-blue-100/50 p-3 rounded-lg">
                     <strong>Transfer bookings</strong> are single journeys on a specific date and time.
                   </p>
@@ -644,7 +644,7 @@ export default function BookingModal({
                   </select>
                   {conflicts.vehicle.length > 0 && (
                     <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm font-bold text-red-800 mb-2">⚠️ Vehicle Conflict Detected</p>
+                      <p className="text-sm font-bold text-red-800 mb-2">Vehicle Conflict Detected</p>
                       {conflicts.vehicle.map((conflict, index) => (
                         <p key={index} className="text-xs text-red-600">
                           {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
