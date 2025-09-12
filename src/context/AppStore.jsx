@@ -211,18 +211,28 @@ export function AppStoreProvider({ children }) {
   }, []);
 
   const initializeBookings = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    const nextWeekEnd = new Date(nextWeek);
+    nextWeekEnd.setDate(nextWeek.getDate() + 3);
+    
     const sampleBookings = [
       {
         id: 1,
         customer: "John Doe",
         pickup: "123 Main St",
         destination: "456 Oak Ave",
-        date: "2024-01-15",
+        date: tomorrow.toISOString().split('T')[0],
         time: "09:00",
         status: "confirmed",
         driver: "Mike Johnson",
         vehicle: "Toyota Camry",
-        type: "priority",
+        type: "single",
+        source: "internal",
+        price: 45,
         pickupCompleted: false,
         returnCompleted: false
       },
@@ -231,12 +241,33 @@ export function AppStoreProvider({ children }) {
         customer: "Jane Smith",
         pickup: "789 Pine St",
         destination: "321 Elm St",
-        date: "2024-01-16",
+        date: tomorrow.toISOString().split('T')[0],
         time: "14:30",
         status: "pending",
         driver: "Sarah Wilson",
         vehicle: "Honda Accord",
-        type: "outsourced",
+        type: "single",
+        source: "outsourced",
+        partner: "City Cab Co.",
+        price: 45,
+        pickupCompleted: false,
+        returnCompleted: false
+      },
+      {
+        id: 3,
+        customer: "Business Corp",
+        pickup: "Airport Terminal 1",
+        destination: "Hotel District",
+        tourStartDate: nextWeek.toISOString().split('T')[0],
+        tourEndDate: nextWeekEnd.toISOString().split('T')[0],
+        tourPickupTime: "08:00",
+        tourReturnPickupTime: "18:00",
+        status: "confirmed",
+        driver: "Tom Brown",
+        vehicle: "BMW 7 Series - BMW-001",
+        type: "tour",
+        source: "internal",
+        price: 320,
         pickupCompleted: false,
         returnCompleted: false
       }

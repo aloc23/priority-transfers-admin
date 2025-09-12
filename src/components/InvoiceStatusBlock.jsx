@@ -243,7 +243,7 @@ export default function InvoiceStatusBlock({
                     }
                   </span></p>
                   {status.id === 'pending' && (
-                    <p className="text-amber-600">⚠️ Only includes invoices for confirmed bookings</p>
+                    <p className="text-amber-600">Only includes invoices for confirmed bookings</p>
                   )}
                 </div>
                 <button
