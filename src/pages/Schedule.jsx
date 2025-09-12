@@ -177,36 +177,61 @@ export default function Schedule() {
     const events = [];
     
     confirmedBookings.forEach(booking => {
-      // Add pickup event
-      events.push({
-        id: `${booking.id}-pickup`,
-        title: `${booking.customer} - ${booking.pickup} → ${booking.destination}`,
-        start: moment(`${booking.date} ${booking.time}`).toDate(),
-        end: moment(`${booking.date} ${booking.time}`).add(1, 'hour').toDate(),
-        resource: { ...booking, isReturn: false, legType: 'pickup' },
-        style: {
-          backgroundColor: getBookingTypeColor(booking.type).bg,
-          borderColor: getBookingTypeColor(booking.type).border,
-          color: 'white'
+      if (booking.type === 'tour') {
+        // Handle tour bookings with date ranges
+        if (booking.tourStartDate && booking.tourEndDate) {
+          const tourStart = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '08:00'}`);
+          const tourEnd = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '18:00'}`);
+          
+          events.push({
+            id: `${booking.id}-tour`,
+            title: `🚌 Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            start: tourStart.toDate(),
+            end: tourEnd.toDate(),
+            allDay: tourStart.clone().startOf('day').isSame(tourEnd.clone().startOf('day')) ? false : true,
+            resource: { ...booking, legType: 'tour' },
+            style: {
+              backgroundColor: getBookingTypeColor(booking.type).bg,
+              borderColor: getBookingTypeColor(booking.type).border,
+              color: 'white',
+              fontWeight: 'bold'
+            }
+          });
         }
-      });
-      
-      // Add return event if applicable
-      if (booking.hasReturn && booking.returnDate && booking.returnTime) {
-        events.push({
-          id: `${booking.id}-return`,
-          title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
-          start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
-          end: moment(`${booking.returnDate} ${booking.returnTime}`).add(1, 'hour').toDate(),
-          resource: { ...booking, isReturn: true, legType: 'return' },
-          style: {
-            backgroundColor: getBookingTypeColor(booking.type).bg,
-            borderColor: getBookingTypeColor(booking.type).border,
-            color: 'white',
-            borderStyle: 'dashed', // Distinguish return trips visually
-            borderWidth: '2px'
+      } else {
+        // Handle single/transfer bookings
+        if (booking.date && booking.time) {
+          events.push({
+            id: `${booking.id}-pickup`,
+            title: `${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            start: moment(`${booking.date} ${booking.time}`).toDate(),
+            end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
+            resource: { ...booking, isReturn: false, legType: 'pickup' },
+            style: {
+              backgroundColor: getBookingTypeColor(booking.type).bg,
+              borderColor: getBookingTypeColor(booking.type).border,
+              color: 'white'
+            }
+          });
+          
+          // Add return event if applicable
+          if (booking.hasReturn && booking.returnDate && booking.returnTime) {
+            events.push({
+              id: `${booking.id}-return`,
+              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
+              start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
+              end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
+              resource: { ...booking, isReturn: true, legType: 'return' },
+              style: {
+                backgroundColor: getBookingTypeColor(booking.type).bg,
+                borderColor: getBookingTypeColor(booking.type).border,
+                color: 'white',
+                borderStyle: 'dashed', // Distinguish return trips visually
+                borderWidth: '2px'
+              }
+            });
           }
-        });
+        }
       }
     });
     
