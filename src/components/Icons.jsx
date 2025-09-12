@@ -31,7 +31,8 @@ import {
   EllipsisVerticalIcon,
   PhoneIcon,
   StarIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 
 import {
@@ -64,6 +65,7 @@ export const TrashIcon = HeroTrashIcon;
 export const ViewIcon = EyeIcon;
 export const SendIcon = PaperAirplaneIcon;
 export const DownloadIcon = ArrowDownTrayIcon;
+export const UploadIcon = CloudArrowUpIcon;
 export { ChevronDownIcon, ChevronUpIcon };
 
 // Document and invoice icons

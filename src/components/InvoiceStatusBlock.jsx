@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { PlusIcon, InvoiceIcon, ChevronDownIcon, ChevronUpIcon, SendIcon, EditIcon } from './Icons';
+import InvoiceEditModal from './InvoiceEditModal';
 
 export default function InvoiceStatusBlock({ 
   compact = false, 
@@ -8,9 +9,11 @@ export default function InvoiceStatusBlock({
   showInvoiceList = false,
   onStatusFilter = null 
 }) {
-  const { invoices, bookings, generateInvoiceFromBooking, addInvoice, markInvoiceAsPaid, sendInvoice, updateInvoice, cancelInvoice } = useAppStore();
+  const { invoices, bookings, generateInvoiceFromBooking, addInvoice, markInvoiceAsPaid, sendInvoice, updateInvoice, cancelInvoice, addActivityLog } = useAppStore();
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
 
   // Calculate invoice status counts
@@ -151,31 +154,60 @@ export default function InvoiceStatusBlock({
 
   // Handle New Invoice
   const handleNewInvoice = () => {
-    setShowModal(true);
+    setEditingInvoice(null);
+    setShowEditModal(true);
   };
 
   // Handle Edit Invoice
   const handleEditInvoice = (invoiceId) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
-    if (invoice && updateInvoice) {
-      // For now, we'll prompt for basic updates since there's no full invoice edit modal
-      const newAmount = prompt(`Edit invoice amount (current: €${invoice.amount}):`, invoice.amount);
-      const newDescription = prompt(`Edit invoice description (current: ${invoice.description || 'N/A'}):`, invoice.description || '');
+    if (invoice) {
+      setEditingInvoice(invoice);
+      setShowEditModal(true);
+    }
+  };
+
+  // Handle Save Invoice (from edit modal)
+  const handleSaveInvoice = (invoiceData, editingInvoice) => {
+    if (editingInvoice) {
+      // Update existing invoice
+      const updates = {
+        ...invoiceData
+      };
       
-      if (newAmount !== null || newDescription !== null) {
-        const updates = {};
-        if (newAmount !== null && !isNaN(newAmount) && newAmount !== invoice.amount.toString()) {
-          updates.amount = parseFloat(newAmount);
-        }
-        if (newDescription !== null && newDescription !== invoice.description) {
-          updates.description = newDescription;
-        }
-        
-        if (Object.keys(updates).length > 0) {
-          updateInvoice(invoiceId, updates);
-        }
+      // Track changes for audit trail
+      const changes = [];
+      if (editingInvoice.customer !== invoiceData.customer) changes.push(`Customer: ${editingInvoice.customer} → ${invoiceData.customer}`);
+      if (editingInvoice.customerEmail !== invoiceData.customerEmail) changes.push(`Email: ${editingInvoice.customerEmail} → ${invoiceData.customerEmail}`);
+      if (editingInvoice.amount !== invoiceData.amount) changes.push(`Amount: €${editingInvoice.amount} → €${invoiceData.amount}`);
+      if (editingInvoice.type !== invoiceData.type) changes.push(`Type: ${editingInvoice.type} → ${invoiceData.type}`);
+      
+      updateInvoice(editingInvoice.id, updates);
+      
+      // Add activity log for the update
+      if (addActivityLog && changes.length > 0) {
+        addActivityLog({
+          type: 'invoice_updated',
+          description: `Invoice #${editingInvoice.id} updated: ${changes.join(', ')}`,
+          relatedId: editingInvoice.id
+        });
+      }
+    } else {
+      // Create new invoice
+      const result = addInvoice(invoiceData);
+      
+      // Add activity log for the creation
+      if (addActivityLog) {
+        const bookingText = invoiceData.bookingId ? ` (linked to Booking #${invoiceData.bookingId})` : '';
+        addActivityLog({
+          type: 'invoice_created',
+          description: `Invoice created for ${invoiceData.customer} (€${invoiceData.amount})${bookingText}`,
+          relatedId: result.invoice?.id
+        });
       }
     }
+    
+    setEditingInvoice(null);
   };
 
   // Handle View Invoice
@@ -393,6 +425,17 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
           </div>
         </div>
       )}
+
+      {/* Invoice Edit Modal */}
+      <InvoiceEditModal
+        show={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingInvoice(null);
+        }}
+        editingInvoice={editingInvoice}
+        onSave={handleSaveInvoice}
+      />
 
       {/* Simple Invoice Modal (basic version) */}
       {showModal && (
