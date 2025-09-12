@@ -254,18 +254,24 @@ export default function BookingModal({
 
   return (
     <ModalPortal isOpen={isOpen}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-modal-title"
+        aria-describedby="booking-modal-description"
+      >
         <div className="modal-container">
           {/* Sticky Header */}
           <div className="modal-header">
-            <h2 className="text-xl font-bold">
-              {title || (editingBooking ? "Edit Booking" : "New Booking")}
+            <h2 id="booking-modal-title" className="text-xl font-bold">
+              {title || (editingBooking ? "Edit Booking" : "Create New Booking")}
             </h2>
             <button
               type="button"
               onClick={handleClose}
               className="btn-close"
-              aria-label="Close modal"
+              aria-label={`Close ${editingBooking ? 'edit' : 'new'} booking modal`}
             >
               ×
             </button>
@@ -273,14 +279,30 @@ export default function BookingModal({
 
           {/* Scrollable Body */}
           <div className="modal-body">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Booking Type - Radio buttons with enhanced styling */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <p id="booking-modal-description" className="sr-only">
+              {editingBooking 
+                ? "Edit the booking details using the form below. All fields marked with an asterisk are required."
+                : "Create a new booking by filling out the form below. All fields marked with an asterisk are required."
+              }
+            </p>
+            
+            <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+              {/* Booking Type - Radio buttons with enhanced styling and accessibility */}
+              <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <legend className="sr-only">Booking Configuration</legend>
+                
                 {/* Trip Type */}
                 <div className="space-y-4">
-                  <label className="block text-sm font-bold text-gray-800 mb-3">Trip Type</label>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center space-x-3 cursor-pointer group">
+                  <legend className="block text-sm font-bold text-gray-800 mb-3">
+                    Trip Type <span className="text-red-500" aria-label="required">*</span>
+                  </legend>
+                  <div 
+                    className="flex flex-col gap-3" 
+                    role="radiogroup" 
+                    aria-labelledby="trip-type-legend"
+                    aria-required="true"
+                  >
+                    <label className="flex items-center space-x-3 cursor-pointer group hover:bg-blue-50 p-3 rounded-lg transition-all duration-200">
                       <div className="relative">
                         <input
                           type="radio"
@@ -288,12 +310,16 @@ export default function BookingModal({
                           value="single"
                           checked={formData.type === 'single'}
                           onChange={(e) => setFormData({...formData, type: e.target.value})}
-                          className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                          className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2"
+                          aria-describedby="trip-type-single-desc"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Transfer</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Transfer</span>
+                        <p id="trip-type-single-desc" className="text-xs text-gray-500 mt-1">Single journey from pickup to destination</p>
+                      </div>
                     </label>
-                    <label className="flex items-center space-x-3 cursor-pointer group">
+                    <label className="flex items-center space-x-3 cursor-pointer group hover:bg-green-50 p-3 rounded-lg transition-all duration-200">
                       <div className="relative">
                         <input
                           type="radio"
@@ -301,19 +327,30 @@ export default function BookingModal({
                           value="tour"
                           checked={formData.type === 'tour'}
                           onChange={(e) => setFormData({...formData, type: e.target.value})}
-                          className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                          className="w-5 h-5 text-green-600 bg-white border-2 border-gray-300 focus:ring-green-500 focus:ring-2 focus:ring-offset-2"
+                          aria-describedby="trip-type-tour-desc"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Tour</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-green-600 transition-colors">Tour</span>
+                        <p id="trip-type-tour-desc" className="text-xs text-gray-500 mt-1">Multi-day service with date range</p>
+                      </div>
                     </label>
                   </div>
                 </div>
 
                 {/* Service Source */}
                 <div className="space-y-4">
-                  <label className="block text-sm font-bold text-gray-800 mb-3">Service Source</label>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center space-x-3 cursor-pointer group">
+                  <legend className="block text-sm font-bold text-gray-800 mb-3">
+                    Service Source <span className="text-red-500" aria-label="required">*</span>
+                  </legend>
+                  <div 
+                    className="flex flex-col gap-3" 
+                    role="radiogroup" 
+                    aria-labelledby="service-source-legend"
+                    aria-required="true"
+                  >
+                    <label className="flex items-center space-x-3 cursor-pointer group hover:bg-emerald-50 p-3 rounded-lg transition-all duration-200">
                       <div className="relative">
                         <input
                           type="radio"
@@ -321,12 +358,16 @@ export default function BookingModal({
                           value="internal"
                           checked={formData.source === 'internal'}
                           onChange={(e) => setFormData({...formData, source: e.target.value})}
-                          className="w-5 h-5 text-emerald-600 bg-white border-2 border-gray-300 focus:ring-emerald-500 focus:ring-2"
+                          className="w-5 h-5 text-emerald-600 bg-white border-2 border-gray-300 focus:ring-emerald-500 focus:ring-2 focus:ring-offset-2"
+                          aria-describedby="service-internal-desc"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-emerald-600 transition-colors">Internal</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-emerald-600 transition-colors">Internal</span>
+                        <p id="service-internal-desc" className="text-xs text-gray-500 mt-1">Use our fleet and drivers</p>
+                      </div>
                     </label>
-                    <label className="flex items-center space-x-3 cursor-pointer group">
+                    <label className="flex items-center space-x-3 cursor-pointer group hover:bg-orange-50 p-3 rounded-lg transition-all duration-200">
                       <div className="relative">
                         <input
                           type="radio"
@@ -334,170 +375,256 @@ export default function BookingModal({
                           value="outsourced"
                           checked={formData.source === 'outsourced'}
                           onChange={(e) => setFormData({...formData, source: e.target.value})}
-                          className="w-5 h-5 text-orange-600 bg-white border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
+                          className="w-5 h-5 text-orange-600 bg-white border-2 border-gray-300 focus:ring-orange-500 focus:ring-2 focus:ring-offset-2"
+                          aria-describedby="service-outsourced-desc"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">Outsourced</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">Outsourced</span>
+                        <p id="service-outsourced-desc" className="text-xs text-gray-500 mt-1">Use external partner services</p>
+                      </div>
                     </label>
                   </div>
                 </div>
-              </div>
-
-              {/* Tour Date Fields - Show for tour bookings */}
+              </fieldset>
+              {/* Tour Date Fields - Show for tour bookings with enhanced UX */}
               {formData.type === 'tour' && (
-                <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
+                <fieldset className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
+                  <legend className="text-lg font-bold text-blue-900 mb-4">
+                    🚌 Tour Details
+                  </legend>
+                  <p className="text-sm text-blue-700 mb-6 bg-blue-100/50 p-3 rounded-lg">
+                    <strong>Tour bookings span multiple days.</strong> Specify the start and end dates along with pickup and return times.
+                  </p>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Tour Start Date</label>
+                      <label htmlFor="tour-start-date" className="block mb-2 text-sm font-bold text-gray-800">
+                        Tour Start Date <span className="text-red-500" aria-label="required">*</span>
+                      </label>
                       <input
+                        id="tour-start-date"
                         type="date"
                         value={formData.tourStartDate}
                         onChange={(e) => setFormData({...formData, tourStartDate: e.target.value})}
                         className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         required={formData.type === 'tour'}
+                        aria-describedby="tour-start-date-help"
                       />
+                      <p id="tour-start-date-help" className="mt-1 text-xs text-gray-600">When the tour begins</p>
                     </div>
                     <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Tour End Date</label>
+                      <label htmlFor="tour-end-date" className="block mb-2 text-sm font-bold text-gray-800">
+                        Tour End Date <span className="text-red-500" aria-label="required">*</span>
+                      </label>
                       <input
+                        id="tour-end-date"
                         type="date"
                         value={formData.tourEndDate}
                         onChange={(e) => setFormData({...formData, tourEndDate: e.target.value})}
                         className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         required={formData.type === 'tour'}
+                        aria-describedby="tour-end-date-help"
+                        min={formData.tourStartDate || undefined}
                       />
+                      <p id="tour-end-date-help" className="mt-1 text-xs text-gray-600">When the tour ends</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Pick Up Time</label>
+                      <label htmlFor="tour-pickup-time" className="block mb-2 text-sm font-bold text-gray-800">
+                        Pick Up Time <span className="text-red-500" aria-label="required">*</span>
+                      </label>
                       <input
+                        id="tour-pickup-time"
                         type="time"
                         value={formData.tourPickupTime}
                         onChange={(e) => setFormData({...formData, tourPickupTime: e.target.value})}
                         className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         required={formData.type === 'tour'}
+                        aria-describedby="tour-pickup-time-help"
                       />
+                      <p id="tour-pickup-time-help" className="mt-1 text-xs text-gray-600">Initial pickup time</p>
                     </div>
                     <div>
-                      <label className="block mb-2 text-sm font-bold text-gray-800">Return Pick Up Time</label>
+                      <label htmlFor="tour-return-time" className="block mb-2 text-sm font-bold text-gray-800">
+                        Return Pick Up Time <span className="text-red-500" aria-label="required">*</span>
+                      </label>
                       <input
+                        id="tour-return-time"
                         type="time"
                         value={formData.tourReturnPickupTime}
                         onChange={(e) => setFormData({...formData, tourReturnPickupTime: e.target.value})}
                         className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
                         required={formData.type === 'tour'}
+                        aria-describedby="tour-return-time-help"
                       />
+                      <p id="tour-return-time-help" className="mt-1 text-xs text-gray-600">Final return pickup time</p>
                     </div>
                   </div>
-                </div>
+                </fieldset>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Customer and Resource Assignment */}
+              <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <legend className="sr-only">Customer and Resource Assignment</legend>
+                
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">Customer</label>
+                  <label htmlFor="customer-name" className="block mb-2 text-sm font-bold text-gray-800">
+                    Customer <span className="text-red-500" aria-label="required">*</span>
+                  </label>
                   <input
+                    id="customer-name"
                     type="text"
                     value={formData.customer}
                     onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
                     placeholder="Enter customer name..."
                     required
+                    aria-describedby="customer-name-help"
                   />
+                  <p id="customer-name-help" className="mt-1 text-xs text-gray-600">Full name of the customer or company</p>
                 </div>
+                
                 {/* Driver field - Show for Internal bookings only */}
                 {formData.source === 'internal' && (
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Driver</label>
+                    <label htmlFor="driver-select" className="block mb-2 text-sm font-bold text-gray-800">
+                      Driver <span className="text-red-500" aria-label="required">*</span>
+                    </label>
                     <select
+                      id="driver-select"
                       value={formData.driver}
                       onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 ${conflicts.driver.length > 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400 ${conflicts.driver.length > 0 ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
                       required={formData.source === 'internal'}
+                      aria-describedby="driver-select-help driver-conflicts"
+                      aria-invalid={conflicts.driver.length > 0 ? 'true' : 'false'}
                     >
-                      <option value="">Select Driver</option>
+                      <option value="">Select a driver...</option>
                       {drivers.map(driver => (
                         <option key={driver.id} value={driver.name}>{driver.name}</option>
                       ))}
                     </select>
+                    <p id="driver-select-help" className="mt-1 text-xs text-gray-600">
+                      Assign a driver from your internal team
+                    </p>
                     {conflicts.driver.length > 0 && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div id="driver-conflicts" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert">
                         <p className="text-sm font-bold text-red-800 mb-2">⚠️ Driver Conflict Detected</p>
                         {conflicts.driver.map((conflict, index) => (
                           <p key={index} className="text-xs text-red-600">
                             {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
                           </p>
                         ))}
+                        <p className="text-xs text-red-600 mt-1 font-medium">This driver is already scheduled for another booking during this time.</p>
                       </div>
                     )}
                   </div>
                 )}
+                
                 {/* Partner field - Show for Outsourced bookings only */}
                 {formData.source === 'outsourced' && (
                   <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Partner/External Provider</label>
+                    <label htmlFor="partner-name" className="block mb-2 text-sm font-bold text-gray-800">
+                      Partner/External Provider <span className="text-red-500" aria-label="required">*</span>
+                    </label>
                     <input
+                      id="partner-name"
                       type="text"
                       value={formData.partner || ''}
                       onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
                       placeholder="Enter partner company name..."
                       required={formData.source === 'outsourced'}
+                      aria-describedby="partner-name-help"
                     />
+                    <p id="partner-name-help" className="mt-1 text-xs text-gray-600">Name of the external service provider</p>
                   </div>
                 )}
-              </div>
+              </fieldset>
 
-              <div className="space-y-6">
+              {/* Location Information */}
+              <fieldset className="space-y-6">
+                <legend className="text-lg font-semibold text-gray-900 mb-4">📍 Location Details</legend>
+                
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Location</label>
+                  <label htmlFor="pickup-location" className="block mb-2 text-sm font-bold text-gray-800">
+                    Pickup Location <span className="text-red-500" aria-label="required">*</span>
+                  </label>
                   <input
+                    id="pickup-location"
                     type="text"
                     value={formData.pickup}
                     onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                    placeholder="Enter pickup location..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
+                    placeholder="Enter pickup address or location..."
                     required
+                    aria-describedby="pickup-location-help"
                   />
+                  <p id="pickup-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark where passenger will be picked up</p>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">Destination</label>
+                  <label htmlFor="destination-location" className="block mb-2 text-sm font-bold text-gray-800">
+                    Destination <span className="text-red-500" aria-label="required">*</span>
+                  </label>
                   <input
+                    id="destination-location"
                     type="text"
                     value={formData.destination}
                     onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                    placeholder="Enter destination..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
+                    placeholder="Enter destination address or location..."
                     required
+                    aria-describedby="destination-location-help"
                   />
+                  <p id="destination-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark for the final destination</p>
                 </div>
-              </div>
+              </fieldset>
 
-              {/* Pickup Date and Time - Hide for Tours */}
+              {/* Pickup Date and Time - Show for Transfer bookings only */}
               {formData.type === 'single' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Pickup Date</label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
-                      required={formData.type === 'single'}
-                    />
+                <fieldset className="space-y-6 p-6 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 rounded-xl border-2 border-gray-200/50 shadow-inner">
+                  <legend className="text-lg font-bold text-gray-900 mb-4">🕒 Transfer Schedule</legend>
+                  <p className="text-sm text-gray-700 mb-6 bg-blue-100/50 p-3 rounded-lg">
+                    <strong>Transfer bookings</strong> are single journeys on a specific date and time.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="pickup-date" className="block mb-2 text-sm font-bold text-gray-800">
+                        Pickup Date <span className="text-red-500" aria-label="required">*</span>
+                      </label>
+                      <input
+                        id="pickup-date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'single'}
+                        aria-describedby="pickup-date-help"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                      <p id="pickup-date-help" className="mt-1 text-xs text-gray-600">Date of the pickup</p>
+                    </div>
+                    <div>
+                      <label htmlFor="pickup-time" className="block mb-2 text-sm font-bold text-gray-800">
+                        Pickup Time <span className="text-red-500" aria-label="required">*</span>
+                      </label>
+                      <input
+                        id="pickup-time"
+                        type="time"
+                        value={formData.time}
+                        onChange={(e) => setFormData({...formData, time: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                        required={formData.type === 'single'}
+                        aria-describedby="pickup-time-help"
+                      />
+                      <p id="pickup-time-help" className="mt-1 text-xs text-gray-600">Time of the pickup</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-bold text-gray-800">Pick Up Time</label>
-                    <input
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData({...formData, time: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
-                      required={formData.type === 'single'}
-                    />
-                  </div>
-                </div>
+                </fieldset>
               )}
 
               {/* Vehicle field - Show for Internal bookings only */}
