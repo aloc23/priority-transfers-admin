@@ -227,8 +227,17 @@ export default function ResourceScheduleView() {
             return (
               <div 
                 key={day.format('YYYY-MM-DD')} 
-                className="flex-1 min-h-[80px] border-r border-gray-200 p-1 relative cursor-pointer hover:bg-blue-50 transition-colors"
+                className="flex-1 min-h-[80px] border-r border-gray-200 p-1 relative cursor-pointer hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                 onClick={() => handleQuickBooking(resource, day)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleQuickBooking(resource, day);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Create booking for ${resource.name} on ${day.format('MMMM D, YYYY')}`}
               >
                 {/* Day bookings */}
                 <div className="space-y-1">
@@ -269,30 +278,55 @@ export default function ResourceScheduleView() {
                           ) : 'rounded-lg'}
                           border-l-4 ${bookingColors.border}
                           ${isOutsourced ? 'ring-1 ring-orange-200' : ''}
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                         `}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedResource({ resource, booking });
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedResource({ resource, booking });
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${booking.type === 'tour' ? 'Tour booking' : 'Transfer booking'} for ${booking.customer} - ${titleInfo}`}
                         title={titleInfo}
                       >
                         <div className="flex items-center gap-1 mb-1">
                           {isOutsourced && (
-                            <svg className="w-3 h-3 text-orange-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg 
+                              className="w-3 h-3 text-orange-200" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              strokeWidth="2"
+                              aria-hidden="true"
+                            >
                               <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
                             </svg>
                           )}
                           {booking.type === 'tour' && (
-                            <svg className="w-3 h-3 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg 
+                              className="w-3 h-3 text-white/80" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              strokeWidth="2"
+                              aria-hidden="true"
+                            >
                               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
                               <circle cx="12" cy="12" r="3"/>
                             </svg>
                           )}
-                          <div className="font-semibold truncate text-xs">{booking.customer}</div>
+                          <div className="font-semibold truncate text-xs" aria-hidden="true">{booking.customer}</div>
                         </div>
                         
                         {booking.type === 'tour' ? (
-                          <div className="text-xs space-y-0.5 opacity-90">
+                          <div className="text-xs space-y-0.5 opacity-90" aria-hidden="true">
                             {tourPosition === 'start' && (
                               <>
                                 <div className="font-medium">Tour Begins</div>
@@ -308,9 +342,12 @@ export default function ResourceScheduleView() {
                             {tourPosition === 'middle' && (
                               <div className="font-medium text-center">Tour In Progress</div>
                             )}
+                            <div className="sr-only">
+                              Tour from {booking.tourStartDate} to {booking.tourEndDate} for {booking.customer}
+                            </div>
                           </div>
                         ) : (
-                          <div className="text-xs space-y-0.5 opacity-90">
+                          <div className="text-xs space-y-0.5 opacity-90" aria-hidden="true">
                             <div className="font-medium">{booking.time}</div>
                             {booking.hasReturn && booking.returnDate && (
                               <div className="opacity-75">Return: {booking.returnDate}</div>
@@ -319,7 +356,7 @@ export default function ResourceScheduleView() {
                         )}
                         
                         {isOutsourced && booking.partner && (
-                          <div className="text-xs opacity-75 truncate font-medium" title={`Partner: ${booking.partner}`}>
+                          <div className="text-xs opacity-75 truncate font-medium" title={`Partner: ${booking.partner}`} aria-hidden="true">
                             {booking.partner}
                           </div>
                         )}
@@ -433,7 +470,7 @@ export default function ResourceScheduleView() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="text-sm text-blue-600 mb-1">Total Resources</div>
           <div className="text-2xl font-bold text-blue-800">{filteredResources.length}</div>
@@ -454,6 +491,29 @@ export default function ResourceScheduleView() {
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
           <div className="text-sm text-purple-600 mb-1">Conflicts</div>
           <div className="text-2xl font-bold text-purple-800">{conflicts.length}</div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+        <h3 className="font-medium text-gray-900 mb-3">Booking Legend</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-500 rounded-sm border-l-4 border-blue-300"></div>
+            <span>Transfer Booking</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-emerald-500 rounded-l-lg border-l-4 border-emerald-300"></div>
+            <span>Tour Booking (continuous)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-orange-500 rounded-sm border-l-4 border-orange-300 ring-1 ring-orange-200"></div>
+            <span>Outsourced Booking</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <WarningIcon className="w-4 h-4 text-red-500" />
+            <span>Conflict Detected</span>
+          </div>
         </div>
       </div>
 
