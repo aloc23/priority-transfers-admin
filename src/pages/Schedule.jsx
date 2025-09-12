@@ -171,14 +171,12 @@ export default function Schedule() {
     return result;
   }, [bookings, selectedDriver, filterStatus]);
 
-  // Memoize calendar events for performance - ONLY show confirmed bookings
+  // Memoize calendar events for performance - show all filtered bookings with status indication
   const calendarEvents = useMemo(() => {
-    // Filter to only include confirmed bookings for calendar display
-    const confirmedBookings = filteredBookings.filter(booking => booking.status === 'confirmed');
-    
+    // Show all filtered bookings (confirmed, pending, etc.) with visual status indicators
     const events = [];
     
-    confirmedBookings.forEach(booking => {
+    filteredBookings.forEach(booking => {
       if (booking.type === 'tour') {
         // Handle tour bookings with date ranges - create continuous blocks
         if (booking.tourStartDate && booking.tourEndDate) {
@@ -189,24 +187,33 @@ export default function Schedule() {
           const startOfTour = tourStart.clone().startOf('day').add(8, 'hours');
           const endOfTour = tourEnd.clone().startOf('day').add(18, 'hours');
           
+          // Get status-based styling
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const baseColor = isOutsourced ? '#f97316' : '#10b981'; // Orange for outsourced, emerald for internal tours
+          const baseBorderColor = isOutsourced ? '#ea580c' : '#047857';
+          
+          // Apply opacity based on status
+          const statusOpacity = booking.status === 'confirmed' ? '1' : 
+                               booking.status === 'pending' ? '0.7' : 
+                               booking.status === 'completed' ? '0.9' : '0.5';
+          
           events.push({
             id: `${booking.id}-tour`,
-            title: `Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
             start: startOfTour.toDate(),
             end: endOfTour.toDate(),
             allDay: false, // Keep as timed event for better visibility
             resource: { ...booking, legType: 'tour' },
             style: {
-              backgroundColor: booking.source === 'outsourced' || booking.type === 'outsourced' ? 
-                '#f97316' : '#10b981', // Orange for outsourced, emerald for internal tours
-              borderColor: booking.source === 'outsourced' || booking.type === 'outsourced' ? 
-                '#ea580c' : '#047857',
+              backgroundColor: baseColor,
+              borderColor: baseBorderColor,
               color: 'white',
               fontWeight: '600',
               fontSize: '12px',
               borderRadius: '6px',
-              border: '2px solid',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: statusOpacity
             }
           });
         }
@@ -214,22 +221,30 @@ export default function Schedule() {
         // Handle single/transfer bookings
         if (booking.date && booking.time) {
           const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const baseColor = isOutsourced ? '#f97316' : '#3b82f6'; // Orange for outsourced, blue for internal
+          const baseBorderColor = isOutsourced ? '#ea580c' : '#1d4ed8';
+          
+          // Apply opacity and visual cues based on status
+          const statusOpacity = booking.status === 'confirmed' ? '1' : 
+                               booking.status === 'pending' ? '0.7' : 
+                               booking.status === 'completed' ? '0.9' : '0.5';
           
           events.push({
             id: `${booking.id}-pickup`,
-            title: `${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            title: `${booking.status === 'pending' ? '[PENDING] ' : ''}${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
             start: moment(`${booking.date} ${booking.time}`).toDate(),
             end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
             resource: { ...booking, isReturn: false, legType: 'pickup' },
             style: {
-              backgroundColor: isOutsourced ? '#f97316' : '#3b82f6', // Orange for outsourced, blue for internal
-              borderColor: isOutsourced ? '#ea580c' : '#1d4ed8',
+              backgroundColor: baseColor,
+              borderColor: baseBorderColor,
               color: 'white',
               fontWeight: '600',
               fontSize: '12px',
               borderRadius: '6px',
-              border: '2px solid',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: statusOpacity
             }
           });
           
@@ -237,19 +252,20 @@ export default function Schedule() {
           if (booking.hasReturn && booking.returnDate && booking.returnTime) {
             events.push({
               id: `${booking.id}-return`,
-              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
+              title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
               start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
               end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
               resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
-                backgroundColor: isOutsourced ? '#f97316' : '#3b82f6',
-                borderColor: isOutsourced ? '#ea580c' : '#1d4ed8',
+                backgroundColor: baseColor,
+                borderColor: baseBorderColor,
                 color: 'white',
                 fontWeight: '600',
                 fontSize: '12px',
                 borderRadius: '6px',
-                border: '2px dashed', // Dashed border for return trips
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                border: booking.status === 'pending' ? '3px dashed' : '2px dashed', // Always dashed for return trips
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                opacity: statusOpacity
               }
             });
           }
