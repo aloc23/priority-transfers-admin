@@ -99,8 +99,24 @@ export default function ResourceScheduleView() {
   const weekBookings = useMemo(() => {
     const weekEnd = currentWeekStart.clone().add(6, 'days');
     return bookings.filter(booking => {
-      const bookingDate = moment(booking.date);
-      return bookingDate.isBetween(currentWeekStart, weekEnd, null, '[]');
+      if (booking.type === 'tour') {
+        // For tour bookings, check if the tour spans any day in the current week
+        if (booking.tourStartDate && booking.tourEndDate) {
+          const tourStart = moment(booking.tourStartDate);
+          const tourEnd = moment(booking.tourEndDate);
+          return tourStart.isSameOrBefore(weekEnd) && tourEnd.isSameOrAfter(currentWeekStart);
+        }
+        return false;
+      } else {
+        // For transfer bookings, check pickup date and return date
+        const pickupDate = moment(booking.date);
+        const returnDate = booking.hasReturn && booking.returnDate ? moment(booking.returnDate) : null;
+        
+        const pickupInWeek = pickupDate.isBetween(currentWeekStart, weekEnd, null, '[]');
+        const returnInWeek = returnDate ? returnDate.isBetween(currentWeekStart, weekEnd, null, '[]') : false;
+        
+        return pickupInWeek || returnInWeek;
+      }
     });
   }, [bookings, currentWeekStart]);
 
@@ -140,9 +156,12 @@ export default function ResourceScheduleView() {
   // Render resource row
   const renderResourceRow = (resource) => {
     const resourceBookings = weekBookings.filter(booking => {
-      if (resource.type === 'driver') return booking.driver === resource.name;
-      if (resource.type === 'vehicle') return booking.vehicle === resource.name || booking.vehicle === resource.id;
-      if (resource.type === 'partner') return booking.type === 'outsourced' && booking.partner === resource.name;
+      if (resource.type === 'driver') return booking.driver === resource.name && booking.source !== 'outsourced';
+      if (resource.type === 'vehicle') return (booking.vehicle === resource.name || booking.vehicle === resource.id) && booking.source !== 'outsourced';
+      if (resource.type === 'partner') {
+        return (booking.source === 'outsourced' || booking.type === 'outsourced') && 
+               (booking.partner === resource.name || (!booking.partner && resource.name === 'City Cab Co.'));
+      }
       return false;
     });
 
@@ -187,9 +206,20 @@ export default function ResourceScheduleView() {
         {/* Timeline Grid */}
         <div className="flex-1 flex">
           {weekDays.map(day => {
-            const dayBookings = resourceBookings.filter(booking => 
-              moment(booking.date).isSame(day, 'day')
-            );
+            const dayBookings = resourceBookings.filter(booking => {
+              if (booking.type === 'tour') {
+                // For tours, show the booking only on the start and end dates
+                const tourStart = moment(booking.tourStartDate);
+                const tourEnd = moment(booking.tourEndDate);
+                return tourStart.isSame(day, 'day') || tourEnd.isSame(day, 'day');
+              } else {
+                // For transfers, show on pickup date and return date
+                const pickupMatch = moment(booking.date).isSame(day, 'day');
+                const returnMatch = booking.hasReturn && booking.returnDate && 
+                                   moment(booking.returnDate).isSame(day, 'day');
+                return pickupMatch || returnMatch;
+              }
+            });
             
             return (
               <div 
@@ -200,22 +230,52 @@ export default function ResourceScheduleView() {
                 {/* Day bookings */}
                 <div className="space-y-1">
                   {dayBookings.map(booking => {
-                    const bookingColors = BOOKING_TYPE_COLORS[booking.type] || BOOKING_TYPE_COLORS.single;
+                    const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+                    const bookingColors = isOutsourced ? 
+                      { bg: 'bg-orange-500', text: 'text-white' } :
+                      BOOKING_TYPE_COLORS[booking.type] || BOOKING_TYPE_COLORS.single;
+                    
+                    const bookingTime = booking.type === 'tour' ? 
+                      `${booking.tourPickupTime || '09:00'} - ${booking.tourReturnPickupTime || '17:00'}` :
+                      booking.time;
+                    
+                    const titleInfo = booking.type === 'tour' ?
+                      `${booking.customer} - Tour: ${booking.pickup} → ${booking.destination} (${booking.tourStartDate} to ${booking.tourEndDate})` :
+                      `${booking.customer} - ${booking.pickup} → ${booking.destination} (${bookingTime})${booking.hasReturn && booking.returnDate ? ` + Return: ${booking.returnDate} ${booking.returnTime}` : ''}`;
                     
                     return (
                       <div 
                         key={booking.id}
-                        className={`text-xs p-1 rounded ${bookingColors.bg} ${bookingColors.text} cursor-pointer hover:opacity-80`}
+                        className={`text-xs p-1.5 rounded ${bookingColors.bg} ${bookingColors.text} cursor-pointer hover:opacity-80 border-l-2 ${isOutsourced ? 'border-orange-300' : 'border-transparent'}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedResource({ resource, booking });
                         }}
-                        title={`${booking.customer} - ${booking.pickup} → ${booking.destination} (${booking.time})`}
+                        title={titleInfo}
                       >
-                        <div className="font-medium truncate">{booking.customer}</div>
-                        <div className="text-xs opacity-90">{booking.time}</div>
-                        {booking.hasReturn && (
-                          <div className="text-xs opacity-75">+ Return</div>
+                        <div className="flex items-center gap-1 mb-1">
+                          {isOutsourced && <span className="text-xs">🚐</span>}
+                          <div className="font-medium truncate">{booking.customer}</div>
+                        </div>
+                        
+                        {booking.type === 'tour' ? (
+                          <div className="text-xs space-y-0.5">
+                            <div>Tour: {booking.tourPickupTime || '09:00'} - {booking.tourReturnPickupTime || '17:00'}</div>
+                            <div className="opacity-75">{booking.tourStartDate} to {booking.tourEndDate}</div>
+                          </div>
+                        ) : (
+                          <div className="text-xs space-y-0.5">
+                            <div>{booking.time}</div>
+                            {booking.hasReturn && booking.returnDate && (
+                              <div className="opacity-75">Return: {booking.returnDate}</div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {isOutsourced && booking.partner && (
+                          <div className="text-xs opacity-75 truncate" title={`Partner: ${booking.partner}`}>
+                            {booking.partner}
+                          </div>
                         )}
                       </div>
                     );

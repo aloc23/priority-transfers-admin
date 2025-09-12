@@ -240,14 +240,17 @@ export default function BookingsCalendarWidget(props) {
           const startDate = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           const endDate = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '17:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const typePrefix = isOutsourced ? '🚐 Outsourced Tour' : 'Tour';
+          
           events.push({
             id: `${booking.id}-tour`,
-            title: `Tour: ${booking.customer} - ${booking.pickup}`,
+            title: `${typePrefix}: ${booking.customer} - ${booking.pickup}`,
             start: startDate,
             end: endDate,
-            resource: { ...booking, isTour: true },
+            resource: { ...booking, isTour: true, isOutsourced },
             style: {
-              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+              ...getDriverColor(booking.driver, isOutsourced),
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
@@ -260,14 +263,17 @@ export default function BookingsCalendarWidget(props) {
           const startDate = moment(`${booking.date} ${booking.time || '09:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           const endDate = moment(startDate).add(2, 'hours').toDate();
           
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const typePrefix = isOutsourced ? '🚐 Outsourced' : 'Transfer';
+          
           events.push({
             id: `${booking.id}-pickup`,
-            title: `Transfer: ${booking.customer} - ${booking.pickup}`,
+            title: `${typePrefix}: ${booking.customer} - ${booking.pickup}`,
             start: startDate,
             end: endDate,
-            resource: { ...booking, isReturn: false, legType: 'pickup' },
+            resource: { ...booking, isReturn: false, legType: 'pickup', isOutsourced },
             style: {
-              ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+              ...getDriverColor(booking.driver, isOutsourced),
               color: 'white',
               fontSize: '12px',
               fontWeight: 'bold'
@@ -281,12 +287,12 @@ export default function BookingsCalendarWidget(props) {
             
             events.push({
               id: `${booking.id}-return`,
-              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination}`,
+              title: `${typePrefix} Return: ${booking.customer} - ${booking.returnPickup || booking.destination}`,
               start: returnStartDate,
               end: returnEndDate,
-              resource: { ...booking, isReturn: true, legType: 'return' },
+              resource: { ...booking, isReturn: true, legType: 'return', isOutsourced },
               style: {
-                ...getDriverColor(booking.driver, booking.source === 'outsourced' || booking.type === 'outsourced'),
+                ...getDriverColor(booking.driver, isOutsourced),
                 color: 'white',
                 fontSize: '12px',
                 fontWeight: 'bold',
@@ -615,7 +621,15 @@ export default function BookingsCalendarWidget(props) {
                       <details key={booking.id} className="group bg-gradient-to-r from-white/90 to-slate-50/90 border border-slate-200/60 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-indigo-50/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                         <summary className="relative z-10 flex items-center justify-between cursor-pointer select-none">
-                          <span className="font-bold text-slate-800 truncate text-base">{booking.customer || booking.customerName}</span>
+                          <div className="flex items-center gap-3 flex-1 truncate">
+                            {/* Outsourced indicator */}
+                            {(booking.source === 'outsourced' || booking.type === 'outsourced') && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50 shadow-sm">
+                                🚐 Partner
+                              </span>
+                            )}
+                            <span className="font-bold text-slate-800 truncate text-base">{booking.customer || booking.customerName}</span>
+                          </div>
                           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ml-3 shadow-sm transition-all duration-300 ${
                             booking.status === 'confirmed' ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200/50' :
                             booking.status === 'pending' ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200/50' :
@@ -632,8 +646,17 @@ export default function BookingsCalendarWidget(props) {
                             <span className="bg-slate-100/80 px-2 py-1 rounded-lg text-xs font-medium">{booking.destination}</span>
                           </div>
                           <div className="flex items-center gap-4 text-xs">
-                            <div><span className="font-semibold text-slate-700">Date:</span> {booking.date}</div>
-                            <div><span className="font-semibold text-slate-700">Time:</span> {booking.time}</div>
+                            {booking.type === 'tour' ? (
+                              <>
+                                <div><span className="font-semibold text-slate-700">Start:</span> {booking.tourStartDate}</div>
+                                <div><span className="font-semibold text-slate-700">End:</span> {booking.tourEndDate}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div><span className="font-semibold text-slate-700">Date:</span> {booking.date}</div>
+                                <div><span className="font-semibold text-slate-700">Time:</span> {booking.time}</div>
+                              </>
+                            )}
                           </div>
                           {/* Show return trip info if it exists and selected date matches return date */}
                           {booking.hasReturn && booking.returnDate && selectedDate && 
@@ -650,7 +673,16 @@ export default function BookingsCalendarWidget(props) {
                               </div>
                             </div>
                           )}
-                          <div className="text-xs"><span className="font-semibold text-slate-700">Driver:</span> {booking.driver || 'Unassigned'}</div>
+                          {/* Show partner info for outsourced bookings */}
+                          {(booking.source === 'outsourced' || booking.type === 'outsourced') ? (
+                            <div className="text-xs">
+                              <span className="font-semibold text-slate-700">Partner:</span> {booking.partner || 'External Provider'}
+                            </div>
+                          ) : (
+                            <div className="text-xs">
+                              <span className="font-semibold text-slate-700">Driver:</span> {booking.driver || 'Unassigned'}
+                            </div>
+                          )}
                         </div>
                         {actions.length > 0 && (
                           <div className="relative z-10 flex flex-wrap gap-2 mt-4">

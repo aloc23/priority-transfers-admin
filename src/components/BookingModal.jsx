@@ -526,20 +526,25 @@ export default function BookingModal({
                 {/* Partner field - Show for Outsourced bookings only */}
                 {formData.source === 'outsourced' && (
                   <div>
-                    <label htmlFor="partner-name" className="block mb-2 text-sm font-bold text-gray-800">
+                    <label htmlFor="partner-select" className="block mb-2 text-sm font-bold text-gray-800">
                       Partner/External Provider <span className="text-red-500" aria-label="required">*</span>
                     </label>
-                    <input
-                      id="partner-name"
-                      type="text"
+                    <select
+                      id="partner-select"
                       value={formData.partner || ''}
                       onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
-                      placeholder="Enter partner company name..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400"
                       required={formData.source === 'outsourced'}
-                      aria-describedby="partner-name-help"
-                    />
-                    <p id="partner-name-help" className="mt-1 text-xs text-gray-600">Name of the external service provider</p>
+                      aria-describedby="partner-select-help"
+                    >
+                      <option value="">Select a partner...</option>
+                      {partners.filter(partner => partner.status === 'active').map(partner => (
+                        <option key={partner.id} value={partner.name}>{partner.name}</option>
+                      ))}
+                    </select>
+                    <p id="partner-select-help" className="mt-1 text-xs text-gray-600">
+                      Select from your approved external service providers
+                    </p>
                   </div>
                 )}
               </fieldset>
