@@ -208,10 +208,13 @@ export default function ResourceScheduleView() {
           {weekDays.map(day => {
             const dayBookings = resourceBookings.filter(booking => {
               if (booking.type === 'tour') {
-                // For tours, show the booking only on the start and end dates
-                const tourStart = moment(booking.tourStartDate);
-                const tourEnd = moment(booking.tourEndDate);
-                return tourStart.isSame(day, 'day') || tourEnd.isSame(day, 'day');
+                // For tours, show continuous blocks spanning all days from start to end
+                if (booking.tourStartDate && booking.tourEndDate) {
+                  const tourStart = moment(booking.tourStartDate);
+                  const tourEnd = moment(booking.tourEndDate);
+                  return day.isBetween(tourStart, tourEnd, 'day', '[]'); // inclusive range
+                }
+                return false;
               } else {
                 // For transfers, show on pickup date and return date
                 const pickupMatch = moment(booking.date).isSame(day, 'day');
@@ -232,8 +235,19 @@ export default function ResourceScheduleView() {
                   {dayBookings.map(booking => {
                     const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
                     const bookingColors = isOutsourced ? 
-                      { bg: 'bg-orange-500', text: 'text-white' } :
-                      BOOKING_TYPE_COLORS[booking.type] || BOOKING_TYPE_COLORS.single;
+                      { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-300' } :
+                      booking.type === 'tour' ?
+                      { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-300' } :
+                      { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-300' };
+                    
+                    // For tour bookings, determine position in the tour span
+                    let tourPosition = 'middle';
+                    if (booking.type === 'tour' && booking.tourStartDate && booking.tourEndDate) {
+                      const tourStart = moment(booking.tourStartDate);
+                      const tourEnd = moment(booking.tourEndDate);
+                      if (day.isSame(tourStart, 'day')) tourPosition = 'start';
+                      else if (day.isSame(tourEnd, 'day')) tourPosition = 'end';
+                    }
                     
                     const bookingTime = booking.type === 'tour' ? 
                       `${booking.tourPickupTime || '09:00'} - ${booking.tourReturnPickupTime || '17:00'}` :
@@ -246,7 +260,16 @@ export default function ResourceScheduleView() {
                     return (
                       <div 
                         key={booking.id}
-                        className={`text-xs p-1.5 rounded ${bookingColors.bg} ${bookingColors.text} cursor-pointer hover:opacity-80 border-l-2 ${isOutsourced ? 'border-orange-300' : 'border-transparent'}`}
+                        className={`text-xs p-1.5 cursor-pointer hover:opacity-90 transition-all duration-200 
+                          ${bookingColors.bg} ${bookingColors.text} shadow-sm
+                          ${booking.type === 'tour' ? (
+                            tourPosition === 'start' ? 'rounded-l-lg rounded-r-sm border-r-2 border-r-white/20' :
+                            tourPosition === 'end' ? 'rounded-r-lg rounded-l-sm border-l-2 border-l-white/20' :
+                            'rounded-sm border-x-2 border-x-white/20'
+                          ) : 'rounded-lg'}
+                          border-l-4 ${bookingColors.border}
+                          ${isOutsourced ? 'ring-1 ring-orange-200' : ''}
+                        `}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedResource({ resource, booking });
@@ -254,18 +277,41 @@ export default function ResourceScheduleView() {
                         title={titleInfo}
                       >
                         <div className="flex items-center gap-1 mb-1">
-                          {isOutsourced && <span className="text-xs">🚐</span>}
-                          <div className="font-medium truncate">{booking.customer}</div>
+                          {isOutsourced && (
+                            <svg className="w-3 h-3 text-orange-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                            </svg>
+                          )}
+                          {booking.type === 'tour' && (
+                            <svg className="w-3 h-3 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                          )}
+                          <div className="font-semibold truncate text-xs">{booking.customer}</div>
                         </div>
                         
                         {booking.type === 'tour' ? (
-                          <div className="text-xs space-y-0.5">
-                            <div>Tour: {booking.tourPickupTime || '09:00'} - {booking.tourReturnPickupTime || '17:00'}</div>
-                            <div className="opacity-75">{booking.tourStartDate} to {booking.tourEndDate}</div>
+                          <div className="text-xs space-y-0.5 opacity-90">
+                            {tourPosition === 'start' && (
+                              <>
+                                <div className="font-medium">Tour Begins</div>
+                                <div className="text-xs opacity-75">Start: {booking.tourPickupTime || '09:00'}</div>
+                              </>
+                            )}
+                            {tourPosition === 'end' && (
+                              <>
+                                <div className="font-medium">Tour Ends</div>
+                                <div className="text-xs opacity-75">Return: {booking.tourReturnPickupTime || '17:00'}</div>
+                              </>
+                            )}
+                            {tourPosition === 'middle' && (
+                              <div className="font-medium text-center">Tour In Progress</div>
+                            )}
                           </div>
                         ) : (
-                          <div className="text-xs space-y-0.5">
-                            <div>{booking.time}</div>
+                          <div className="text-xs space-y-0.5 opacity-90">
+                            <div className="font-medium">{booking.time}</div>
                             {booking.hasReturn && booking.returnDate && (
                               <div className="opacity-75">Return: {booking.returnDate}</div>
                             )}
@@ -273,7 +319,7 @@ export default function ResourceScheduleView() {
                         )}
                         
                         {isOutsourced && booking.partner && (
-                          <div className="text-xs opacity-75 truncate" title={`Partner: ${booking.partner}`}>
+                          <div className="text-xs opacity-75 truncate font-medium" title={`Partner: ${booking.partner}`}>
                             {booking.partner}
                           </div>
                         )}
@@ -282,13 +328,32 @@ export default function ResourceScheduleView() {
                   })}
                 </div>
 
-                {/* Show conflicts if any */}
-                {conflicts.some(c => 
-                  c.resource === resource.name && 
-                  (moment(c.booking1.date).isSame(day, 'day') || moment(c.booking2.date).isSame(day, 'day'))
-                ) && (
-                  <div className="absolute top-1 right-1">
-                    <WarningIcon className="w-4 h-4 text-red-500" title="Booking conflict detected" />
+                {/* Show conflicts if any - Enhanced for tour bookings */}
+                {conflicts.some(c => {
+                  if (c.resource !== resource.name) return false;
+                  
+                  // Check for conflicts considering tour date ranges
+                  const hasConflictForDay = dayBookings.some(booking => {
+                    if (booking.type === 'tour' && booking.tourStartDate && booking.tourEndDate) {
+                      const tourStart = moment(booking.tourStartDate);
+                      const tourEnd = moment(booking.tourEndDate);
+                      return day.isBetween(tourStart, tourEnd, 'day', '[]');
+                    }
+                    return moment(booking.date).isSame(day, 'day') || 
+                           (booking.returnDate && moment(booking.returnDate).isSame(day, 'day'));
+                  });
+                  
+                  return hasConflictForDay;
+                }) && (
+                  <div className="absolute top-1 right-1 z-10">
+                    <div className="relative group">
+                      <WarningIcon className="w-5 h-5 text-red-500 bg-white rounded-full border-2 border-red-500 p-0.5 shadow-lg animate-pulse" 
+                        title="Resource conflict detected - multiple bookings overlap" />
+                      <div className="absolute top-6 right-0 bg-red-50 border border-red-200 rounded-lg p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 min-w-max">
+                        <div className="text-xs text-red-800 font-medium">Double booking detected!</div>
+                        <div className="text-xs text-red-600">This resource has overlapping bookings.</div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
