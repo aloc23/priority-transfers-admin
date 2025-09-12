@@ -7,11 +7,13 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
-import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon } from "../components/Icons";
+import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, DriverIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import ToggleSwitch from "../components/ToggleSwitch";
+import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
+import ResourceScheduleView from "../components/ResourceScheduleView";
 
 const localizer = momentLocalizer(moment);
 
@@ -55,7 +57,7 @@ export default function Schedule() {
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
   const [editingBooking, setEditingBooking] = useState(null);
-  const [viewMode, setViewMode] = useState('calendar'); // Default to 'calendar' view
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar', 'table', 'resources'
   const [highlightedBooking, setHighlightedBooking] = useState(null);
 
   // Use global calendar state instead of local state  
@@ -404,13 +406,14 @@ export default function Schedule() {
 
   const scheduleActions = (
     <>
-      <ToggleSwitch 
-        leftLabel="Table"
-        rightLabel="Calendar"
-        leftIcon={TableIcon}
-        rightIcon={CalendarIcon}
-        isRight={viewMode === 'calendar'}
-        onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+      <ThreeWayToggle
+        options={[
+          { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+          { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+          { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+        ]}
+        selected={viewMode}
+        onChange={setViewMode}
       />
       {/* Quick Invoice Creation - Only show for Admin */}
       {currentUser?.role === 'Admin' && (
@@ -508,16 +511,17 @@ export default function Schedule() {
                 </span>
               </h2>
             </div>
-            {/* Table/Calendar Switcher, Add Booking, and Filters for mobile, above cards */}
+            {/* Three-way toggle, Add Booking, and Filters for mobile, above cards */}
             <div className="mb-1 flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <ToggleSwitch 
-                  leftLabel="Table"
-                  rightLabel="Calendar"
-                  leftIcon={TableIcon}
-                  rightIcon={CalendarIcon}
-                  isRight={viewMode === 'calendar'}
-                  onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+                <ThreeWayToggle
+                  options={[
+                    { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+                    { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+                  ]}
+                  selected={viewMode}
+                  onChange={setViewMode}
                 />
                 <button 
                   className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
@@ -564,16 +568,17 @@ export default function Schedule() {
           </div>
         ) : (
           <div className="card p-4" ref={tableRef}>
-            {/* Table/Calendar Switcher, Add Booking, and Filters for desktop, above table */}
+            {/* Three-way toggle, Add Booking, and Filters for desktop, above table */}
             <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
               <div className="flex items-center gap-2">
-                <ToggleSwitch 
-                  leftLabel="Table"
-                  rightLabel="Calendar"
-                  leftIcon={TableIcon}
-                  rightIcon={CalendarIcon}
-                  isRight={viewMode === 'calendar'}
-                  onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+                <ThreeWayToggle
+                  options={[
+                    { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+                    { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+                  ]}
+                  selected={viewMode}
+                  onChange={setViewMode}
                 />
                 <button 
                   className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
@@ -760,18 +765,19 @@ export default function Schedule() {
             </div>
           </div>
         )
-      ) : (
+      ) : viewMode === 'calendar' ? (
         <div className="card p-4">
-          {/* Table/Calendar Switcher, Add Booking, and Filters for calendar view, above calendar */}
+          {/* Three-way toggle, Add Booking, and Filters for calendar view, above calendar */}
           <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
             <div className="flex items-center gap-2">
-              <ToggleSwitch 
-                leftLabel="Table"
-                rightLabel="Calendar"
-                leftIcon={TableIcon}
-                rightIcon={CalendarIcon}
-                isRight={viewMode === 'calendar'}
-                onChange={(isCalendar) => setViewMode(isCalendar ? 'calendar' : 'table')}
+              <ThreeWayToggle
+                options={[
+                  { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+                  { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+                ]}
+                selected={viewMode}
+                onChange={setViewMode}
               />
               <button 
                 className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
@@ -1007,6 +1013,33 @@ export default function Schedule() {
               </div>
             )}
           </div>
+        </div>
+      ) : (
+        // Resources view
+        <div className="card p-4">
+          <div className="mb-4 flex flex-wrap items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <ThreeWayToggle
+                options={[
+                  { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+                  { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+                ]}
+                selected={viewMode}
+                onChange={setViewMode}
+              />
+              <button 
+                className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
+                onClick={() => setShowModal(true)}
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Add Booking</span>
+                <span className="sm:hidden">Add</span>
+              </button>
+            </div>
+          </div>
+          
+          <ResourceScheduleView />
         </div>
       )}
 
