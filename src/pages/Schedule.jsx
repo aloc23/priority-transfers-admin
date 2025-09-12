@@ -900,21 +900,55 @@ export default function Schedule() {
                           }}>Confirm</button>
                         );
                       } else if (status === 'confirmed') {
-                        if (!selectedCalendarBooking.pickupCompleted) {
-                          actions.push(
-                            <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
-                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
-                              setSelectedCalendarBooking(null); 
-                            }}>Complete Pickup</button>
-                          );
-                        } else if (selectedCalendarBooking.hasReturn && !selectedCalendarBooking.returnCompleted) {
-                          actions.push(
-                            <button key="return" className="btn btn-success flex-1" onClick={() => { 
-                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
-                              setSelectedCalendarBooking(null); 
-                            }}>Complete Return</button>
-                          );
-                        } else if (!selectedCalendarBooking.hasReturn) {
+                        // Handle return transfer bookings with proper leg differentiation
+                        if (selectedCalendarBooking.hasReturn) {
+                          const legType = selectedCalendarBooking.legType;
+                          
+                          if (legType === 'pickup' && !selectedCalendarBooking.pickupCompleted) {
+                            // Only show "Complete Pickup" for pickup leg when pickup not completed
+                            actions.push(
+                              <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
+                                updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
+                                setSelectedCalendarBooking(null); 
+                              }}>Complete Pickup</button>
+                            );
+                          } else if (legType === 'return') {
+                            if (selectedCalendarBooking.pickupCompleted && !selectedCalendarBooking.returnCompleted) {
+                              // Only show "Complete" for return leg when pickup is completed
+                              actions.push(
+                                <button key="return" className="btn btn-success flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete</button>
+                              );
+                            } else if (!selectedCalendarBooking.pickupCompleted) {
+                              // Show informational message for return leg when pickup not completed
+                              actions.push(
+                                <div key="waiting" className="btn btn-disabled flex-1 bg-yellow-100 text-yellow-800 cursor-not-allowed">
+                                  Waiting for pickup completion
+                                </div>
+                              );
+                            }
+                          } else if (!legType) {
+                            // Fallback for general booking view (no specific leg)
+                            if (!selectedCalendarBooking.pickupCompleted) {
+                              actions.push(
+                                <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete Pickup</button>
+                              );
+                            } else if (!selectedCalendarBooking.returnCompleted) {
+                              actions.push(
+                                <button key="return" className="btn btn-success flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete Return</button>
+                              );
+                            }
+                          }
+                        } else {
+                          // Single trip - complete the entire booking
                           actions.push(
                             <button key="complete" className="btn btn-success flex-1" onClick={() => { 
                               updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); 
