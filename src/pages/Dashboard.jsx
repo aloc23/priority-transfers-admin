@@ -28,7 +28,7 @@ export default function Dashboard() {
   const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('bookings-calendar');
   const [searchParams, setSearchParams] = useSearchParams();
   const [accountingSubTab, setAccountingSubTab] = useState('overview');
   const [showIncomeModal, setShowIncomeModal] = useState(false);
@@ -277,7 +277,7 @@ export default function Dashboard() {
   };
 
   const dashboardTabs = [
-    { id: 'overview', label: 'Overview' },
+    { id: 'bookings-calendar', label: 'Bookings & Calendar' },
     { id: 'accounting', label: 'Accounting' }
   ];
 
@@ -319,8 +319,8 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Overview Tab Content - New Structure */}
-      {activeTab === 'overview' && (
+      {/* Bookings & Calendar Tab Content - Moved from Overview */}
+      {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
           {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
           <BookingsFleetGroupedWidget compact={true} />
@@ -330,18 +330,13 @@ export default function Dashboard() {
 
           {/* Combined Booking & Invoice Status - Standalone Overview Component */}
           <CombinedStatusSummary compact={true} />
-        </div>
-      )}
 
-      {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <section className="space-y-6">
           {/* Activity Section */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
             <ActivityList activities={recentActivity} />
           </div>
-        </section>
+        </div>
       )}
       {activeTab === 'accounting' && (
         <section className="space-y-8">
