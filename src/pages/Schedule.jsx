@@ -10,6 +10,8 @@ import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, DriverIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
+import CompactStatusChips from "../components/CompactStatusChips";
+import CompactCalendarNav from "../components/CompactCalendarNav";
 import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
@@ -71,6 +73,21 @@ export default function Schedule() {
       if (counts[b.status] !== undefined) counts[b.status] += 1;
     });
     return counts;
+  }, [bookings]);
+
+  // Calculate upcoming bookings for compact chips
+  const upcomingBookings = useMemo(() => {
+    const today = moment().startOf('day');
+    return bookings.filter(booking => {
+      if (booking.type === 'tour' && booking.tourStartDate) {
+        const bookingDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      } else if (booking.date) {
+        const bookingDate = moment(booking.date, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      }
+      return false;
+    });
   }, [bookings]);
 
   // Combined booking/invoice status logic (same as Dashboard)
@@ -527,31 +544,25 @@ export default function Schedule() {
   return (
   <div className="space-y-4">
       <PageHeader
-        title="Schedule"
+        title="Bookings & Calendar"
         plain={true}
         className="mb-2"
       />
 
-    {/* Status Blocks - Booking status only */}
-      <div className="mb-2">
-        <StatusBlockGrid
-          title="Booking Status"
-          statusData={statusTabs.filter(tab => tab.id !== 'all').map(tab => ({
-            id: tab.id,
-            label: tab.label,
-            count: tab.count,
-            color:
-              tab.id === 'pending' ? 'bg-gradient-to-r from-amber-400 via-yellow-200 to-yellow-100'
-              : tab.id === 'confirmed' ? 'bg-gradient-to-r from-green-400 via-emerald-200 to-green-100'
-              : tab.id === 'completed' ? 'bg-gradient-to-r from-blue-400 via-indigo-200 to-blue-100'
-              : tab.id === 'cancelled' ? 'bg-gradient-to-r from-slate-400 via-slate-200 to-slate-100'
-              : 'bg-gradient-to-r from-slate-200 to-slate-100'
-          }))}
+    {/* Compact Status Chips - Single row layout */}
+      <div className="mb-4">
+        <CompactStatusChips
+          statusData={[
+            { id: 'pending', label: 'Pending', count: statusCounts.pending },
+            { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
+            { id: 'completed', label: 'Completed', count: statusCounts.completed },
+            { id: 'upcoming', label: 'Upcoming', count: upcomingBookings.length },
+            { id: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled }
+          ]}
           selectedStatus={filterStatus}
           onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
-          cardClassName="backdrop-blur-md bg-white/80 border border-slate-200 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-200 group"
-          countClassName="text-2xl font-extrabold text-slate-900 drop-shadow-sm"
-          labelClassName="text-xs font-bold text-slate-700 uppercase tracking-wider"
+          className="flex-wrap gap-2"
+          isMobile={isMobile}
         />
       </div>
 
@@ -938,7 +949,19 @@ export default function Schedule() {
               </div>
             </div>
           </div>
-          <div style={{ height: '600px' }} className="calendar-mobile relative">
+          <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
+            {/* Compact Calendar Navigation */}
+            <div className="mb-4 p-4">
+              <CompactCalendarNav
+                currentDate={selectedDate || new Date()}
+                onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
+                onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
+                currentView="month"
+                views={['month', 'week', 'day']}
+                isMobile={isMobile}
+              />
+            </div>
+            
             <Calendar
               localizer={localizer}
               events={calendarEvents}
@@ -953,9 +976,13 @@ export default function Schedule() {
                 style: event.style
               })}
               popup
+              toolbar={false}
+              style={{
+                height: '100%',
+                fontFamily: 'Inter, system-ui, sans-serif'
+              }}
               components={{
                 event: ({ event }) => {
-                  // Render a small dot, color-coded by status
                   const status = getCombinedStatus(event.resource || event);
                   const colorMap = {
                     Pending: '#fbbf24',

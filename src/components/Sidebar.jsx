@@ -33,7 +33,7 @@ const navigationItems = [
   },
   {
     path: "/invoices",
-    label: "Invoices",
+    label: "Accounting",
     icon: InvoiceIcon,
     roles: ["Admin", "Dispatcher"]
   },
@@ -66,15 +66,15 @@ const navigationItems = [
 const navSections = [
   {
     heading: 'Main',
-    items: navigationItems.slice(0, 2)
+    items: navigationItems.slice(0, 3) // Dashboard, Bookings & Calendar, Accounting
   },
   {
     heading: 'Management',
-    items: navigationItems.slice(2, 5)
+    items: navigationItems.slice(3, 5) // Reports, Estimates
   },
   {
     heading: 'Other',
-    items: navigationItems.slice(5)
+    items: navigationItems.slice(5) // Notifications, Settings
   }
 ];
 

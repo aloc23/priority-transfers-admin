@@ -544,8 +544,54 @@ label {
   @apply border-b border-gray-100;
 }
 
-.rbc-day-bg {
-  @apply border-r border-gray-100 transition-colors duration-200 hover:bg-gray-50;
+/* Mobile optimizations for calendar and dashboard */
+@media (max-width: 768px) {
+  /* Reduce main container padding on mobile */
+  main .max-w-7xl {
+    padding: 0.75rem !important;
+  }
+  
+  /* Compact calendar for mobile */
+  .calendar-container {
+    margin: 0 !important;
+    border-radius: 0.75rem !important;
+  }
+  
+  /* Optimize calendar cells for mobile */
+  .rbc-date-cell {
+    padding: 0.25rem !important;
+    min-height: 2.5rem;
+  }
+  
+  .rbc-date-cell button {
+    font-size: 0.75rem !important;
+    min-height: 2rem;
+  }
+  
+  /* Compact status chips on mobile */
+  .compact-status-chips {
+    gap: 0.25rem !important;
+  }
+  
+  .compact-status-chips button {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.625rem !important;
+  }
+  
+  /* Mobile calendar header optimization */
+  .rbc-header {
+    padding: 0.5rem !important;
+    font-size: 0.625rem !important;
+  }
+  
+  /* Reduce space between elements on mobile */
+  .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
 }
 
 .rbc-day-bg:last-child {
