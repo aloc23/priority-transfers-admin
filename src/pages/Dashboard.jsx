@@ -21,7 +21,6 @@ import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
-import BookingsFleetGroupedWidget from "../components/BookingsFleetGroupedWidget";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -322,16 +321,13 @@ export default function Dashboard() {
       {/* Bookings & Calendar Tab Content - Moved from Overview */}
       {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
-          {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
-          <BookingsFleetGroupedWidget compact={true} />
-
-          {/* Grouped Booking & Invoice Status - New Tabbed Component */}
+          {/* Booking Status / Invoice Status - First position as required */}
           <BookingInvoiceStatusTabs compact={true} />
 
-          {/* Combined Booking & Invoice Status - Standalone Overview Component */}
+          {/* Combined Booking & Invoice Status - Second position as required */}
           <CombinedStatusSummary compact={true} />
 
-          {/* Activity Section */}
+          {/* Recent Activity - Third position as required */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
             <ActivityList activities={recentActivity} />
