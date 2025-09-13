@@ -27,7 +27,7 @@ const navigationItems = [
   },
   {
     path: "/schedule",
-    label: "Bookings & Calendar",
+    label: "Schedule",
     icon: CalendarIcon,
     roles: ["Admin", "Dispatcher", "Driver"]
   },
