@@ -321,13 +321,16 @@ export default function Dashboard() {
       {/* Bookings & Calendar Tab Content - Moved from Overview */}
       {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
-          {/* Booking Status / Invoice Status - First position as required */}
+          {/* Calendar Component - Primary, most visible block at the top */}
+          <BookingsCalendarWidget />
+
+          {/* Booking Status / Invoice Status - Second position */}
           <BookingInvoiceStatusTabs compact={true} />
 
-          {/* Combined Booking & Invoice Status - Second position as required */}
+          {/* Combined Booking & Invoice Status - Third position */}
           <CombinedStatusSummary compact={true} />
 
-          {/* Recent Activity - Third position as required */}
+          {/* Recent Activity - Fourth position */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
             <ActivityList activities={recentActivity} />
