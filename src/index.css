@@ -463,9 +463,9 @@ label {
 
 .rbc-header {
   background: linear-gradient(135deg, var(--slate-50) 0%, var(--granite-50) 100%);
-  @apply font-semibold text-slate-800 border-b border-slate-200 py-3;
+  @apply font-semibold text-slate-800 border-b border-slate-200 py-1.5;
   text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   letter-spacing: 0.05em;
 }
 
@@ -473,9 +473,9 @@ label {
   @apply rounded-md text-white font-medium;
   background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
   border: none;
-  padding: 2px 6px;
-  font-size: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  padding: 1px 4px;
+  font-size: 0.70rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
 }
 
 .rbc-event.priority {
@@ -517,7 +517,8 @@ label {
 }
 
 .rbc-date-cell {
-  @apply p-2;
+  @apply p-1;
+  min-height: 2.2rem;
 }
 
 .rbc-date-cell button {
@@ -559,13 +560,13 @@ label {
   
   /* Optimize calendar cells for mobile */
   .rbc-date-cell {
-    padding: 0.25rem !important;
-    min-height: 2.5rem;
+    padding: 0.12rem !important;
+    min-height: 2rem;
   }
   
   .rbc-date-cell button {
-    font-size: 0.75rem !important;
-    min-height: 2rem;
+    font-size: 0.68rem !important;
+    min-height: 1.6rem;
   }
   
   /* Compact status chips on mobile */
