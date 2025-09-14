@@ -443,80 +443,7 @@ export default function BookingsCalendarWidget(props) {
         {/* Glassmorphism overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-indigo-50/20 pointer-events-none"></div>
         <div className="relative z-10">
-        {/* Enhanced KPI Pills with glassmorphism - Mobile optimized compact design */}
-        <div className={`px-4 md:px-6 py-3 md:py-5 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border-b border-white/30 ${isMobile ? 'pb-2' : ''}`}>
-        <div className={`flex flex-wrap ${isMobile ? 'gap-2' : 'gap-3'}`}>
-          <button
-            onClick={() => handleStatusFilter('confirmed')}
-            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:ring-offset-2 ${
-              selectedStatus === 'confirmed'
-                ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 text-white shadow-emerald-500/30 border-emerald-300/50 scale-105'
-                : 'bg-gradient-to-r from-green-50/90 to-emerald-50/90 text-emerald-700 hover:from-green-100 hover:to-emerald-100 border-emerald-200/60 backdrop-blur-sm'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'confirmed' ? 'bg-white/90' : 'bg-emerald-500'}`}></span>
-              {isMobile ? (
-                <span className="flex items-center gap-1">
-                  <span className="font-bold">{confirmedBookings.length}</span>
-                  <span className="hidden xs:inline">Confirmed</span>
-                  <span className="xs:hidden">Conf</span>
-                </span>
-              ) : (
-                <>
-                  <span className="font-bold">Confirmed:</span> {confirmedBookings.length}
-                </>
-              )}
-            </span>
-          </button>
-          <button
-            onClick={() => handleStatusFilter('pending')}
-            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 ${
-              selectedStatus === 'pending'
-                ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-400 text-white shadow-amber-500/30 border-amber-300/50 scale-105'
-                : 'bg-gradient-to-r from-amber-50/90 to-yellow-50/90 text-amber-700 hover:from-amber-100 hover:to-yellow-100 border-amber-200/60 backdrop-blur-sm'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'pending' ? 'bg-white/90' : 'bg-amber-500'}`}></span>
-              {isMobile ? (
-                <span className="flex items-center gap-1">
-                  <span className="font-bold">{pendingBookings.length}</span>
-                  <span className="hidden xs:inline">Pending</span>
-                  <span className="xs:hidden">Pend</span>
-                </span>
-              ) : (
-                <>
-                  <span className="font-bold">Pending:</span> {pendingBookings.length}
-                </>
-              )}
-            </span>
-          </button>
-          <button
-            onClick={() => handleStatusFilter('upcoming')}
-            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 ${
-              selectedStatus === 'upcoming'
-                ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-400 text-white shadow-blue-500/30 border-blue-300/50 scale-105'
-                : 'bg-gradient-to-r from-blue-50/90 to-cyan-50/90 text-blue-700 hover:from-blue-100 hover:to-cyan-100 border-blue-200/60 backdrop-blur-sm'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'upcoming' ? 'bg-white/90' : 'bg-blue-500'}`}></span>
-              {isMobile ? (
-                <span className="flex items-center gap-1">
-                  <span className="font-bold">{upcomingBookings.length}</span>
-                  <span className="hidden xs:inline">Upcoming</span>
-                  <span className="xs:hidden">Up</span>
-                </span>
-              ) : (
-                <>
-                  <span className="font-bold">Upcoming:</span> {upcomingBookings.length}
-                </>
-              )}
-            </span>
-          </button>
-        </div>
-      </div>
+
 
         {/* Main Content Area with Enhanced Glassmorphism - Mobile optimized single-column layout */}
         <div className={`${isMobile ? 'px-4 pt-2 pb-4 space-y-4' : 'p-6 pt-4 grid grid-cols-5 gap-8'}`}>
@@ -528,7 +455,6 @@ export default function BookingsCalendarWidget(props) {
             <div className="relative z-10">
               <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-5'}`}>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">Calendar</span>
                   {/* Book Now Button - Prominent placement */}
                   <BookNowContext.Consumer>
                     {({ openModal }) => (
@@ -700,18 +626,92 @@ export default function BookingsCalendarWidget(props) {
                   )}
                 </BookNowContext.Consumer>
               )}
-              <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-5'}`}>
-                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text`}>
-                  {selectedStatus ? 
-                    `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} Bookings` :
-                    selectedDate ?
-                      (isMobile ? `${moment(selectedDate).format('MMM D')}` : `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}`) :
-                      'All Bookings'
-                  }
-                </h3>
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-100/80 to-slate-50/80 rounded-full text-xs font-bold text-slate-600 border border-slate-200/50 backdrop-blur-sm shadow-sm`}>
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
-                  {filteredBookings.length}
+              <div className={`flex flex-col gap-2 ${isMobile ? 'mb-3' : 'mb-5'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text`}>
+                    {selectedStatus ? 
+                      `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} Bookings` :
+                      selectedDate ?
+                        (isMobile ? `${moment(selectedDate).format('MMM D')}` : `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}`) :
+                        'All Bookings'
+                    }
+                  </h3>
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-100/80 to-slate-50/80 rounded-full text-xs font-bold text-slate-600 border border-slate-200/50 backdrop-blur-sm shadow-sm`}>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                    {filteredBookings.length}
+                  </div>
+                </div>
+                {/* KPI Pills moved inline here */}
+                <div className={`flex flex-wrap ${isMobile ? 'gap-2' : 'gap-3'}`}>
+                  <button
+                    onClick={() => handleStatusFilter('confirmed')}
+                    className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:ring-offset-2 ${
+                      selectedStatus === 'confirmed'
+                        ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 text-white shadow-emerald-500/30 border-emerald-300/50 scale-105'
+                        : 'bg-gradient-to-r from-green-50/90 to-emerald-50/90 text-emerald-700 hover:from-green-100 hover:to-emerald-100 border-emerald-200/60 backdrop-blur-sm'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${selectedStatus === 'confirmed' ? 'bg-white/90' : 'bg-emerald-500'}`}></span>
+                      {isMobile ? (
+                        <span className="flex items-center gap-1">
+                          <span className="font-bold">{confirmedBookings.length}</span>
+                          <span className="hidden xs:inline">Confirmed</span>
+                          <span className="xs:hidden">Conf</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-bold">Confirmed:</span> {confirmedBookings.length}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleStatusFilter('pending')}
+                    className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 ${
+                      selectedStatus === 'pending'
+                        ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-400 text-white shadow-amber-500/30 border-amber-300/50 scale-105'
+                        : 'bg-gradient-to-r from-amber-50/90 to-yellow-50/90 text-amber-700 hover:from-amber-100 hover:to-yellow-100 border-amber-200/60 backdrop-blur-sm'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${selectedStatus === 'pending' ? 'bg-white/90' : 'bg-amber-500'}`}></span>
+                      {isMobile ? (
+                        <span className="flex items-center gap-1">
+                          <span className="font-bold">{pendingBookings.length}</span>
+                          <span className="hidden xs:inline">Pending</span>
+                          <span className="xs:hidden">Pend</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-bold">Pending:</span> {pendingBookings.length}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleStatusFilter('upcoming')}
+                    className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 ${
+                      selectedStatus === 'upcoming'
+                        ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-400 text-white shadow-blue-500/30 border-blue-300/50 scale-105'
+                        : 'bg-gradient-to-r from-blue-50/90 to-cyan-50/90 text-blue-700 hover:from-blue-100 hover:to-cyan-100 border-blue-200/60 backdrop-blur-sm'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${selectedStatus === 'upcoming' ? 'bg-white/90' : 'bg-blue-500'}`}></span>
+                      {isMobile ? (
+                        <span className="flex items-center gap-1">
+                          <span className="font-bold">{upcomingBookings.length}</span>
+                          <span className="hidden xs:inline">Upcoming</span>
+                          <span className="xs:hidden">Up</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-bold">Upcoming:</span> {upcomingBookings.length}
+                        </>
+                      )}
+                    </span>
+                  </button>
                 </div>
               </div>
 
