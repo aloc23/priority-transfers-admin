@@ -9,6 +9,7 @@ import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import BookingModal from './BookingModal';
+import ModernDatePicker from './ModernDatePicker';
 
 // Context for Book Now button (provides openModal and openModalWithDate)
 export const BookNowContext = createContext({ openModal: () => {}, openModalWithDate: (date) => {} });
@@ -336,13 +337,6 @@ export default function BookingsCalendarWidget(props) {
     });
   };
 
-  // Navigate calendar with global state
-  const navigateCalendar = (direction) => {
-    const newDate = moment(selectedDate);
-    newDate.add(direction === 'next' ? 1 : -1, 'month');
-    updateGlobalCalendarState({ selectedDate: newDate.toDate() });
-  };
-
   // Get available actions for a booking with proper pickup/return leg handling
   const getBookingActions = (booking, legType = null) => {
     const inv = invoices.find(inv => inv.bookingId === booking.id);
@@ -533,30 +527,43 @@ export default function BookingsCalendarWidget(props) {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-indigo-50/10 pointer-events-none"></div>
             <div className="relative z-10">
               <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-5'}`}>
-                <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">Calendar</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigateCalendar('prev')}
-                    className="p-2 rounded-xl hover:bg-white/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 backdrop-blur-sm border border-white/30 shadow-sm hover:shadow-md transform hover:scale-105"
-                    aria-label="Previous Month"
-                  >
-                    <ChevronLeftIcon className="w-4 h-4 text-slate-600" />
-                  </button>
-                  <button
-                    onClick={() => updateGlobalCalendarState({ selectedDate: new Date() })}
-                    className="px-3 py-2 text-xs font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-lg hover:shadow-xl transform hover:scale-105 backdrop-blur-sm"
-                    aria-label="Today"
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => navigateCalendar('next')}
-                    className="p-2 rounded-xl hover:bg-white/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 backdrop-blur-sm border border-white/30 shadow-sm hover:shadow-md transform hover:scale-105"
-                    aria-label="Next Month"
-                  >
-                    <ChevronRightIcon className="w-4 h-4 text-slate-600" />
-                  </button>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">Calendar</span>
+                  {/* Book Now Button - Prominent placement */}
+                  <BookNowContext.Consumer>
+                    {({ openModal }) => (
+                      <button 
+                        onClick={openModal}
+                        className={`group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white ${isMobile ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'} rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50 overflow-hidden relative`}
+                      >
+                        {/* Animated background overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        {/* Content */}
+                        <div className="relative z-10 flex items-center gap-1.5">
+                          <PlusIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} group-hover:rotate-90 transition-transform duration-300`} />
+                          <span className="font-bold tracking-wide">{isMobile ? 'Book' : 'Book Now'}</span>
+                        </div>
+                        
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                        </div>
+                      </button>
+                    )}
+                  </BookNowContext.Consumer>
                 </div>
+                
+                {/* Modern unified date picker */}
+                <ModernDatePicker
+                  currentDate={selectedDate || new Date()}
+                  onNavigate={(date) => updateGlobalCalendarState({ selectedDate: date })}
+                  onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
+                  onDateSelect={(date) => handleCalendarDateSelect(date)}
+                  isMobile={isMobile}
+                  compact={isMobile}
+                  className="flex-shrink-0"
+                />
               </div>
 
               <div style={{ height: isMobile ? '400px' : '550px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
@@ -573,13 +580,77 @@ export default function BookingsCalendarWidget(props) {
                   onView={(view) => updateGlobalCalendarState({ currentView: view })}
                   views={['month']}
                   eventPropGetter={(event) => ({
-                    style: event.style
+                    style: {
+                      ...event.style,
+                      borderRadius: '8px',
+                      border: 'none',
+                      padding: '4px 8px',
+                      margin: '1px 0',
+                      fontSize: isMobile ? '11px' : '13px',
+                      fontWeight: '600',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      transition: 'all 0.2s ease-in-out',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }
                   })}
                   selectable
                   popup
+                  toolbar={false}
+                  formats={{
+                    dayFormat: (date) => moment(date).format('D'),
+                    monthHeaderFormat: (date) => moment(date).format('MMMM YYYY'),
+                    dayHeaderFormat: (date) => moment(date).format('dddd'),
+                    dayRangeHeaderFormat: ({ start, end }) => 
+                      `${moment(start).format('MMM D')} - ${moment(end).format('MMM D, YYYY')}`
+                  }}
+                  messages={{
+                    next: "Next",
+                    previous: "Previous", 
+                    today: "Today",
+                    month: "Month",
+                    week: "Week",
+                    day: "Day",
+                    agenda: "Agenda",
+                    date: "Date",
+                    time: "Time",
+                    event: "Event",
+                    noEventsInRange: "No bookings in this date range",
+                    showMore: total => `+${total} more`
+                  }}
                   style={{
                     fontSize: isMobile ? '12px' : '15px',
-                    minHeight: isMobile ? '400px' : '550px'
+                    minHeight: isMobile ? '400px' : '550px',
+                    fontFamily: 'inherit'
+                  }}
+                  components={{
+                    event: ({ event }) => (
+                      <div 
+                        className="group relative h-full flex items-center hover:scale-105 transition-transform duration-200"
+                        style={{ 
+                          background: event.style?.background,
+                          color: event.style?.color,
+                          borderRadius: '6px',
+                          padding: '2px 6px'
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs leading-tight truncate">
+                            {event.title}
+                          </div>
+                          {event.resource?.legType && (
+                            <div className="text-xs opacity-90 truncate">
+                              {event.resource.legType === 'pickup' ? '↑ Pickup' : '↓ Return'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md pointer-events-none" />
+                      </div>
+                    ),
+                    toolbar: () => null // Hide the default toolbar completely
                   }}
                 />
               </div>
