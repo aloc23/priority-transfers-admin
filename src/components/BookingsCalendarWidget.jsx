@@ -446,10 +446,10 @@ export default function BookingsCalendarWidget(props) {
 
 
         {/* Main Content Area with Enhanced Glassmorphism - Mobile optimized single-column layout */}
-        <div className={`${isMobile ? 'px-4 pt-2 pb-4 space-y-4' : 'p-6 pt-4 grid grid-cols-5 gap-8'}`}>
+  <div className={`${isMobile ? 'px-2 pt-1 pb-2 space-y-3' : 'p-3 pt-2 grid grid-cols-5 gap-6'}`}>
         {/* Calendar Section with Enhanced Styling - Mobile full-width, increased height */}
         <div className={`${isMobile ? 'order-2' : 'col-span-3'} relative`}>
-          <div className="bg-gradient-to-br from-white/80 via-slate-50/60 to-white/80 rounded-2xl p-5 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
+          <div className="bg-gradient-to-br from-white/80 via-slate-50/60 to-white/80 rounded-2xl p-2 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
             {/* Calendar header background */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-indigo-50/10 pointer-events-none"></div>
             <div className="relative z-10">
