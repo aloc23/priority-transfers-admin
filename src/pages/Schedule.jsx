@@ -10,6 +10,8 @@ import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, DriverIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
+import CompactStatusChips from "../components/CompactStatusChips";
+import CompactCalendarNav from "../components/CompactCalendarNav";
 import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
@@ -71,6 +73,21 @@ export default function Schedule() {
       if (counts[b.status] !== undefined) counts[b.status] += 1;
     });
     return counts;
+  }, [bookings]);
+
+  // Calculate upcoming bookings for compact chips
+  const upcomingBookings = useMemo(() => {
+    const today = moment().startOf('day');
+    return bookings.filter(booking => {
+      if (booking.type === 'tour' && booking.tourStartDate) {
+        const bookingDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      } else if (booking.date) {
+        const bookingDate = moment(booking.date, 'YYYY-MM-DD');
+        return bookingDate.isSameOrAfter(today) && (booking.status === 'confirmed' || booking.status === 'pending');
+      }
+      return false;
+    });
   }, [bookings]);
 
   // Combined booking/invoice status logic (same as Dashboard)
@@ -171,65 +188,101 @@ export default function Schedule() {
     return result;
   }, [bookings, selectedDriver, filterStatus]);
 
-  // Memoize calendar events for performance - ONLY show confirmed bookings
+  // Memoize calendar events for performance - show all filtered bookings with status indication
   const calendarEvents = useMemo(() => {
-    // Filter to only include confirmed bookings for calendar display
-    const confirmedBookings = filteredBookings.filter(booking => booking.status === 'confirmed');
-    
+    // Show all filtered bookings (confirmed, pending, etc.) with visual status indicators
     const events = [];
     
-    confirmedBookings.forEach(booking => {
+    filteredBookings.forEach(booking => {
       if (booking.type === 'tour') {
-        // Handle tour bookings with date ranges
+        // Handle tour bookings with date ranges - create continuous blocks
         if (booking.tourStartDate && booking.tourEndDate) {
           const tourStart = moment(`${booking.tourStartDate} ${booking.tourPickupTime || '08:00'}`);
           const tourEnd = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '18:00'}`);
           
+          // Ensure the tour spans full days for proper continuous blocking
+          const startOfTour = tourStart.clone().startOf('day').add(8, 'hours');
+          const endOfTour = tourEnd.clone().startOf('day').add(18, 'hours');
+          
+          // Get status-based styling
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const baseColor = isOutsourced ? '#f97316' : '#10b981'; // Orange for outsourced, emerald for internal tours
+          const baseBorderColor = isOutsourced ? '#ea580c' : '#047857';
+          
+          // Apply opacity based on status
+          const statusOpacity = booking.status === 'confirmed' ? '1' : 
+                               booking.status === 'pending' ? '0.7' : 
+                               booking.status === 'completed' ? '0.9' : '0.5';
+          
           events.push({
             id: `${booking.id}-tour`,
-            title: `Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
-            start: tourStart.toDate(),
-            end: tourEnd.toDate(),
-            allDay: tourStart.clone().startOf('day').isSame(tourEnd.clone().startOf('day')) ? false : true,
+            title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Tour: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            start: startOfTour.toDate(),
+            end: endOfTour.toDate(),
+            allDay: false, // Keep as timed event for better visibility
             resource: { ...booking, legType: 'tour' },
             style: {
-              backgroundColor: getBookingTypeColor(booking.type).bg,
-              borderColor: getBookingTypeColor(booking.type).border,
+              backgroundColor: baseColor,
+              borderColor: baseBorderColor,
               color: 'white',
-              fontWeight: 'bold'
+              fontWeight: '600',
+              fontSize: '12px',
+              borderRadius: '6px',
+              border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: statusOpacity
             }
           });
         }
       } else {
         // Handle single/transfer bookings
         if (booking.date && booking.time) {
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const baseColor = isOutsourced ? '#f97316' : '#3b82f6'; // Orange for outsourced, blue for internal
+          const baseBorderColor = isOutsourced ? '#ea580c' : '#1d4ed8';
+          
+          // Apply opacity and visual cues based on status
+          const statusOpacity = booking.status === 'confirmed' ? '1' : 
+                               booking.status === 'pending' ? '0.7' : 
+                               booking.status === 'completed' ? '0.9' : '0.5';
+          
           events.push({
             id: `${booking.id}-pickup`,
-            title: `${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            title: `${booking.status === 'pending' ? '[PENDING] ' : ''}${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
             start: moment(`${booking.date} ${booking.time}`).toDate(),
             end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
             resource: { ...booking, isReturn: false, legType: 'pickup' },
             style: {
-              backgroundColor: getBookingTypeColor(booking.type).bg,
-              borderColor: getBookingTypeColor(booking.type).border,
-              color: 'white'
+              backgroundColor: baseColor,
+              borderColor: baseBorderColor,
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '12px',
+              borderRadius: '6px',
+              border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: statusOpacity
             }
           });
           
-          // Add return event if applicable
+          // Add return event if applicable with enhanced styling
           if (booking.hasReturn && booking.returnDate && booking.returnTime) {
             events.push({
               id: `${booking.id}-return`,
-              title: `Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
+              title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
               start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
               end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
               resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
-                backgroundColor: getBookingTypeColor(booking.type).bg,
-                borderColor: getBookingTypeColor(booking.type).border,
+                backgroundColor: baseColor,
+                borderColor: baseBorderColor,
                 color: 'white',
-                borderStyle: 'dashed', // Distinguish return trips visually
-                borderWidth: '2px'
+                fontWeight: '600',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: booking.status === 'pending' ? '3px dashed' : '2px dashed', // Always dashed for return trips
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                opacity: statusOpacity
               }
             });
           }
@@ -313,30 +366,74 @@ export default function Schedule() {
           <div>
             <h3 className="font-semibold text-lg text-slate-800 mb-1">{booking.customer}</h3>
             <div className="flex items-center gap-2 mb-2">
-              <span className={`badge badge-animated ${
-                booking.status === 'confirmed' ? 'badge-green' :
-                booking.status === 'pending' ? 'badge-yellow' :
-                booking.status === 'completed' ? 'badge-blue' :
-                'badge-red'
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                'bg-red-50 text-red-700 border-red-200'
               }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  booking.status === 'confirmed' ? 'bg-emerald-500' :
+                  booking.status === 'pending' ? 'bg-amber-500' :
+                  booking.status === 'completed' ? 'bg-blue-500' :
+                  'bg-red-500'
+                }`}></span>
                 {booking.status}
               </span>
-              <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                booking.type === 'tour' ? 'bg-green-50 text-green-700 border-green-200' :
+                booking.type === 'outsourced' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                'bg-blue-50 text-blue-700 border-blue-200'
+              }`}>
+                {booking.type === 'tour' && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+                {booking.type === 'outsourced' && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                  </svg>
+                )}
+                {(booking.type === 'single' || !booking.type) && (
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 12l2 2 4-4M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8Z"/>
+                  </svg>
+                )}
                 {getBookingTypeDisplay(booking.type)}
               </span>
               {/* Show completion status for confirmed bookings */}
               {booking.status === 'confirmed' && (
-                <div className="flex items-center gap-1 text-xs">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    booking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm border ${
+                    booking.pickupCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                   }`}>
-                    Pickup {booking.pickupCompleted ? '✓' : '○'}
+                    {booking.pickupCompleted ? (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                      </svg>
+                    )}
+                    Pickup
                   </span>
                   {booking.hasReturn && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      booking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm border ${
+                      booking.returnCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                     }`}>
-                      Return {booking.returnCompleted ? '✓' : '○'}
+                      {booking.returnCompleted ? (
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                      )}
+                      Return
                     </span>
                   )}
                 </div>
@@ -447,31 +544,25 @@ export default function Schedule() {
   return (
   <div className="space-y-4">
       <PageHeader
-        title="Schedule"
+        title="Bookings & Calendar"
         plain={true}
         className="mb-2"
       />
 
-    {/* Status Blocks - Booking status only */}
-      <div className="mb-2">
-        <StatusBlockGrid
-          title="Booking Status"
-          statusData={statusTabs.filter(tab => tab.id !== 'all').map(tab => ({
-            id: tab.id,
-            label: tab.label,
-            count: tab.count,
-            color:
-              tab.id === 'pending' ? 'bg-gradient-to-r from-amber-400 via-yellow-200 to-yellow-100'
-              : tab.id === 'confirmed' ? 'bg-gradient-to-r from-green-400 via-emerald-200 to-green-100'
-              : tab.id === 'completed' ? 'bg-gradient-to-r from-blue-400 via-indigo-200 to-blue-100'
-              : tab.id === 'cancelled' ? 'bg-gradient-to-r from-slate-400 via-slate-200 to-slate-100'
-              : 'bg-gradient-to-r from-slate-200 to-slate-100'
-          }))}
+    {/* Compact Status Chips - Single row layout */}
+      <div className="mb-4">
+        <CompactStatusChips
+          statusData={[
+            { id: 'pending', label: 'Pending', count: statusCounts.pending },
+            { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
+            { id: 'completed', label: 'Completed', count: statusCounts.completed },
+            { id: 'upcoming', label: 'Upcoming', count: upcomingBookings.length },
+            { id: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled }
+          ]}
           selectedStatus={filterStatus}
           onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
-          cardClassName="backdrop-blur-md bg-white/80 border border-slate-200 shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-200 group"
-          countClassName="text-2xl font-extrabold text-slate-900 drop-shadow-sm"
-          labelClassName="text-xs font-bold text-slate-700 uppercase tracking-wider"
+          className="flex-wrap gap-2"
+          isMobile={isMobile}
         />
       </div>
 
@@ -696,33 +787,77 @@ export default function Schedule() {
                           {formatCurrency(booking.price || 45)}
                         </td>
                         <td>
-                          <span className={`badge badge-animated ${getBookingTypeColor(booking.type).badge}`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                            booking.type === 'tour' ? 'bg-green-50 text-green-700 border-green-200' :
+                            booking.type === 'outsourced' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}>
+                            {booking.type === 'tour' && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            )}
+                            {booking.type === 'outsourced' && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                              </svg>
+                            )}
+                            {(booking.type === 'single' || !booking.type) && (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M9 12l2 2 4-4M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8Z"/>
+                              </svg>
+                            )}
                             {getBookingTypeDisplay(booking.type)}
                           </span>
                         </td>
                         <td>
                           <div className="flex flex-col gap-1">
-                            <span className={`badge badge-animated ${
-                              booking.status === 'confirmed' ? 'badge-green' :
-                              booking.status === 'pending' ? 'badge-yellow' :
-                              booking.status === 'completed' ? 'badge-blue' :
-                              'badge-red'
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold shadow-sm border ${
+                              booking.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              booking.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-red-50 text-red-700 border-red-200'
                             }`}>
+                              <span className={`w-2 h-2 rounded-full ${
+                                booking.status === 'confirmed' ? 'bg-emerald-500' :
+                                booking.status === 'pending' ? 'bg-amber-500' :
+                                booking.status === 'completed' ? 'bg-blue-500' :
+                                'bg-red-500'
+                              }`}></span>
                               {booking.status}
                             </span>
                             {/* Show completion status for confirmed bookings */}
                             {booking.status === 'confirmed' && (
                               <div className="flex gap-1 text-xs">
-                                <span className={`px-1 py-0.5 rounded text-xs ${
-                                  booking.pickupCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium border ${
+                                  booking.pickupCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                                 }`}>
-                                  P{booking.pickupCompleted ? '✓' : '○'}
+                                  {booking.pickupCompleted ? (
+                                    <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                      <polyline points="20,6 9,17 4,12"/>
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <circle cx="12" cy="12" r="10"/>
+                                    </svg>
+                                  )}
+                                  P
                                 </span>
                                 {booking.hasReturn && (
-                                  <span className={`px-1 py-0.5 rounded text-xs ${
-                                    booking.returnCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                  <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium border ${
+                                    booking.returnCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'
                                   }`}>
-                                    R{booking.returnCompleted ? '✓' : '○'}
+                                    {booking.returnCompleted ? (
+                                      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <polyline points="20,6 9,17 4,12"/>
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                      </svg>
+                                    )}
+                                    R
                                   </span>
                                 )}
                               </div>
@@ -814,7 +949,19 @@ export default function Schedule() {
               </div>
             </div>
           </div>
-          <div style={{ height: '600px' }} className="calendar-mobile relative">
+          <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
+            {/* Compact Calendar Navigation */}
+            <div className="mb-4 p-4">
+              <CompactCalendarNav
+                currentDate={selectedDate || new Date()}
+                onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
+                onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
+                currentView="month"
+                views={['month', 'week', 'day']}
+                isMobile={isMobile}
+              />
+            </div>
+            
             <Calendar
               localizer={localizer}
               events={calendarEvents}
@@ -829,9 +976,13 @@ export default function Schedule() {
                 style: event.style
               })}
               popup
+              toolbar={false}
+              style={{
+                height: '100%',
+                fontFamily: 'Inter, system-ui, sans-serif'
+              }}
               components={{
                 event: ({ event }) => {
-                  // Render a small dot, color-coded by status
                   const status = getCombinedStatus(event.resource || event);
                   const colorMap = {
                     Pending: '#fbbf24',

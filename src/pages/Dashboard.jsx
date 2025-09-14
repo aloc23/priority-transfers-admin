@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
-import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon } from "../components/Icons";
+import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon, UploadIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
 import DashboardCard from "../components/DashboardCard";
 import ActivityList from "../components/ActivityList";
@@ -21,21 +21,22 @@ import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
-import BookingsFleetGroupedWidget from "../components/BookingsFleetGroupedWidget";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
   const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('bookings-calendar');
   const [searchParams, setSearchParams] = useSearchParams();
   const [accountingSubTab, setAccountingSubTab] = useState('overview');
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [showKPIModal, setShowKPIModal] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleKPIClick = (kpi) => {
     setSelectedKPI(kpi);
@@ -150,8 +151,132 @@ export default function Dashboard() {
     deleteExpense(item.id);
   }
 
+  // File upload handler for expenses - Enhanced version
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Show loading state
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    loadingToast.textContent = `Processing ${file.name}...`;
+    document.body.appendChild(loadingToast);
+
+    try {
+      let expensesToAdd = [];
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith('.csv')) {
+        // Enhanced CSV parsing
+        const text = await file.text();
+        const lines = text.split('\n').slice(1); // Skip header
+        expensesToAdd = lines
+          .filter(line => line.trim())
+          .map(line => {
+            const [date, description, amount, category] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+            return {
+              date: date || new Date().toISOString().split('T')[0],
+              description: description || 'Uploaded expense',
+              amount: parseFloat(amount) || 0,
+              category: category || 'General'
+            };
+          })
+          .filter(expense => expense.amount > 0);
+      } else if (fileName.endsWith('.txt')) {
+        // Enhanced text parsing - look for patterns like "Date: ... Description: ... Amount: ..."
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+          const dateMatch = line.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{1,2}\.\d{1,2}\.\d{4})/);
+          const amountMatch = line.match(/(\d+\.?\d*)/);
+          const description = line.replace(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{1,2}\.\d{1,2}\.\d{4})/, '').replace(/(\d+\.?\d*)/, '').trim();
+          
+          if (amountMatch) {
+            let parsedDate = new Date().toISOString().split('T')[0];
+            if (dateMatch) {
+              const dateStr = dateMatch[0];
+              if (dateStr.includes('.')) {
+                const [day, month, year] = dateStr.split('.');
+                parsedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else if (dateStr.includes('/')) {
+                const [month, day, year] = dateStr.split('/');
+                parsedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else {
+                parsedDate = dateStr;
+              }
+            }
+            
+            expensesToAdd.push({
+              date: parsedDate,
+              description: description || 'Uploaded expense',
+              amount: parseFloat(amountMatch[0]) || 0
+            });
+          }
+        }
+      } else if (fileName.endsWith('.json')) {
+        // JSON file support
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+          expensesToAdd = data.map(item => ({
+            date: item.date || new Date().toISOString().split('T')[0],
+            description: item.description || item.memo || item.details || 'Uploaded expense',
+            amount: parseFloat(item.amount || item.cost || item.value) || 0
+          })).filter(expense => expense.amount > 0);
+        }
+      } else {
+        // For other file types (PDF, Excel), show an enhanced dialog
+        const description = prompt('Enter expense description:', `Document: ${file.name}`) || `Document: ${file.name}`;
+        const amount = prompt('Enter expense amount (€):');
+        if (amount && !isNaN(amount)) {
+          expensesToAdd = [{
+            date: new Date().toISOString().split('T')[0],
+            description: description,
+            amount: parseFloat(amount),
+            source: 'document'
+          }];
+        }
+      }
+
+      // Add all parsed expenses
+      for (const expense of expensesToAdd) {
+        addExpense(expense);
+      }
+
+      // Remove loading toast
+      document.body.removeChild(loadingToast);
+
+      // Show success message
+      const successToast = document.createElement('div');
+      successToast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      successToast.textContent = expensesToAdd.length > 0 
+        ? `Successfully uploaded ${expensesToAdd.length} expense(s) from ${file.name}` 
+        : `No valid expense data found in ${file.name}`;
+      document.body.appendChild(successToast);
+      setTimeout(() => document.body.removeChild(successToast), 5000);
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      
+      // Remove loading toast if exists
+      if (document.body.contains(loadingToast)) {
+        document.body.removeChild(loadingToast);
+      }
+      
+      // Show error message
+      const errorToast = document.createElement('div');
+      errorToast.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      errorToast.textContent = `Error processing ${file.name}: ${error.message}. Please check the format and try again.`;
+      document.body.appendChild(errorToast);
+      setTimeout(() => document.body.removeChild(errorToast), 7000);
+    } finally {
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
   const dashboardTabs = [
-    { id: 'overview', label: 'Overview' },
+    { id: 'bookings-calendar', label: 'Bookings & Calendar' },
     { id: 'accounting', label: 'Accounting' }
   ];
 
@@ -193,29 +318,24 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Overview Tab Content - New Structure */}
-      {activeTab === 'overview' && (
+      {/* Bookings & Calendar Tab Content - Moved from Overview */}
+      {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
-          {/* Unified Bookings & Calendar + Fleet & Driver Status - Grouped Component */}
-          <BookingsFleetGroupedWidget compact={true} />
+          {/* Calendar Component - Primary, most visible block at the top */}
+          <BookingsCalendarWidget />
 
-          {/* Grouped Booking & Invoice Status - New Tabbed Component */}
+          {/* Booking Status / Invoice Status - Second position */}
           <BookingInvoiceStatusTabs compact={true} />
 
-          {/* Combined Booking & Invoice Status - Standalone Overview Component */}
+          {/* Combined Booking & Invoice Status - Third position */}
           <CombinedStatusSummary compact={true} />
-        </div>
-      )}
 
-      {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <section className="space-y-6">
-          {/* Activity Section */}
+          {/* Recent Activity - Fourth position */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
             <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
             <ActivityList activities={recentActivity} />
           </div>
-        </section>
+        </div>
       )}
       {activeTab === 'accounting' && (
         <section className="space-y-8">
@@ -314,41 +434,67 @@ export default function Dashboard() {
           {accountingSubTab === 'income-expenses' && (
             <div className="space-y-6">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold">All Income</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-800 text-lg">All Income</h3>
                   <button className="btn btn-primary" onClick={() => setShowIncomeModal(true)}>Add Income</button>
                 </div>
-                <table className="w-full text-sm bg-gradient-to-r from-green-50 to-green-100 rounded shadow">
-                  <thead>
-                    <tr className="bg-green-200">
-                      <th className="p-2 text-left">DATE</th>
-                      <th className="p-2 text-left">DESCRIPTION</th>
-                      <th className="p-2 text-left">AMOUNT (€)</th>
-                      <th className="p-2 text-left">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {income.length > 0 ? income.map((inc, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2">{inc.date}</td>
-                        <td className="p-2">{inc.description}</td>
-                        <td className="p-2 text-green-700 font-bold">{(typeof inc.amount === 'number' ? inc.amount : Number(inc.amount) || 0).toFixed(2)}</td>
-                        <td className="p-2 flex gap-2">
-                          <button className="btn btn-xs btn-outline" onClick={() => handleEditIncome(idx)}><EditIcon className="w-4 h-4" /></button>
-                          <button className="btn btn-xs btn-danger" onClick={() => handleDeleteIncome(idx)}><TrashIcon className="w-4 h-4" /></button>
-                        </td>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-green-100 to-green-50 border-b border-green-200">
+                        <th className="p-4 text-left font-semibold text-green-800">DATE</th>
+                        <th className="p-4 text-left font-semibold text-green-800">DESCRIPTION</th>
+                        <th className="p-4 text-left font-semibold text-green-800">AMOUNT (€)</th>
+                        <th className="p-4 text-left font-semibold text-green-800">ACTIONS</th>
                       </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} className="text-center py-8 text-slate-500">
-                          <RevenueIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <p>No income found.</p>
-                          <button className="btn btn-outline mt-2" onClick={refreshAllData}>Refresh Data</button>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {income.length > 0 ? income.map((inc, idx) => (
+                        <tr key={idx} className="hover:bg-green-50/50 transition-colors">
+                          <td className="p-4 text-slate-700">{inc.date}</td>
+                          <td className="p-4">
+                            <div className="font-medium text-slate-900">{inc.description}</div>
+                            {inc.source && <div className="text-xs text-green-600 mt-1">Source: {inc.source}</div>}
+                          </td>
+                          <td className="p-4">
+                            <span className="font-bold text-green-700 bg-green-50 px-2 py-1 rounded">
+                              €{(typeof inc.amount === 'number' ? inc.amount : Number(inc.amount) || 0).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-2">
+                              <button 
+                                className="btn btn-xs btn-outline hover:bg-blue-50" 
+                                onClick={() => handleEditIncome(idx)}
+                                title="Edit income"
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                              <button 
+                                className="btn btn-xs btn-danger hover:bg-red-50" 
+                                onClick={() => handleDeleteIncome(idx)}
+                                title="Delete income"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={4} className="text-center py-12 text-slate-500">
+                            <RevenueIcon className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium">No income found</p>
+                            <p className="text-sm mt-1">Add income entries to track revenue</p>
+                            <button className="btn btn-outline btn-sm mt-4" onClick={refreshAllData}>
+                              Refresh Data
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
                 {/* Income Modal */}
                 {showIncomeModal && (
                   <IncomeModal
@@ -359,41 +505,95 @@ export default function Dashboard() {
                 )}
               </div>
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold">All Expenses</h3>
-                  <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>Add Expense</button>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-800 text-lg">All Expenses</h3>
+                  <div className="flex gap-3">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".csv,.xlsx,.xls,.pdf,.txt,.json"
+                      style={{ display: 'none' }}
+                      aria-label="Upload expense document"
+                    />
+                    <button 
+                      className="btn btn-outline flex items-center gap-2" 
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Upload expense documents (CSV, Excel, PDF, TXT, JSON)"
+                    >
+                      <UploadIcon className="w-4 h-4" />
+                      Upload Document
+                    </button>
+                    <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>Add Expense</button>
+                  </div>
                 </div>
-                <table className="w-full text-sm bg-gradient-to-r from-red-50 to-red-100 rounded shadow">
-                  <thead>
-                    <tr className="bg-red-200">
-                      <th className="p-2 text-left">DATE</th>
-                      <th className="p-2 text-left">DESCRIPTION</th>
-                      <th className="p-2 text-left">AMOUNT (€)</th>
-                      <th className="p-2 text-left">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.length > 0 ? expenses.map((exp, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2">{exp.date}</td>
-                        <td className="p-2">{exp.description}</td>
-                        <td className="p-2 text-red-700 font-bold">{(typeof exp.amount === 'number' ? exp.amount : Number(exp.amount) || 0).toFixed(2)}</td>
-                        <td className="p-2 flex gap-2">
-                          <button className="btn btn-xs btn-outline" onClick={() => handleEditExpense(idx)}><EditIcon className="w-4 h-4" /></button>
-                          <button className="btn btn-xs btn-danger" onClick={() => handleDeleteExpense(idx)}><TrashIcon className="w-4 h-4" /></button>
-                        </td>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-red-100 to-red-50 border-b border-red-200">
+                        <th className="p-4 text-left font-semibold text-red-800">DATE</th>
+                        <th className="p-4 text-left font-semibold text-red-800">DESCRIPTION</th>
+                        <th className="p-4 text-left font-semibold text-red-800">AMOUNT (€)</th>
+                        <th className="p-4 text-left font-semibold text-red-800">ACTIONS</th>
                       </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} className="text-center py-8 text-slate-500">
-                          <EstimationIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <p>No expenses found.</p>
-                          <button className="btn btn-outline mt-2" onClick={refreshAllData}>Refresh Data</button>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {expenses.length > 0 ? expenses.map((exp, idx) => (
+                        <tr key={idx} className="hover:bg-red-50/50 transition-colors">
+                          <td className="p-4 text-slate-700">{exp.date}</td>
+                          <td className="p-4">
+                            <div className="font-medium text-slate-900">{exp.description}</div>
+                            {exp.category && <div className="text-xs text-slate-500 mt-1">{exp.category}</div>}
+                            {exp.source && <div className="text-xs text-blue-600 mt-1">Source: {exp.source}</div>}
+                          </td>
+                          <td className="p-4">
+                            <span className="font-bold text-red-700 bg-red-50 px-2 py-1 rounded">
+                              €{(typeof exp.amount === 'number' ? exp.amount : Number(exp.amount) || 0).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-2">
+                              <button 
+                                className="btn btn-xs btn-outline hover:bg-blue-50" 
+                                onClick={() => handleEditExpense(idx)}
+                                title="Edit expense"
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                              <button 
+                                className="btn btn-xs btn-danger hover:bg-red-50" 
+                                onClick={() => handleDeleteExpense(idx)}
+                                title="Delete expense"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={4} className="text-center py-12 text-slate-500">
+                            <EstimationIcon className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium">No expenses found</p>
+                            <p className="text-sm mt-1">Upload documents or add expenses manually</p>
+                            <div className="flex gap-2 justify-center mt-4">
+                              <button 
+                                className="btn btn-outline btn-sm" 
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <UploadIcon className="w-4 h-4 mr-1" />
+                                Upload Documents
+                              </button>
+                              <button className="btn btn-outline btn-sm" onClick={refreshAllData}>
+                                Refresh Data
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
                 {/* Expense Modal */}
                 {showExpenseModal && (
                   <ExpenseModal

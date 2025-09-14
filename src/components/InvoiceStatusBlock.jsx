@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { PlusIcon, InvoiceIcon, ChevronDownIcon, ChevronUpIcon, SendIcon, EditIcon } from './Icons';
+import InvoiceEditModal from './InvoiceEditModal';
 
 export default function InvoiceStatusBlock({ 
   compact = false, 
@@ -8,9 +9,11 @@ export default function InvoiceStatusBlock({
   showInvoiceList = false,
   onStatusFilter = null 
 }) {
-  const { invoices, bookings, generateInvoiceFromBooking, addInvoice, markInvoiceAsPaid, sendInvoice, updateInvoice, cancelInvoice } = useAppStore();
+  const { invoices, bookings, generateInvoiceFromBooking, addInvoice, markInvoiceAsPaid, sendInvoice, updateInvoice, cancelInvoice, addActivityLog } = useAppStore();
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
 
   // Calculate invoice status counts
@@ -151,23 +154,78 @@ export default function InvoiceStatusBlock({
 
   // Handle New Invoice
   const handleNewInvoice = () => {
-    setShowModal(true);
+    setEditingInvoice(null);
+    setShowEditModal(true);
   };
 
   // Handle Edit Invoice
   const handleEditInvoice = (invoiceId) => {
-    // This would typically open an invoice editing modal or navigate to edit page
-    console.log('Edit invoice:', invoiceId);
-    // For now, we'll use the basic modal approach
-    setShowModal(true);
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      setEditingInvoice(invoice);
+      setShowEditModal(true);
+    }
+  };
+
+  // Handle Save Invoice (from edit modal)
+  const handleSaveInvoice = (invoiceData, editingInvoice) => {
+    if (editingInvoice) {
+      // Update existing invoice
+      const updates = {
+        ...invoiceData
+      };
+      
+      // Track changes for audit trail
+      const changes = [];
+      if (editingInvoice.customer !== invoiceData.customer) changes.push(`Customer: ${editingInvoice.customer} → ${invoiceData.customer}`);
+      if (editingInvoice.customerEmail !== invoiceData.customerEmail) changes.push(`Email: ${editingInvoice.customerEmail} → ${invoiceData.customerEmail}`);
+      if (editingInvoice.amount !== invoiceData.amount) changes.push(`Amount: €${editingInvoice.amount} → €${invoiceData.amount}`);
+      if (editingInvoice.type !== invoiceData.type) changes.push(`Type: ${editingInvoice.type} → ${invoiceData.type}`);
+      
+      updateInvoice(editingInvoice.id, updates);
+      
+      // Add activity log for the update
+      if (addActivityLog && changes.length > 0) {
+        addActivityLog({
+          type: 'invoice_updated',
+          description: `Invoice #${editingInvoice.id} updated: ${changes.join(', ')}`,
+          relatedId: editingInvoice.id
+        });
+      }
+    } else {
+      // Create new invoice
+      const result = addInvoice(invoiceData);
+      
+      // Add activity log for the creation
+      if (addActivityLog) {
+        const bookingText = invoiceData.bookingId ? ` (linked to Booking #${invoiceData.bookingId})` : '';
+        addActivityLog({
+          type: 'invoice_created',
+          description: `Invoice created for ${invoiceData.customer} (€${invoiceData.amount})${bookingText}`,
+          relatedId: result.invoice?.id
+        });
+      }
+    }
+    
+    setEditingInvoice(null);
   };
 
   // Handle View Invoice
   const handleViewInvoice = (invoiceId) => {
-    // This would typically open an invoice viewing modal or navigate to view page
-    console.log('View invoice:', invoiceId);
-    // For now, we'll use the basic modal approach
-    setShowModal(true);
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      const invoiceDetails = `
+Invoice #${invoice.id}
+Customer: ${invoice.customer}
+Amount: €${invoice.amount}
+Date: ${invoice.date}
+Status: ${invoice.status}
+${invoice.description ? `Description: ${invoice.description}` : ''}
+${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
+      `.trim();
+      
+      alert(invoiceDetails);
+    }
   };
 
   // Filter invoices if showing list
@@ -367,6 +425,17 @@ export default function InvoiceStatusBlock({
           </div>
         </div>
       )}
+
+      {/* Invoice Edit Modal */}
+      <InvoiceEditModal
+        show={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingInvoice(null);
+        }}
+        editingInvoice={editingInvoice}
+        onSave={handleSaveInvoice}
+      />
 
       {/* Simple Invoice Modal (basic version) */}
       {showModal && (

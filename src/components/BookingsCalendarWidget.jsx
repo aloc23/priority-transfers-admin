@@ -15,6 +15,13 @@ export const BookNowContext = createContext({ openModal: () => {}, openModalWith
 
 export function BookNowButton() {
   const { openModal } = useContext(BookNowContext);
+  const { isMobile } = useResponsive();
+  
+  // Hide on mobile since MobileFAB already provides booking functionality
+  if (isMobile) {
+    return null;
+  }
+  
   return (
     <button 
       onClick={openModal}
@@ -26,8 +33,7 @@ export function BookNowButton() {
       {/* Content */}
       <div className="relative z-10 flex items-center gap-2">
         <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-        <span className="hidden sm:inline text-sm font-bold tracking-wide">Book Now</span>
-        <span className="sm:hidden text-sm font-bold">Book</span>
+        <span className="text-sm font-bold tracking-wide">Book Now</span>
       </div>
       
       {/* Shine effect */}
@@ -241,7 +247,7 @@ export default function BookingsCalendarWidget(props) {
           const endDate = moment(`${booking.tourEndDate} ${booking.tourReturnPickupTime || '17:00'}`, 'YYYY-MM-DD HH:mm').toDate();
           
           const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
-          const typePrefix = isOutsourced ? '🚐 Outsourced Tour' : 'Tour';
+          const typePrefix = isOutsourced ? 'Outsourced Tour' : 'Tour';
           
           events.push({
             id: `${booking.id}-tour`,
@@ -264,7 +270,7 @@ export default function BookingsCalendarWidget(props) {
           const endDate = moment(startDate).add(2, 'hours').toDate();
           
           const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
-          const typePrefix = isOutsourced ? '🚐 Outsourced' : 'Transfer';
+          const typePrefix = isOutsourced ? 'Outsourced' : 'Transfer';
           
           events.push({
             id: `${booking.id}-pickup`,
@@ -443,63 +449,90 @@ export default function BookingsCalendarWidget(props) {
         {/* Glassmorphism overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-indigo-50/20 pointer-events-none"></div>
         <div className="relative z-10">
-        {/* Enhanced KPI Pills with glassmorphism */}
-        <div className="px-6 py-5 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border-b border-white/30">
-        <div className="flex flex-wrap gap-3">
+        {/* Enhanced KPI Pills with glassmorphism - Mobile optimized compact design */}
+        <div className={`px-4 md:px-6 py-3 md:py-5 bg-gradient-to-r from-white/80 to-slate-50/80 backdrop-blur-sm border-b border-white/30 ${isMobile ? 'pb-2' : ''}`}>
+        <div className={`flex flex-wrap ${isMobile ? 'gap-2' : 'gap-3'}`}>
           <button
             onClick={() => handleStatusFilter('confirmed')}
-            className={`group px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-lg border transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:ring-offset-2 ${
+            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400/50 focus:ring-offset-2 ${
               selectedStatus === 'confirmed'
                 ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 text-white shadow-emerald-500/30 border-emerald-300/50 scale-105'
                 : 'bg-gradient-to-r from-green-50/90 to-emerald-50/90 text-emerald-700 hover:from-green-100 hover:to-emerald-100 border-emerald-200/60 backdrop-blur-sm'
             }`}
-            style={{ letterSpacing: '0.02em' }}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${selectedStatus === 'confirmed' ? 'bg-white/90' : 'bg-emerald-500'} animate-pulse`}></span>
-              <span className="font-bold">Confirmed:</span> {confirmedBookings.length}
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'confirmed' ? 'bg-white/90' : 'bg-emerald-500'}`}></span>
+              {isMobile ? (
+                <span className="flex items-center gap-1">
+                  <span className="font-bold">{confirmedBookings.length}</span>
+                  <span className="hidden xs:inline">Confirmed</span>
+                  <span className="xs:hidden">Conf</span>
+                </span>
+              ) : (
+                <>
+                  <span className="font-bold">Confirmed:</span> {confirmedBookings.length}
+                </>
+              )}
             </span>
           </button>
           <button
             onClick={() => handleStatusFilter('pending')}
-            className={`group px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-lg border transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 ${
+            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 ${
               selectedStatus === 'pending'
                 ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-400 text-white shadow-amber-500/30 border-amber-300/50 scale-105'
                 : 'bg-gradient-to-r from-amber-50/90 to-yellow-50/90 text-amber-700 hover:from-amber-100 hover:to-yellow-100 border-amber-200/60 backdrop-blur-sm'
             }`}
-            style={{ letterSpacing: '0.02em' }}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${selectedStatus === 'pending' ? 'bg-white/90' : 'bg-amber-500'} animate-pulse`}></span>
-              <span className="font-bold">Pending:</span> {pendingBookings.length}
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'pending' ? 'bg-white/90' : 'bg-amber-500'}`}></span>
+              {isMobile ? (
+                <span className="flex items-center gap-1">
+                  <span className="font-bold">{pendingBookings.length}</span>
+                  <span className="hidden xs:inline">Pending</span>
+                  <span className="xs:hidden">Pend</span>
+                </span>
+              ) : (
+                <>
+                  <span className="font-bold">Pending:</span> {pendingBookings.length}
+                </>
+              )}
             </span>
           </button>
           <button
             onClick={() => handleStatusFilter('upcoming')}
-            className={`group px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-lg border transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 ${
+            className={`group ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2.5'} rounded-full text-xs font-bold ${isMobile ? 'border' : 'shadow-lg border'} transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-2 ${
               selectedStatus === 'upcoming'
                 ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-400 text-white shadow-blue-500/30 border-blue-300/50 scale-105'
                 : 'bg-gradient-to-r from-blue-50/90 to-cyan-50/90 text-blue-700 hover:from-blue-100 hover:to-cyan-100 border-blue-200/60 backdrop-blur-sm'
             }`}
-            style={{ letterSpacing: '0.02em' }}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${selectedStatus === 'upcoming' ? 'bg-white/90' : 'bg-blue-500'} animate-pulse`}></span>
-              <span className="font-bold">Upcoming:</span> {upcomingBookings.length}
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${selectedStatus === 'upcoming' ? 'bg-white/90' : 'bg-blue-500'}`}></span>
+              {isMobile ? (
+                <span className="flex items-center gap-1">
+                  <span className="font-bold">{upcomingBookings.length}</span>
+                  <span className="hidden xs:inline">Upcoming</span>
+                  <span className="xs:hidden">Up</span>
+                </span>
+              ) : (
+                <>
+                  <span className="font-bold">Upcoming:</span> {upcomingBookings.length}
+                </>
+              )}
             </span>
           </button>
         </div>
       </div>
 
-        {/* Main Content Area with Enhanced Glassmorphism */}
-        <div className={`p-6 pt-4 ${isMobile ? 'space-y-8' : 'grid grid-cols-5 gap-8'}`}>
-        {/* Calendar Section (Left Side) with Enhanced Styling - Increased width */}
-        <div className={`${isMobile ? '' : 'col-span-3'} relative`}>
+        {/* Main Content Area with Enhanced Glassmorphism - Mobile optimized single-column layout */}
+        <div className={`${isMobile ? 'px-4 pt-2 pb-4 space-y-4' : 'p-6 pt-4 grid grid-cols-5 gap-8'}`}>
+        {/* Calendar Section with Enhanced Styling - Mobile full-width, increased height */}
+        <div className={`${isMobile ? 'order-2' : 'col-span-3'} relative`}>
           <div className="bg-gradient-to-br from-white/80 via-slate-50/60 to-white/80 rounded-2xl p-5 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
             {/* Calendar header background */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-indigo-50/10 pointer-events-none"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-5">
+              <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-5'}`}>
                 <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 bg-gradient-to-r from-slate-600 to-slate-500 bg-clip-text">Calendar</span>
                 <div className="flex items-center gap-2">
                   <button
@@ -526,7 +559,7 @@ export default function BookingsCalendarWidget(props) {
                 </div>
               </div>
 
-              <div style={{ height: isMobile ? '350px' : '550px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
+              <div style={{ height: isMobile ? '400px' : '550px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
                 <Calendar
                   localizer={localizer}
                   events={calendarEvents}
@@ -545,8 +578,8 @@ export default function BookingsCalendarWidget(props) {
                   selectable
                   popup
                   style={{
-                    fontSize: isMobile ? '13px' : '15px',
-                    minHeight: isMobile ? '350px' : '550px'
+                    fontSize: isMobile ? '12px' : '15px',
+                    minHeight: isMobile ? '400px' : '550px'
                   }}
                 />
               </div>
@@ -554,51 +587,51 @@ export default function BookingsCalendarWidget(props) {
           </div>
         </div>
 
-        {/* Bookings List (Right Side) with Enhanced Design - Reduced width */}
-        <div className={`${isMobile ? '' : 'col-span-2'} relative`}>
-          <div className="bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-50/80 rounded-2xl p-5 shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden">
+        {/* Bookings List - Mobile full-width above calendar, reduced width on desktop */}
+        <div className={`${isMobile ? 'order-1' : 'col-span-2'} relative`}>
+          <div className={`bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-50/80 rounded-2xl ${isMobile ? 'p-3' : 'p-5'} shadow-xl border border-white/40 backdrop-blur-sm overflow-hidden`}>
             {/* Background pattern */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/10 via-transparent to-purple-50/10 pointer-events-none"></div>
             <div className="relative z-10">
-              {/* Show create booking for selected date */}
+              {/* Show create booking for selected date - Mobile optimized */}
               {selectedDate && !selectedStatus && (
                 <BookNowContext.Consumer>
                   {({ openModalWithDate }) => (
-                    <div className="mb-4 flex items-center gap-3">
+                    <div className={`${isMobile ? 'mb-2' : 'mb-4'} flex items-center gap-3`}>
                       <button
-                        className="group inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 px-4 py-2.5 rounded-xl border border-blue-200/50 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300/50 shadow-sm hover:shadow-md"
+                        className={`group inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 ${isMobile ? 'px-3 py-2' : 'px-4 py-2.5'} rounded-xl border border-blue-200/50 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300/50 shadow-sm hover:shadow-md`}
                         onClick={() => openModalWithDate(selectedDate)}
                       >
                         <PlusIcon className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                        <span className="font-medium">Create booking for {moment(selectedDate).format('MMM D, YYYY')}</span>
+                        <span className="font-medium">{isMobile ? `Book ${moment(selectedDate).format('MMM D')}` : `Create booking for ${moment(selectedDate).format('MMM D, YYYY')}`}</span>
                       </button>
                     </div>
                   )}
                 </BookNowContext.Consumer>
               )}
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-base font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text">
+              <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-5'}`}>
+                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text`}>
                   {selectedStatus ? 
                     `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} Bookings` :
                     selectedDate ?
-                      `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}` :
+                      (isMobile ? `${moment(selectedDate).format('MMM D')}` : `All Bookings for ${moment(selectedDate).format('MMM D, YYYY')}`) :
                       'All Bookings'
                   }
                 </h3>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-slate-100/80 to-slate-50/80 rounded-full text-xs font-bold text-slate-600 border border-slate-200/50 backdrop-blur-sm shadow-sm">
-                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></span>
-                  {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-100/80 to-slate-50/80 rounded-full text-xs font-bold text-slate-600 border border-slate-200/50 backdrop-blur-sm shadow-sm`}>
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                  {filteredBookings.length}
                 </div>
               </div>
 
-              <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+              <div className={`${isMobile ? 'space-y-2 max-h-64' : 'space-y-3 max-h-80'} overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent`}>
                 {filteredBookings.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500">
-                    <div className="mb-4 p-4 mx-auto w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl flex items-center justify-center shadow-inner">
-                      <BookingIcon className="w-8 h-8 opacity-50 text-slate-400" />
+                  <div className={`text-center ${isMobile ? 'py-8' : 'py-12'} text-slate-500`}>
+                    <div className={`mb-4 p-4 mx-auto ${isMobile ? 'w-12 h-12' : 'w-16 h-16'} bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl flex items-center justify-center shadow-inner`}>
+                      <BookingIcon className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} opacity-50 text-slate-400`} />
                     </div>
-                    <p className="text-sm font-medium text-slate-600 mb-2">No bookings found</p>
-                    <p className="text-xs text-slate-500">Create your first booking to get started</p>
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-slate-600 mb-2`}>No bookings found</p>
+                    <p className="text-xs text-slate-500">{isMobile ? 'Create a booking' : 'Create your first booking to get started'}</p>
                     {selectedStatus || selectedDate ? (
                       <button
                         onClick={() => {
@@ -618,14 +651,17 @@ export default function BookingsCalendarWidget(props) {
                     const actions = getBookingActions(booking);
                     const status = getCombinedStatus(booking);
                     return (
-                      <details key={booking.id} className="group bg-gradient-to-r from-white/90 to-slate-50/90 border border-slate-200/60 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden">
+                      <details key={booking.id} className={`group bg-gradient-to-r from-white/90 to-slate-50/90 border border-slate-200/60 rounded-2xl ${isMobile ? 'p-3' : 'p-4'} shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm overflow-hidden`}>
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-indigo-50/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                         <summary className="relative z-10 flex items-center justify-between cursor-pointer select-none">
                           <div className="flex items-center gap-3 flex-1 truncate">
                             {/* Outsourced indicator */}
                             {(booking.source === 'outsourced' || booking.type === 'outsourced') && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50 shadow-sm">
-                                🚐 Partner
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50 shadow-sm">
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.01M15 10h1.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8Z"/>
+                                </svg>
+                                Partner
                               </span>
                             )}
                             <span className="font-bold text-slate-800 truncate text-base">{booking.customer || booking.customerName}</span>

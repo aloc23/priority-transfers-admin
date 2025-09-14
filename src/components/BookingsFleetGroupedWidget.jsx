@@ -6,6 +6,7 @@ import ResourceStatusBlock from './ResourceStatusBlock';
 import { CalendarIcon, VehicleIcon } from './Icons';
 import { createContext } from 'react';
 import moment from 'moment';
+import { isFeatureEnabled } from '../config/features';
 
 // Context for Book Now button (must match BookingsCalendarWidget)
 const BookNowContext = BookingsCalendarWidget.BookNowContext || createContext({ openModal: () => {}, openModalWithDate: (date) => {} });
@@ -13,6 +14,9 @@ const BookNowContext = BookingsCalendarWidget.BookNowContext || createContext({ 
 export default function BookingsFleetGroupedWidget({ compact = false }) {
   const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' or 'fleet'
   const bookingsCalendarRef = useRef(null);
+  
+  // Check if Fleet & Driver Status feature is enabled
+  const fleetStatusEnabled = isFeatureEnabled('FLEET_DRIVER_STATUS');
 
   // Provide context value that will be accessible to BookNowButton
   const contextValue = {
@@ -49,13 +53,16 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
               <CalendarIcon className="w-4 h-4" />
               <span>Bookings & Calendar</span>
             </button>
-            <button
-              onClick={() => setActiveTab('fleet')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'fleet' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-            >
-              <VehicleIcon className="w-4 h-4" />
-              <span>Fleet & Driver Status</span>
-            </button>
+            {/* Fleet & Driver Status tab - conditionally rendered based on feature flag */}
+            {fleetStatusEnabled && (
+              <button
+                onClick={() => setActiveTab('fleet')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'fleet' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              >
+                <VehicleIcon className="w-4 h-4" />
+                <span>Fleet & Driver Status</span>
+              </button>
+            )}
           </div>
           <div className="flex-shrink-0 ml-auto">
             <BookNowButton />
@@ -70,7 +77,8 @@ export default function BookingsFleetGroupedWidget({ compact = false }) {
               />
             </div>
           )}
-          {activeTab === 'fleet' && (
+          {/* Fleet & Driver Status content - conditionally rendered based on feature flag */}
+          {fleetStatusEnabled && activeTab === 'fleet' && (
             <div className="space-y-6">
               {/* Enhanced Resource Status Block */}
               <div className="-mx-4 md:-mx-5">
