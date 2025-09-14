@@ -579,24 +579,38 @@ export default function BookingsCalendarWidget(props) {
                   onSelectEvent={handleSelectEvent}
                   onView={(view) => updateGlobalCalendarState({ currentView: view })}
                   views={['month']}
-                  eventPropGetter={(event) => ({
-                    style: {
-                      ...event.style,
-                      borderRadius: '8px',
-                      border: 'none',
-                      padding: '4px 8px',
-                      margin: '1px 0',
-                      fontSize: isMobile ? '11px' : '13px',
-                      fontWeight: '600',
-                      textShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                      transition: 'all 0.2s ease-in-out',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                  eventPropGetter={(event) => {
+                    // Neon gradient backgrounds by status/type
+                    let gradient = 'linear-gradient(90deg, var(--neon-blue), var(--neon-purple))';
+                    if (event.resource?.isOutsourced) {
+                      gradient = 'linear-gradient(90deg, var(--neon-orange), var(--neon-pink))';
+                    } else if (event.resource?.legType === 'return') {
+                      gradient = 'linear-gradient(90deg, var(--neon-cyan), var(--neon-blue))';
+                    } else if (event.resource?.status === 'pending') {
+                      gradient = 'linear-gradient(90deg, var(--neon-orange), var(--neon-yellow))';
                     }
-                  })}
+                    return {
+                      style: {
+                        ...event.style,
+                        background: gradient,
+                        borderRadius: '12px',
+                        border: 'none',
+                        padding: '6px 10px',
+                        margin: '2px 0',
+                        fontSize: isMobile ? '11px' : '13px',
+                        fontWeight: '600',
+                        color: '#fff',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.12)',
+                        boxShadow: '0 2px 12px rgba(139,92,246,0.10)',
+                        transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        outline: event.resource?.status === 'pending' ? '2px solid var(--neon-orange)' : 'none',
+                      }
+                    };
+                  }}
                   selectable
                   popup
                   toolbar={false}
@@ -627,29 +641,35 @@ export default function BookingsCalendarWidget(props) {
                     fontFamily: 'inherit'
                   }}
                   components={{
-                    event: ({ event }) => (
-                      <div 
-                        className="group relative h-full flex items-center hover:scale-105 transition-transform duration-200"
-                        style={{ 
-                          background: event.style?.background,
-                          color: event.style?.color,
-                          borderRadius: '6px',
-                          padding: '2px 6px'
-                        }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs leading-tight truncate">
-                            {event.title}
-                          </div>
-                          {event.resource?.legType && (
-                            <div className="text-xs opacity-90 truncate">
-                              {event.resource.legType === 'pickup' ? '↑ Pickup' : '↓ Return'}
+                    event: ({ event }) => {
+                      // Status chip color
+                      let badgeClass = 'badge badge-blue';
+                      if (event.resource?.isOutsourced) badgeClass = 'badge badge-yellow';
+                      else if (event.resource?.legType === 'return') badgeClass = 'badge badge-cyan';
+                      else if (event.resource?.status === 'pending') badgeClass = 'badge badge-yellow';
+                      else if (event.resource?.status === 'confirmed') badgeClass = 'badge badge-green';
+                      else if (event.resource?.status === 'completed') badgeClass = 'badge badge-purple';
+                      return (
+                        <div 
+                          className="group relative h-full flex items-center gap-2 hover:scale-105 transition-transform duration-200"
+                        >
+                          <span className={badgeClass} style={{fontWeight:600, fontSize:'10px'}}>
+                            {event.resource?.isOutsourced ? 'Partner' : event.resource?.legType === 'return' ? 'Return' : event.resource?.status?.charAt(0).toUpperCase() + event.resource?.status?.slice(1)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-xs leading-tight truncate">
+                              {event.title}
                             </div>
-                          )}
+                            {event.resource?.legType && (
+                              <div className="text-xs opacity-90 truncate">
+                                {event.resource.legType === 'pickup' ? '↑ Pickup' : '↓ Return'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl pointer-events-none" />
                         </div>
-                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md pointer-events-none" />
-                      </div>
-                    ),
+                      );
+                    },
                     toolbar: () => null // Hide the default toolbar completely
                   }}
                 />
