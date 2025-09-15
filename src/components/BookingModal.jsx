@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { calculateTotalPrice } from '../utils/priceCalculator';
 // Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
@@ -19,6 +20,8 @@ export default function BookingModal({
 
   // State for journey info
   const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
+  // Track if price was manually overridden
+  const [priceManuallySet, setPriceManuallySet] = useState(false);
 
   // Google Maps JavaScript API DirectionsService fetch function
   function loadGoogleMapsScript(apiKey, callback) {
@@ -39,7 +42,7 @@ export default function BookingModal({
     }
   }
 
-  function fetchJourneyInfo(pickup, destination) {
+  function fetchJourneyInfo(pickup, destination, hasReturn = false) {
     if (!pickup || !destination) return;
     const apiKey = 'AIzaSyDoCk3Y84BUdtuOQNNjSm7rPOOZzenrkkw'; // <-- Your API key
     loadGoogleMapsScript(apiKey, () => {
@@ -57,11 +60,39 @@ export default function BookingModal({
         (result, status) => {
           if (status === 'OK' && result.routes.length > 0) {
             const leg = result.routes[0].legs[0];
+            // meters to km, seconds to min
+            let distanceKm = leg.distance.value / 1000;
+            let durationMin = leg.duration.value / 60;
+            if (hasReturn) {
+              distanceKm *= 2;
+              durationMin *= 2;
+            }
             setJourneyInfo({
-              distance: leg.distance.text,
-              duration: leg.duration.text,
+              distance: `${distanceKm.toFixed(2)} km`,
+              duration: `${durationMin.toFixed(1)} min`,
               error: ''
             });
+            // Auto-calculate price if not manually set
+            if (!priceManuallySet) {
+              let runningCost = 0, fuelRate = 0;
+              let runningCostUnit = 'km', fuelRateUnit = 'km';
+              if (formData.vehicle) {
+                const selectedVehicle = fleet.find(v => v.name === formData.vehicle);
+                if (selectedVehicle) {
+                  runningCost = parseFloat(selectedVehicle.runningCost) || 0;
+                  fuelRate = parseFloat(selectedVehicle.fuelRate) || 0;
+                  if (selectedVehicle.runningCostUnit) runningCostUnit = selectedVehicle.runningCostUnit;
+                  if (selectedVehicle.fuelRateUnit) fuelRateUnit = selectedVehicle.fuelRateUnit;
+                }
+              }
+              // Convert per-mile rates to per-km if needed
+              const MILE_TO_KM = 1.60934;
+              if (runningCostUnit === 'mile') runningCost = runningCost / MILE_TO_KM;
+              if (fuelRateUnit === 'mile') fuelRate = fuelRate / MILE_TO_KM;
+              // Calculate price: (fuel + running) * distance
+              const price = (runningCost + fuelRate) * distanceKm;
+              setFormData(prev => ({ ...prev, price: Math.round(price * 100) / 100 }));
+            }
           } else {
             setJourneyInfo({ distance: '', duration: '', error: 'No route found.' });
           }
@@ -312,15 +343,15 @@ export default function BookingModal({
     }
   }, [formData.driver, formData.vehicle, formData.date, formData.time, formData.returnDate, formData.returnTime, formData.tourStartDate, formData.tourEndDate, formData.tourPickupTime, formData.tourReturnPickupTime, formData.type, formData.source, formData.hasReturn, isOpen]);
 
-  // Fetch journey info when pickup or destination changes
+  // Fetch journey info and auto-calculate price when pickup, destination, or return changes
   useEffect(() => {
     if (formData.pickup && formData.destination) {
-      fetchJourneyInfo(formData.pickup, formData.destination);
+      fetchJourneyInfo(formData.pickup, formData.destination, formData.hasReturn);
     } else {
       setJourneyInfo({ distance: '', duration: '', error: '' });
     }
     // eslint-disable-next-line
-  }, [formData.pickup, formData.destination]);
+  }, [formData.pickup, formData.destination, formData.hasReturn]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -928,7 +959,10 @@ export default function BookingModal({
                         min="0"
                         step="0.01"
                         value={formData.price}
-                        onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                        onChange={(e) => {
+                          setFormData({...formData, price: parseFloat(e.target.value) || 0});
+                          setPriceManuallySet(true);
+                        }}
                         className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
                         placeholder="45.00"
                         aria-describedby="price-input-help"

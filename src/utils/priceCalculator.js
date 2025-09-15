@@ -88,8 +88,13 @@ export const calculateBaseRate = (serviceType) => {
  * @param {string} serviceType - Service type
  * @returns {number} - Distance cost
  */
-export const calculateDistancePrice = (distance, serviceType) => {
+// If runningCost or fuelRate are provided, use them in addition to or instead of the default perKm rate
+export const calculateDistancePrice = (distance, serviceType, runningCost = 0, fuelRate = 0) => {
   const serviceRate = SERVICE_RATES[serviceType] || SERVICE_RATES.standard;
+  // If both runningCost and fuelRate are provided, use them; otherwise, use the default perKm
+  if (runningCost > 0 || fuelRate > 0) {
+    return distance * (runningCost + fuelRate);
+  }
   return distance * serviceRate.perKm;
 };
 
@@ -99,8 +104,13 @@ export const calculateDistancePrice = (distance, serviceType) => {
  * @param {string} serviceType - Service type
  * @returns {number} - Time cost
  */
-export const calculateTimePrice = (duration, serviceType) => {
+// If driverRateOverride is provided, use it for time-based cost; otherwise, use the default perMin
+export const calculateTimePrice = (duration, serviceType, driverRateOverride = null) => {
   const serviceRate = SERVICE_RATES[serviceType] || SERVICE_RATES.standard;
+  if (driverRateOverride !== null && driverRateOverride > 0) {
+    // driverRateOverride is per hour, duration is in minutes
+    return (duration / 60) * driverRateOverride;
+  }
   return duration * serviceRate.perMin;
 };
 
@@ -159,29 +169,50 @@ export const calculatePriceBreakdown = (params) => {
     customDateTime
   } = validatedParams;
 
-  // Calculate base components
+  // Use custom runningCost, fuelRate if provided
+  const runningCost = params.runningCost !== undefined ? Number(params.runningCost) : 0;
+  const fuelRate = params.fuelRate !== undefined ? Number(params.fuelRate) : 0;
+  const useFleetRates = runningCost > 0 || fuelRate > 0;
+
+  if (useFleetRates) {
+    // Only use (runningCost + fuelRate) * distance, plus any additional fees
+    const distancePrice = (runningCost + fuelRate) * distance;
+    const total = distancePrice + (additionalFees || 0);
+    return {
+      baseRate: 0,
+      distancePrice,
+      timePrice: 0,
+      vehicleAdjustment: 0,
+      peakSurcharge: 0,
+      driverCost: 0,
+      additionalFees: additionalFees || 0,
+      subtotal: distancePrice,
+      calculatedBase: distancePrice,
+      finalBasePrice: distancePrice,
+      total,
+      isPeakHour: false,
+      serviceType,
+      vehicleType,
+      serviceRate: null,
+      vehicleMultiplier: null,
+      driverRate: null
+    };
+  }
+
+  // Default calculation if no fleet rates provided
+  const driverRateOverride = params.driverRate !== undefined ? Number(params.driverRate) : null;
   const baseRate = calculateBaseRate(serviceType);
-  const distancePrice = calculateDistancePrice(distance, serviceType);
-  const timePrice = calculateTimePrice(duration, serviceType);
-  
-  // Calculate subtotal before vehicle and peak adjustments
+  const distancePrice = calculateDistancePrice(distance, serviceType, runningCost, fuelRate);
+  const timePrice = calculateTimePrice(duration, serviceType, driverRateOverride);
   const subtotal = baseRate + distancePrice + timePrice;
-  
-  // Calculate adjustments
   const vehicleAdjustment = calculateVehicleAdjustment(subtotal, vehicleType);
   const peakSurcharge = calculatePeakSurcharge(subtotal, vehicleType, customDateTime);
-  
-  // Calculate driver cost based on subtotal + adjustments
   const adjustedSubtotal = subtotal + vehicleAdjustment;
   const driverCost = calculateDriverCost(adjustedSubtotal, serviceType);
-  
-  // Calculate final amounts
   const calculatedBase = subtotal + vehicleAdjustment + peakSurcharge + driverCost;
   const finalBasePrice = manualBasePrice ? Math.max(manualBasePrice, calculatedBase) : calculatedBase;
   const total = finalBasePrice + additionalFees;
-
   return {
-    // Individual components
     baseRate,
     distancePrice,
     timePrice,
@@ -189,19 +220,13 @@ export const calculatePriceBreakdown = (params) => {
     peakSurcharge,
     driverCost,
     additionalFees,
-    
-    // Calculated totals
     subtotal,
     calculatedBase,
     finalBasePrice,
     total,
-    
-    // Meta information
     isPeakHour: isPeakHour(customDateTime),
     serviceType,
     vehicleType,
-    
-    // Configuration info for display
     serviceRate: SERVICE_RATES[serviceType],
     vehicleMultiplier: VEHICLE_MULTIPLIERS[vehicleType],
     driverRate: DRIVER_RATES[serviceType]
