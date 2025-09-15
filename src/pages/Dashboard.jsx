@@ -318,11 +318,13 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Bookings & Calendar Tab Content - Moved from Overview */}
+      {/* Bookings & Calendar Tab Content - Calendar as main focus */}
       {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
-          {/* Calendar Component - Primary, most visible block at the top */}
-          <BookingsCalendarWidget />
+          {/* Calendar Component - Full width primary focus */}
+          <div className="-mx-6 md:-mx-8 lg:-mx-8">
+            <BookingsCalendarWidget fullWidth={true} />
+          </div>
 
           {/* Booking Status / Invoice Status - Second position */}
           <BookingInvoiceStatusTabs compact={true} />
