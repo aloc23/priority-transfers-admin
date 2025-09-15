@@ -24,7 +24,7 @@ import FleetDriverChecker from "../components/FleetDriverChecker";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
+  const { currentUser, income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const [activeTab, setActiveTab] = useState('bookings-calendar');
