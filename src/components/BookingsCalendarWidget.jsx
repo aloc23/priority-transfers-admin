@@ -10,6 +10,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import { BookingIcon, CalendarIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import BookingModal from './BookingModal';
 import ModernDatePicker from './ModernDatePicker';
+import { BookingEventWithInvoices } from './BookingEventComponent';
 
 // Context for Book Now button (provides openModal and openModalWithDate)
 export const BookNowContext = createContext({ openModal: () => {}, openModalWithDate: (date) => {} });
@@ -568,35 +569,14 @@ export default function BookingsCalendarWidget(props) {
                     fontFamily: 'inherit'
                   }}
                   components={{
-                    event: ({ event }) => {
-                      // Status chip color
-                      let badgeClass = 'badge badge-blue';
-                      if (event.resource?.isOutsourced) badgeClass = 'badge badge-yellow';
-                      else if (event.resource?.legType === 'return') badgeClass = 'badge badge-cyan';
-                      else if (event.resource?.status === 'pending') badgeClass = 'badge badge-yellow';
-                      else if (event.resource?.status === 'confirmed') badgeClass = 'badge badge-green';
-                      else if (event.resource?.status === 'completed') badgeClass = 'badge badge-purple';
-                      return (
-                        <div 
-                          className="group relative h-full flex items-center gap-2 hover:scale-105 transition-transform duration-200"
-                        >
-                          <span className={badgeClass} style={{fontWeight:600, fontSize:'10px'}}>
-                            {event.resource?.isOutsourced ? 'Partner' : event.resource?.legType === 'return' ? 'Return' : event.resource?.status?.charAt(0).toUpperCase() + event.resource?.status?.slice(1)}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-xs leading-tight truncate">
-                              {event.title}
-                            </div>
-                            {event.resource?.legType && (
-                              <div className="text-xs opacity-90 truncate">
-                                {event.resource.legType === 'pickup' ? '↑ Pickup' : '↓ Return'}
-                              </div>
-                            )}
-                          </div>
-                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl pointer-events-none" />
-                        </div>
-                      );
-                    },
+                    event: ({ event }) => (
+                      <BookingEventWithInvoices 
+                        event={event} 
+                        invoices={invoices} 
+                        compact={false} 
+                        isMobile={isMobile} 
+                      />
+                    ),
                     toolbar: () => null // Hide the default toolbar completely
                   }}
                 />
