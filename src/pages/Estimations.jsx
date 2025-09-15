@@ -276,58 +276,59 @@ export default function Estimations() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-8">
-      {/* Header Section */}
-      <div className="bg-white rounded-2xl shadow-lg mb-8 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6">
+      {/* Streamlined Header */}
+      <div className="bg-white rounded-xl shadow-sm mb-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Estimates & Quotes</h1>
-            <p className="text-gray-600">Calculate accurate pricing for your transfer services</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Estimates & Quotes</h1>
+            <p className="text-gray-600 text-sm md:text-base">Calculate accurate pricing for your transfer services</p>
           </div>
-          <div className="flex gap-3">
-            <button className="btn btn-outline hover:scale-105 transition-transform" onClick={refreshAllData}>
+          <div className="flex gap-2">
+            <button className="btn btn-outline text-sm" onClick={refreshAllData}>
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Refresh Data
+              Refresh
             </button>
-            <button className="btn btn-primary hover:scale-105 transition-transform" onClick={exportEstimations}>
+            <button className="btn btn-primary text-sm" onClick={exportEstimations}>
               <DownloadIcon className="w-4 h-4 mr-2" />
-              Export All
+              Export
             </button>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          {/* Job Details Card */}
-          <div className="bg-white rounded-2xl shadow-lg mb-8">
-            {/* Sticky Header - responsive */}
-            <div className="sticky top-0 lg:top-0 bg-white rounded-t-2xl shadow-sm z-10 px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-100">
+      
+      {/* Main Content: Side-by-side EstimateForm and Live Cost Analysis */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* EstimateForm Section */}
+        <div className="xl:col-span-2">
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-4 md:p-6 border-b border-gray-100">
               <div className="flex items-center">
-                <div className="bg-purple-100 p-3 rounded-full mr-4">
-                  <EstimationIcon className="w-6 h-6 text-purple-600" />
+                <div className="bg-blue-100 p-2 md:p-3 rounded-lg mr-3 md:mr-4">
+                  <EstimationIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
-                  <p className="text-gray-600">Enter service parameters for accurate pricing</p>
+                  <h2 className="text-lg md:text-xl font-bold text-gray-800">Estimate Form</h2>
+                  <p className="text-sm text-gray-600">Enter service details for pricing</p>
                 </div>
               </div>
             </div>
-            {/* Form Content */}
-            <div className="px-4 lg:px-8 pb-6 lg:pb-8 pt-2">
-              <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
+            
+            <div className="p-4 md:p-6">
+              <form className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block mb-1">Service Type</label>
-              <select value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+              <select className="form-select w-full" value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
                 <option value="chauffeur">Chauffeur Service</option>
                 <option value="priority">Priority</option>
                 <option value="luxury">Luxury</option>
               </select>
             </div>
             <div>
-              <label className="block mb-1">Quick Select Vehicle</label>
-                <select value={form.vehicleId} onChange={handleVehicleSelect}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quick Select Vehicle</label>
+                <select className="form-select w-full" value={form.vehicleId} onChange={handleVehicleSelect}>
                 <option value="">Select from fleet...</option>
                 {fleet && fleet.map(vehicle => (
                   <option key={vehicle.id} value={vehicle.id}>{vehicle.name} ({vehicle.type})</option>
@@ -335,103 +336,122 @@ export default function Estimations() {
               </select>
             </div>
             <div>
-              <label className="block mb-1">Distance (miles)</label>
-              <input type="number" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+              <input className="form-input w-full" type="number" step="0.1" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Duration (hours)</label>
-              <input type="number" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
+              <input className="form-input w-full" type="number" step="0.1" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Passengers</label>
-              <input type="number" value={form.passengers} onChange={e => setForm({ ...form, passengers: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
+              <input className="form-input w-full" type="number" min="1" value={form.passengers} onChange={e => setForm({ ...form, passengers: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Driver Rate (€/hour)</label>
-              <input type="number" value={form.driverRate} onChange={e => setForm({ ...form, driverRate: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Driver Rate (€/hour)</label>
+              <input className="form-input w-full" type="number" step="0.01" value={form.driverRate} onChange={e => setForm({ ...form, driverRate: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Fuel Cost (€/mile)</label>
-              <input type="number" value={form.fuelRate} onChange={e => setForm({ ...form, fuelRate: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Cost (€/mile)</label>
+              <input className="form-input w-full" type="number" step="0.01" value={form.fuelRate} onChange={e => setForm({ ...form, fuelRate: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Vehicle Running Cost (€/mile)</label>
-              <input type="number" value={form.runningCost} onChange={e => setForm({ ...form, runningCost: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Running Cost (€/mile)</label>
+              <input className="form-input w-full" type="number" step="0.01" value={form.runningCost} onChange={e => setForm({ ...form, runningCost: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Business Insurance/Day (€)</label>
-              <input type="number" value={form.insuranceRate} onChange={e => setForm({ ...form, insuranceRate: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Insurance/Day (€)</label>
+              <input className="form-input w-full" type="number" step="0.01" value={form.insuranceRate} onChange={e => setForm({ ...form, insuranceRate: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1">Additional Costs (€)</label>
-              <input type="number" value={form.additionalCosts} onChange={e => setForm({ ...form, additionalCosts: e.target.value })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Costs (€)</label>
+              <input className="form-input w-full" type="number" step="0.01" value={form.additionalCosts} onChange={e => setForm({ ...form, additionalCosts: e.target.value })} />
             </div>
-            <div className="md:col-span-2 mt-6">
-              <h3 className="font-semibold mb-2">Pricing Strategy</h3>
-              <div className="grid grid-cols-3 gap-4">
+            
+            <div className="md:col-span-2 pt-4">
+              <h3 className="text-base font-semibold text-gray-800 mb-3">Pricing Strategy</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block mb-1">Markup % (on costs)</label>
-                  <input type="number" value={form.markupPercent} onChange={e => setForm({ ...form, markupPercent: e.target.value })} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Markup %</label>
+                  <input className="form-input w-full" type="number" step="0.1" value={form.markupPercent} onChange={e => setForm({ ...form, markupPercent: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block mb-1">Base Fee (€)</label>
-                  <input type="number" value={form.baseFee} onChange={e => setForm({ ...form, baseFee: e.target.value })} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Fee (€)</label>
+                  <input className="form-input w-full" type="number" step="0.01" value={form.baseFee} onChange={e => setForm({ ...form, baseFee: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block mb-1">Minimum Charge (€)</label>
-                  <input type="number" value={form.minimumCharge} onChange={e => setForm({ ...form, minimumCharge: e.target.value })} />
-                </div>
-              </div>
-            </div>
-            <div className="md:col-span-2 mt-6">
-              <h3 className="font-semibold mb-2">Additional Services</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label><input type="checkbox" checked={form.waitingTime} onChange={e => setForm({ ...form, waitingTime: e.target.checked })} /> Waiting Time</label>
-                  <input type="number" value={form.waitingHours} onChange={e => setForm({ ...form, waitingHours: e.target.value })} placeholder="Hours" />
-                </div>
-                <div>
-                  <label><input type="checkbox" checked={form.meetGreet} onChange={e => setForm({ ...form, meetGreet: e.target.checked })} /> Meet & Greet</label>
-                  <input type="number" value={form.meetGreetPrice} onChange={e => setForm({ ...form, meetGreetPrice: e.target.value })} />
-                </div>
-                <div>
-                  <label><input type="checkbox" checked={form.refreshments} onChange={e => setForm({ ...form, refreshments: e.target.checked })} /> Refreshments</label>
-                  <input type="number" value={form.refreshmentsPrice} onChange={e => setForm({ ...form, refreshmentsPrice: e.target.value })} />
-                </div>
-                <div>
-                  <label><input type="checkbox" checked={form.childSeats} onChange={e => setForm({ ...form, childSeats: e.target.checked })} /> Child Seats</label>
-                  <input type="number" value={form.childSeatCount} onChange={e => setForm({ ...form, childSeatCount: e.target.value })} placeholder="Quantity" />
-                  <input type="number" value={form.childSeatPrice} onChange={e => setForm({ ...form, childSeatPrice: e.target.value })} placeholder="Price" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Charge (€)</label>
+                  <input className="form-input w-full" type="number" step="0.01" value={form.minimumCharge} onChange={e => setForm({ ...form, minimumCharge: e.target.value })} />
                 </div>
               </div>
             </div>
-              <div className="md:col-span-2 flex gap-2 pt-4 justify-end">
-                <button type="submit" className="btn btn-primary shadow-md hover:shadow-lg">
-                  Save
+            
+            <div className="md:col-span-2 pt-4">
+              <h3 className="text-base font-semibold text-gray-800 mb-3">Additional Services</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input type="checkbox" className="mr-2" checked={form.waitingTime} onChange={e => setForm({ ...form, waitingTime: e.target.checked })} />
+                    Waiting Time (hours)
+                  </label>
+                  <input className="form-input flex-1" type="number" step="0.1" placeholder="Hours" value={form.waitingHours} onChange={e => setForm({ ...form, waitingHours: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input type="checkbox" className="mr-2" checked={form.meetGreet} onChange={e => setForm({ ...form, meetGreet: e.target.checked })} />
+                    Meet & Greet (€)
+                  </label>
+                  <input className="form-input flex-1" type="number" step="0.01" placeholder="Price" value={form.meetGreetPrice} onChange={e => setForm({ ...form, meetGreetPrice: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input type="checkbox" className="mr-2" checked={form.refreshments} onChange={e => setForm({ ...form, refreshments: e.target.checked })} />
+                    Refreshments (€)
+                  </label>
+                  <input className="form-input flex-1" type="number" step="0.01" placeholder="Price" value={form.refreshmentsPrice} onChange={e => setForm({ ...form, refreshmentsPrice: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input type="checkbox" className="mr-2" checked={form.childSeats} onChange={e => setForm({ ...form, childSeats: e.target.checked })} />
+                    Child Seats
+                  </label>
+                  <input className="form-input w-16" type="number" min="1" placeholder="Qty" value={form.childSeatCount} onChange={e => setForm({ ...form, childSeatCount: e.target.value })} />
+                  <span className="text-sm text-gray-500">×</span>
+                  <input className="form-input flex-1" type="number" step="0.01" placeholder="Price" value={form.childSeatPrice} onChange={e => setForm({ ...form, childSeatPrice: e.target.value })} />
+                </div>
+              </div>
+            </div>
+            
+              <div className="md:col-span-2 flex justify-end pt-6">
+                <button type="submit" className="btn btn-primary">
+                  {editingId ? 'Update Estimate' : 'Save Estimate'}
                 </button>
               </div>
             </form>
             </div>
           </div>
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          {/* Live Cost Analysis - Sticky on desktop only */}
-          <div className="lg:sticky lg:top-4">
-            <div className="bg-white rounded-2xl shadow-lg p-4 lg:p-6">
+        </div>
+        
+        {/* Live Cost Analysis Section */}
+        <div className="xl:col-span-1">
+          <div className="xl:sticky xl:top-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
               <div className="flex items-center mb-4">
-                <div className="bg-green-100 p-3 rounded-full mr-4">
-                  <RevenueIcon className="w-6 h-6 text-green-600" />
+                <div className="bg-green-100 p-2 md:p-3 rounded-lg mr-3 md:mr-4">
+                  <RevenueIcon className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Live Cost Analysis</h3>
-                  <p className="text-sm text-gray-600">Real-time pricing breakdown</p>
+                  <h3 className="text-lg md:text-xl font-bold text-gray-800">Live Cost Analysis</h3>
+                  <p className="text-xs md:text-sm text-gray-600">Real-time breakdown</p>
                 </div>
               </div>
+              
           {results ? (
-            <div className="space-y-4 cost-analysis-mobile">
+            <div className="space-y-3 md:space-y-4">
               {/* Service Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 mb-2">Service Summary</h4>
-                <div className="text-sm space-y-1">
+              <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2 text-sm">Service Summary</h4>
+                <div className="text-xs md:text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Distance:</span>
                     <span className="font-medium">{results.distance} miles</span>
@@ -448,9 +468,9 @@ export default function Estimations() {
               </div>
 
               {/* Cost Breakdown */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-2">Cost Breakdown</h4>
-                <div className="text-sm space-y-1">
+              <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2 text-sm">Cost Breakdown</h4>
+                <div className="text-xs md:text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Driver Cost:</span>
                     <span className="font-medium">€{results.driverCost}</span>
@@ -483,9 +503,9 @@ export default function Estimations() {
               </div>
 
               {/* Pricing Summary */}
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">Pricing Summary</h4>
-                <div className="text-sm space-y-1">
+              <div className="bg-green-50 p-3 md:p-4 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-2 text-sm">Pricing Summary</h4>
+                <div className="text-xs md:text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Base Fee:</span>
                     <span className="font-medium">€{results.baseFee}</span>
@@ -508,8 +528,8 @@ export default function Estimations() {
                   )}
                 </div>
                 <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between text-lg font-bold text-green-700">
-                    <span>Final Quote Price:</span>
+                  <div className="flex justify-between text-base md:text-lg font-bold text-green-700">
+                    <span>Final Quote:</span>
                     <span>€{results.finalPrice}</span>
                   </div>
                   {results.isMinimumApplied && (
@@ -519,91 +539,113 @@ export default function Estimations() {
                   )}
                 </div>
               </div>
-              </div>
+            </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Fill in the form to see live cost analysis</p>
+              <div className="text-center py-6 md:py-8 text-gray-500">
+                <EstimationIcon className="w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-xs md:text-sm">Fill in the form to see live cost analysis</p>
               </div>
             )}
             </div>
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
-        <button onClick={exportEstimations} className="btn btn-outline flex items-center gap-2">
-          <DownloadIcon className="w-4 h-4" /> Export
-        </button>
-      </div>
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <FilterIcon className="w-5 h-5 text-gray-500" />
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">From:</label>
-            <input type="date" value={filters.dateFrom} onChange={e => setFilters({...filters, dateFrom: e.target.value})} className="form-input text-sm" />
+      
+      {/* Estimates List Section */}
+      <div className="mt-6 md:mt-8">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <FilterIcon className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filters:</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">From:</label>
+                <input type="date" value={filters.dateFrom} onChange={e => setFilters({...filters, dateFrom: e.target.value})} className="form-input text-sm" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">To:</label>
+                <input type="date" value={filters.dateTo} onChange={e => setFilters({...filters, dateTo: e.target.value})} className="form-input text-sm" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Status:</label>
+                <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="form-select text-sm">
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="converted">Converted</option>
+                  <option value="expired">Expired</option>
+                </select>
+              </div>
+              <button className="btn btn-outline text-xs" onClick={() => setFilters({ status: 'all', dateFrom: '', dateTo: '' })}>Clear Filters</button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">To:</label>
-            <input type="date" value={filters.dateTo} onChange={e => setFilters({...filters, dateTo: e.target.value})} className="form-input text-sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Status:</label>
-            <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="form-select text-sm">
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="converted">Converted</option>
-              <option value="expired">Expired</option>
-            </select>
-          </div>
-          <button className="btn btn-outline text-xs ml-auto" onClick={() => setFilters({ status: 'all', dateFrom: '', dateTo: '', serviceType: 'all' })}>Clear Filters</button>
         </div>
-      </div>
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Estimations ({filteredEstimations.length})</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Route</th>
-                <th>Service</th>
-                <th>Price</th>
-                <th>Valid Until</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEstimations.map((estimation) => (
-                <tr key={estimation.id}>
-                  <td>{estimation.date}</td>
-                  <td>{estimation.customer}</td>
-                  <td>{estimation.route}</td>
-                  <td>{estimation.serviceType}</td>
-                  <td>€{estimation.totalPrice}</td>
-                  <td>{estimation.validUntil}</td>
-                  <td>{estimation.status}</td>
-                  <td>
-                    <button className="btn btn-outline px-2 py-1 text-xs" onClick={() => handleEdit(estimation)}>Edit</button>
-                    <button className="btn bg-red-600 text-white hover:bg-red-700 px-2 py-1 text-xs" onClick={() => handleDelete(estimation.id)}>Delete</button>
-                  </td>
+        
+        <div className="bg-white rounded-xl shadow-sm">
+          <div className="p-4 md:p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">Saved Estimates ({filteredEstimations.length})</h2>
+              <button onClick={exportEstimations} className="btn btn-outline btn-sm flex items-center gap-2">
+                <DownloadIcon className="w-4 h-4" /> Export
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="table w-full">
+              <thead>
+                <tr>
+                  <th className="text-left">Date</th>
+                  <th className="text-left">Customer</th>
+                  <th className="text-left">Service</th>
+                  <th className="text-left">Price</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredEstimations.length === 0 && (
-          <div className="text-center py-8 text-slate-500">
-            <EstimationIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No estimations found matching the current filters.</p>
-            <p className="text-sm">Try clearing filters or adding a new estimation.</p>
+              </thead>
+              <tbody>
+                {filteredEstimations.map((estimation) => (
+                  <tr key={estimation.id} className="border-b border-gray-100">
+                    <td className="py-3">{estimation.date}</td>
+                    <td className="py-3">{estimation.customer || 'Demo Customer'}</td>
+                    <td className="py-3">
+                      <span className={`badge text-xs ${
+                        estimation.serviceType === 'priority' ? 'badge-purple' :
+                        estimation.serviceType === 'luxury' ? 'badge-yellow' : 'badge-gray'
+                      }`}>
+                        {estimation.serviceType}
+                      </span>
+                    </td>
+                    <td className="py-3 font-medium">€{estimation.totalPrice?.toFixed(2) || '0.00'}</td>
+                    <td className="py-3">
+                      <span className={`badge text-xs ${
+                        estimation.status === 'pending' ? 'badge-yellow' :
+                        estimation.status === 'approved' ? 'badge-green' :
+                        estimation.status === 'converted' ? 'badge-purple' : 'badge-gray'
+                      }`}>
+                        {estimation.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-outline btn-sm text-xs" onClick={() => handleEdit(estimation)}>Edit</button>
+                        <button className="btn btn-outline btn-sm text-xs text-red-600 hover:bg-red-50" onClick={() => handleDelete(estimation.id)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {filteredEstimations.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <EstimationIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-base">No estimates found</p>
+                <p className="text-sm">Create your first estimate using the form above</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
       </div>
     </div>
   );
