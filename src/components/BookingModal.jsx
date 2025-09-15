@@ -23,6 +23,34 @@ export default function BookingModal({
   // Track if price was manually overridden
   const [priceManuallySet, setPriceManuallySet] = useState(false);
 
+  // Force price recalculation using latest journey info and vehicle
+  function forceRecalculatePrice() {
+    let runningCost = 0, fuelRate = 0;
+    let runningCostUnit = 'km', fuelRateUnit = 'km';
+    if (formData.vehicle) {
+      const selectedVehicle = fleet.find(v => v.name === formData.vehicle);
+      if (selectedVehicle) {
+        runningCost = parseFloat(selectedVehicle.runningCost) || 0;
+        fuelRate = parseFloat(selectedVehicle.fuelRate) || 0;
+        if (selectedVehicle.runningCostUnit) runningCostUnit = selectedVehicle.runningCostUnit;
+        if (selectedVehicle.fuelRateUnit) fuelRateUnit = selectedVehicle.fuelRateUnit;
+      }
+    }
+    // Convert per-mile rates to per-km if needed
+    const MILE_TO_KM = 1.60934;
+    if (runningCostUnit === 'mile') runningCost = runningCost / MILE_TO_KM;
+    if (fuelRateUnit === 'mile') fuelRate = fuelRate / MILE_TO_KM;
+    // Parse distance from journeyInfo
+    let distanceKm = 0;
+    if (journeyInfo.distance) {
+      const match = journeyInfo.distance.match(/([\d.]+)\s*km/);
+      if (match) distanceKm = parseFloat(match[1]);
+    }
+    const price = (runningCost + fuelRate) * distanceKm;
+    setFormData(prev => ({ ...prev, price: Math.round(price * 100) / 100 }));
+    setPriceManuallySet(false);
+  }
+
   // Google Maps JavaScript API DirectionsService fetch function
   function loadGoogleMapsScript(apiKey, callback) {
     if (window.google && window.google.maps) {
@@ -366,25 +394,33 @@ export default function BookingModal({
     
     // Extract date/time from datetime fields for backwards compatibility
     const submissionData = { ...formData };
-    
+
+    // Always save journey distance and duration
+    if (journeyInfo.distance) {
+      submissionData.journeyDistance = journeyInfo.distance;
+    }
+    if (journeyInfo.duration) {
+      submissionData.journeyDuration = journeyInfo.duration;
+    }
+
     // Handle pickup datetime
     if (formData.pickupDateTime) {
       const pickupMoment = moment(formData.pickupDateTime);
       submissionData.date = pickupMoment.format('YYYY-MM-DD');
       submissionData.time = pickupMoment.format('HH:mm');
     }
-    
+
     // Handle return datetime
     if (formData.returnDateTime) {
       const returnMoment = moment(formData.returnDateTime);
       submissionData.returnDate = returnMoment.format('YYYY-MM-DD');
       submissionData.returnTime = returnMoment.format('HH:mm');
     }
-    
+
     // For backwards compatibility, map to the old single type field
     // Keep the new fields for future use
     submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
-    
+
     if (editingBooking) {
       updateBooking(editingBooking.id, submissionData);
     } else {
@@ -951,7 +987,7 @@ export default function BookingModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="price-input" className="block mb-2 text-sm font-semibold text-gray-700">Price (€)</label>
-                    <div className="relative">
+                    <div className="relative flex items-center gap-2">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">€</span>
                       <input
                         id="price-input"
@@ -967,8 +1003,16 @@ export default function BookingModal({
                         placeholder="45.00"
                         aria-describedby="price-input-help"
                       />
+                      <button
+                        type="button"
+                        className="ml-2 px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-semibold border border-blue-300 transition-all duration-150"
+                        onClick={forceRecalculatePrice}
+                        title="Recalculate price using journey and vehicle info"
+                      >
+                        Recalculate
+                      </button>
                     </div>
-                    <p id="price-input-help" className="mt-1 text-xs text-gray-600">Total price for this booking</p>
+                    <p id="price-input-help" className="mt-1 text-xs text-gray-600">Total price for this booking. Click 'Recalculate' to update using journey and vehicle info.</p>
                   </div>
                 </div>
               </fieldset>
