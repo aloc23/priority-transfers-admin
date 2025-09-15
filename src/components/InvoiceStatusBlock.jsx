@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { PlusIcon, InvoiceIcon, ChevronDownIcon, ChevronUpIcon, SendIcon, EditIcon } from './Icons';
 import InvoiceEditModal from './InvoiceEditModal';
@@ -15,6 +15,27 @@ export default function InvoiceStatusBlock({
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
+  // For closing dropdown on outside click or Escape
+  const dropdownRef = useRef();
+
+  // Close dropdown on outside click or Escape
+  useEffect(() => {
+    if (expandedKPI === null) return;
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setExpandedKPI(null);
+      }
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setExpandedKPI(null);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [expandedKPI]);
 
   // Calculate invoice status counts
   const invoiceStatusCounts = useMemo(() => {
@@ -285,32 +306,42 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
                 }
               </div>
             </button>
-            
-            {/* Expandable Content */}
+            {/* Expandable Content with backdrop for better UX */}
             {expandedKPI === status.id && (
-              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-lg shadow-lg p-3 mt-1">
-                <h4 className="font-semibold text-sm mb-2">{status.label} Invoices Details</h4>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p>Total Count: <span className="font-semibold">{status.count}</span></p>
-                  <p className="text-slate-500">{status.description}</p>
-                  <p>Total Value: <span className="font-semibold">
-                    €{invoices
-                      .filter(inv => status.id === 'all' || inv.status === status.id)
-                      .reduce((sum, inv) => sum + (inv.amount || 0), 0)
-                      .toFixed(2)
-                    }
-                  </span></p>
-                  {status.id === 'pending' && (
-                    <p className="text-amber-600">Only includes invoices for confirmed bookings</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleStatusClick(status.id)}
-                  className="mt-2 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200"
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  style={{background:'transparent'}} 
+                  onClick={() => setExpandedKPI(null)}
+                />
+                <div 
+                  ref={dropdownRef} 
+                  className="absolute top-full left-0 right-0 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 mt-1"
+                  onClick={e => e.stopPropagation()}
                 >
-                  View {status.label} Invoices
-                </button>
-              </div>
+                  <h4 className="font-semibold text-sm mb-2">{status.label} Invoices Details</h4>
+                  <div className="text-xs text-slate-600 space-y-1">
+                    <p>Total Count: <span className="font-semibold">{status.count}</span></p>
+                    <p className="text-slate-500">{status.description}</p>
+                    <p>Total Value: <span className="font-semibold">
+                      €{invoices
+                        .filter(inv => status.id === 'all' || inv.status === status.id)
+                        .reduce((sum, inv) => sum + (inv.amount || 0), 0)
+                        .toFixed(2)
+                      }
+                    </span></p>
+                    {status.id === 'pending' && (
+                      <p className="text-amber-600">Only includes invoices for confirmed bookings</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleStatusClick(status.id)}
+                    className="mt-2 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200"
+                  >
+                    View {status.label} Invoices
+                  </button>
+                </div>
+              </>
             )}
           </div>
         ))}

@@ -323,99 +323,35 @@ export default function Dashboard() {
       {/* Bookings & Calendar Tab Content - Calendar as main focus */}
       {activeTab === 'bookings-calendar' && (
         <div className="space-y-6">
-          {/* Invoice Status Block Position Switcher */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">Invoice Status Display</h3>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-600">Position:</label>
-                <select 
-                  value={invoiceStatusPosition} 
-                  onChange={(e) => setInvoiceStatusPosition(e.target.value)}
-                  className="text-xs border rounded px-2 py-1 bg-white border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="beside">Beside Calendar</option>
-                  <option value="combined">Replace Combined Status</option>
-                  <option value="dropdown">Under Booking Lists</option>
-                </select>
-              </div>
-            </div>
+          {/* Calendar Component - Full width */}
+          <div className="-mx-6 md:-mx-8 lg:-mx-8">
+            <BookingsCalendarWidget fullWidth={true} />
           </div>
 
-          {/* Layout based on Invoice Status Position */}
-          {invoiceStatusPosition === 'beside' ? (
-            /* Beside Layout - Calendar with Invoice Status Block beside it */
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Calendar Component - 3/4 width */}
-              <div className="lg:col-span-3 -mx-6 md:-mx-8 lg:mx-0">
-                <BookingsCalendarWidget fullWidth={false} />
-              </div>
-              
-              {/* Invoice Status Block - 1/4 width */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-4">
-                  <InvoiceStatusBlock 
-                    compact={true}
-                    showAddButtons={currentUser?.role === 'Admin'}
-                    showInvoiceList={true}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : invoiceStatusPosition === 'combined' ? (
-            /* Replace Combined Status Layout */
-            <div className="space-y-6">
-              {/* Calendar Component - Full width */}
-              <div className="-mx-6 md:-mx-8 lg:-mx-8">
-                <BookingsCalendarWidget fullWidth={true} />
-              </div>
+          {/* Invoice Status Block moved directly under the calendar */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <InvoiceStatusBlock 
+              compact={false}
+              showAddButtons={currentUser?.role === 'Admin'}
+              showInvoiceList={true}
+            />
+          </div>
 
-              {/* Status Summary with Invoice Status replacing Combined Status */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Invoice Status Block instead of Combined Status */}
-                <InvoiceStatusBlock 
-                  compact={false}
-                  showAddButtons={currentUser?.role === 'Admin'}
-                  showInvoiceList={true}
-                />
-                
-                {/* Recent Activity */}
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-                  <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
-                  <ActivityList activities={recentActivity} />
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Dropdown Layout - Standard layout with Invoice Status dropdown */
-            <div className="space-y-6">
-              {/* Calendar Component - Full width */}
-              <div className="-mx-6 md:-mx-8 lg:-mx-8">
-                <BookingsCalendarWidget fullWidth={true} />
-              </div>
+          {/* Booking List (mobile or desktop) - removed placeholder for no bookings */}
+          <div>
+            <MobileBookingList />
+          </div>
 
-              {/* Invoice Status Block as dropdown */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <InvoiceStatusBlock 
-                  compact={false}
-                  showAddButtons={currentUser?.role === 'Admin'}
-                  showInvoiceList={true}
-                />
-              </div>
-
-              {/* Standard Status Summary */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Combined Status Overview */}
-                <CombinedStatusSummary compact={true} />
-                
-                {/* Recent Activity */}
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-                  <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
-                  <ActivityList activities={recentActivity} />
-                </div>
-              </div>
+          {/* Standard Status Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Combined Status Overview */}
+            <CombinedStatusSummary compact={true} />
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
+              <ActivityList activities={recentActivity} />
             </div>
-          )}
+          </div>
         </div>
       )}
       {activeTab === 'accounting' && (

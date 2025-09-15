@@ -47,12 +47,7 @@ export default function MobileBookingList({ bookings, onActionClick }) {
     }
   ];
   if (!bookings || bookings.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <BookingIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-        <p>No bookings found</p>
-      </div>
-    );
+    return null;
   }
 
   return (
