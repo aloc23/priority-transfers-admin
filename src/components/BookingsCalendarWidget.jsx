@@ -51,6 +51,7 @@ BookingsCalendarWidget.BookNowContext = BookNowContext;
 const localizer = momentLocalizer(moment);
 
 export default function BookingsCalendarWidget(props) {
+  const { fullWidth = false } = props;
   const { bookings, drivers, partners, invoices, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid, refreshAllData, globalCalendarState, updateGlobalCalendarState } = useAppStore();
   const { fleet } = useFleet();
   const { isMobile } = useResponsive();
@@ -492,7 +493,7 @@ export default function BookingsCalendarWidget(props) {
                 />
               </div>
 
-              <div style={{ height: isMobile ? '400px' : '550px' }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
+              <div style={{ height: fullWidth ? (isMobile ? '500px' : '650px') : (isMobile ? '400px' : '550px') }} className="rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm border border-white/30 shadow-inner">
                 <Calendar
                   localizer={localizer}
                   events={calendarEvents}
