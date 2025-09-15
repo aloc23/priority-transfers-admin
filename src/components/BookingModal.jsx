@@ -1,5 +1,7 @@
+import { sendDriverEmailNotification } from '../utils/email';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
+// import { sendDriverEmailNotification } from '../utils/email';
 // Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
@@ -8,6 +10,7 @@ import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
 
 export default function BookingModal({ 
+  // Demo: Send email notification to driver
   isOpen, 
   onClose, 
   editingBooking = null,
@@ -22,6 +25,23 @@ export default function BookingModal({
   const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
   // Track if price was manually overridden
   const [priceManuallySet, setPriceManuallySet] = useState(false);
+
+  // Demo: Send email notification to driver
+  async function handleSendDriverEmail() {
+    if (!formData.driver) {
+      alert('Please select a driver first.');
+      return;
+    }
+    const driverObj = drivers.find(d => d.name === formData.driver);
+    if (!driverObj || !driverObj.email) {
+      alert('Selected driver has no email address.');
+      return;
+    }
+    const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
+    const message = `Dear ${driverObj.name},\n\nYou have a new booking:\nPickup: ${formData.pickup}\nDestination: ${formData.destination}\nDate: ${formData.date} ${formData.time}\n\nPlease confirm availability.`;
+    await sendDriverEmailNotification({ driverEmail: driverObj.email, subject, message });
+    window.alert(`Demo email notification sent to ${driverObj.email}`);
+  }
 
   // Force price recalculation using latest journey info and vehicle
   function forceRecalculatePrice() {
@@ -431,11 +451,27 @@ export default function BookingModal({
     // Keep the new fields for future use
     submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
 
+    // Save booking
     if (editingBooking) {
       updateBooking(editingBooking.id, submissionData);
     } else {
       addBooking(submissionData);
     }
+
+    // After booking is confirmed, send driver notification (demo integration)
+    if (formData.source === 'internal' && formData.driver) {
+      const driverObj = drivers.find(d => d.name === formData.driver);
+      if (driverObj && driverObj.email) {
+        const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
+        const message = `Dear ${driverObj.name},\n\nYou have a new booking:\nPickup: ${formData.pickup}\nDestination: ${formData.destination}\nDate: ${formData.date} ${formData.time}\n\nPlease confirm availability.`;
+        fetch('/api/notify-driver', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driverEmail: driverObj.email, subject, message })
+        });
+      }
+    }
+
     onClose();
   };
 

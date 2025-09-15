@@ -18,6 +18,7 @@ import { FleetProvider } from "./context/FleetContext";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
 import { useResponsive } from "./hooks/useResponsive";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function AuthenticatedShell() {
   const { currentUser } = useAppStore();
@@ -103,12 +104,14 @@ function RequireRole({children, roles}){
 
 export default function App(){
   return (
-    <FleetProvider>
-      <AppStoreProvider>
-        <Router>
-          <AppShell />
-        </Router>
-      </AppStoreProvider>
-    </FleetProvider>
+    <ErrorBoundary>
+      <FleetProvider>
+        <AppStoreProvider>
+          <Router>
+            <AppShell />
+          </Router>
+        </AppStoreProvider>
+      </FleetProvider>
+    </ErrorBoundary>
   );
 }

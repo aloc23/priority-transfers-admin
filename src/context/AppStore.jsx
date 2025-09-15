@@ -288,9 +288,9 @@ export function AppStoreProvider({ children }) {
 
   const initializeDrivers = () => {
     const sampleDrivers = [
-      { id: 1, name: "Mike Johnson", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
-      { id: 2, name: "Sarah Wilson", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
-      { id: 3, name: "Tom Brown", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
+      { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
+      { id: 2, name: "Sarah Wilson", email: "sarah@example.com", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
+      { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
     ];
     setDrivers(sampleDrivers);
     safeLocalStorage.setItem("drivers", JSON.stringify(sampleDrivers));
