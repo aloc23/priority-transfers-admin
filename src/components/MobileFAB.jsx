@@ -61,18 +61,19 @@ export default function MobileFAB() {
 
   const actions = [
     {
-      label: 'Home',
-      icon: DashboardIcon,
-      href: '#/',
-      color: 'bg-gradient-to-r from-indigo-600 to-purple-500 hover:from-indigo-700 hover:to-purple-600',
-      permission: true // Available to all authenticated users
-    },
-    {
       label: 'New Booking',
       icon: BookingIcon,
       href: '#/schedule',
       action: handleNewBooking,
-      color: 'bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600',
+      color: 'bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600',
+      permission: true, // Available to all authenticated users
+      priority: true // Mark as priority action
+    },
+    {
+      label: 'Home',
+      icon: DashboardIcon,
+      href: '#/',
+      color: 'bg-gradient-to-r from-indigo-600 to-purple-500 hover:from-indigo-700 hover:to-purple-600',
       permission: true // Available to all authenticated users
     },
     {
