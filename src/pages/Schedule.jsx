@@ -17,7 +17,7 @@ import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
 import ResourceScheduleView from "../components/ResourceScheduleView";
 import { BookingEventWithInvoices } from "../components/BookingEventComponent";
-import InvoiceStatusBlock from "../components/InvoiceStatusBlock";
+
 
 const localizer = momentLocalizer(moment);
 
@@ -63,8 +63,6 @@ export default function Schedule() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar', 'table', 'resources'
   const [highlightedBooking, setHighlightedBooking] = useState(null);
-  // Invoice Status Block position: 'beside' (beside calendar), 'dropdown' (under lists), 'replacement' (replace Combined block)
-  const [invoiceStatusPosition, setInvoiceStatusPosition] = useState('beside');
 
   // Use global calendar state instead of local state  
   const { selectedDate, selectedStatus, selectedDriver } = globalCalendarState;
@@ -576,24 +574,7 @@ export default function Schedule() {
         />
       </div>
 
-      {/* Invoice Status Block Switcher Controls */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-          <h3 className="text-sm font-semibold text-slate-800">Invoice Status Display</h3>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-600">Position:</label>
-            <select 
-              value={invoiceStatusPosition} 
-              onChange={(e) => setInvoiceStatusPosition(e.target.value)}
-              className="text-xs border rounded px-2 py-1 bg-white border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="beside">Beside Calendar</option>
-              <option value="dropdown">Under Lists</option>
-              <option value="replacement">Replace Combined Block</option>
-            </select>
-          </div>
-        </div>
-      </div>
+
 
 
   {viewMode === 'table' ? (
@@ -907,393 +888,252 @@ export default function Schedule() {
           </div>
         )
       ) : viewMode === 'calendar' ? (
-        <div className="space-y-4">
-          {/* Calendar View with Invoice Status Block */}
-          {invoiceStatusPosition === 'beside' ? (
-            /* Beside Calendar Layout */
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Main Calendar Section */}
-              <div className="lg:col-span-3">
-                <div className="card p-4">
-                  {/* Three-way toggle, Add Booking, and Filters for calendar view, above calendar */}
-                  <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <ThreeWayToggle
-                        options={[
-                          { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                          { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                          { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                        ]}
-                        selected={viewMode}
-                        onChange={setViewMode}
-                      />
-                      <button 
-                        className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                        onClick={() => setShowModal(true)}
-                      >
-                        <PlusIcon className="w-5 h-5" />
-                        <span className="hidden sm:inline">Add Booking</span>
-                        <span className="sm:hidden">Add</span>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
-                        <select
-                          value={selectedDriver}
-                          onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
-                          className="border rounded px-2 py-1"
-                        >
-                          <option value="">All Drivers</option>
-                          {drivers.map(driver => (
-                            <option key={driver.id} value={driver.name}>{driver.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex gap-2 items-center text-sm">
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                          <span>Priority</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                          <span>Outsourced</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
-                    {/* Compact Calendar Navigation */}
-                    <div className="mb-4 p-4">
-                      <CompactCalendarNav
-                        currentDate={selectedDate || new Date()}
-                        onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
-                        onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
-                        currentView="month"
-                        views={['month', 'week', 'day']}
-                        isMobile={isMobile}
-                      />
-                    </div>
-                    
-                    <Calendar
-                      localizer={localizer}
-                      events={calendarEvents}
-                      startAccessor="start"
-                      endAccessor="end"
-                      onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
-                      onSelectSlot={handleSelectSlot}
-                      selectable
-                      views={['month', 'week', 'day']}
-                      defaultView="month"
-                      eventPropGetter={(event) => ({
-                        style: event.style
-                      })}
-                      popup
-                      toolbar={false}
-                      style={{
-                        height: '100%',
-                        fontFamily: 'Inter, system-ui, sans-serif'
-                      }}
-                      components={{
-                        event: ({ event }) => (
-                          <BookingEventWithInvoices 
-                            event={event} 
-                            invoices={invoices} 
-                            compact={false} 
-                            isMobile={isMobile} 
-                          />
-                        )
-                      }}
-                    />
-                    {/* Booking Card Popup */}
-                    {selectedCalendarBooking && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" onClick={() => setSelectedCalendarBooking(null)}>
-                        <div className="bg-white rounded-xl shadow-xl p-6 min-w-[320px] max-w-[90vw] relative" onClick={e => e.stopPropagation()}>
-                          {/* Status badge */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-slate-100`} style={{background: combinedStatusColors[getCombinedStatus(selectedCalendarBooking)] || '#f3f4f6', color: '#222'}}>
-                              {getCombinedStatus(selectedCalendarBooking)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-lg font-bold text-slate-600">
-                              {selectedCalendarBooking.customer?.[0]}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-base">{selectedCalendarBooking.customer}</div>
-                              <div className="text-xs text-slate-500">{selectedCalendarBooking.pickup} → {selectedCalendarBooking.destination}</div>
-                            </div>
-                          </div>
-                          <div className="text-xs text-slate-500 mb-2">
-                            <span className="font-medium">Date:</span> {selectedCalendarBooking.date} {selectedCalendarBooking.time}
-                          </div>
-                          <div className="flex gap-2 mb-2">
-                            <span className="text-xs"><span className="font-medium">Driver:</span> {selectedCalendarBooking.driver}</span>
-                            <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarBooking.vehicle}</span>
-                          </div>
-                          {/* Show completion status for confirmed bookings */}
-                          {selectedCalendarBooking.status === 'confirmed' && (
-                            <div className="flex gap-2 mb-2 text-xs">
-                              <span className={`px-2 py-1 rounded-full font-medium ${
-                                selectedCalendarBooking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                Pickup {selectedCalendarBooking.pickupCompleted ? '✓' : '○'}
-                              </span>
-                              {selectedCalendarBooking.hasReturn && (
-                                <span className={`px-2 py-1 rounded-full font-medium ${
-                                  selectedCalendarBooking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  Return {selectedCalendarBooking.returnCompleted ? '✓' : '○'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {/* Show return trip info if this is a return leg */}
-                          {selectedCalendarBooking.legType === 'return' && selectedCalendarBooking.returnDate && (
-                            <div className="mb-2 p-2 bg-cyan-50 rounded-lg border border-cyan-200">
-                              <div className="text-xs font-semibold text-cyan-800 mb-1">Return Trip Details</div>
-                              <div className="text-xs text-cyan-700">
-                                <div>Return Date: {selectedCalendarBooking.returnDate} at {selectedCalendarBooking.returnTime}</div>
-                                {selectedCalendarBooking.returnPickup && <div>From: {selectedCalendarBooking.returnPickup}</div>}
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex gap-2 mb-4">
-                            <span className="text-xs"><span className="font-medium">Type:</span> {getBookingTypeDisplay(selectedCalendarBooking.type)}</span>
-                            <span className="text-xs"><span className="font-medium">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}</span>
-                          </div>
-                          {/* Action buttons */}
-                          <div className="flex gap-2 mt-2">
-                            {/* Render action button based on status and completion state */}
-                            {(() => {
-                              const status = selectedCalendarBooking.status;
-                              const inv = invoices.find(inv => inv.bookingId === selectedCalendarBooking.id);
-                              const actions = [];
-                              
-                              if (status === 'pending') {
-                                actions.push(
-                                  <button key="confirm" className="btn btn-success flex-1" onClick={() => { 
-                                    updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'confirmed' }); 
-                                    setSelectedCalendarBooking(null); 
-                                  }}>Confirm</button>
-                                );
-                              } else if (status === 'confirmed') {
-                                // Handle return transfer bookings with proper leg differentiation
-                                if (selectedCalendarBooking.hasReturn) {
-                                  const legType = selectedCalendarBooking.legType;
-                                  
-                                  if (legType === 'pickup' && !selectedCalendarBooking.pickupCompleted) {
-                                    // Only show "Complete Pickup" for pickup leg when pickup not completed
-                                    actions.push(
-                                      <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
-                                        updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
-                                        setSelectedCalendarBooking(null); 
-                                      }}>Complete Pickup</button>
-                                    );
-                                  } else if (legType === 'return') {
-                                    if (selectedCalendarBooking.pickupCompleted && !selectedCalendarBooking.returnCompleted) {
-                                      // Only show "Complete" for return leg when pickup is completed
-                                      actions.push(
-                                        <button key="return" className="btn btn-success flex-1" onClick={() => { 
-                                          updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
-                                          setSelectedCalendarBooking(null); 
-                                        }}>Complete</button>
-                                      );
-                                    } else if (!selectedCalendarBooking.pickupCompleted) {
-                                      // Show informational message for return leg when pickup not completed
-                                      actions.push(
-                                        <div key="waiting" className="btn btn-disabled flex-1 bg-yellow-100 text-yellow-800 cursor-not-allowed">
-                                          Waiting for pickup completion
-                                        </div>
-                                      );
-                                    }
-                                  } else if (!legType) {
-                                    // Fallback for general booking view (no specific leg)
-                                    if (!selectedCalendarBooking.pickupCompleted) {
-                                      actions.push(
-                                        <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
-                                          updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
-                                          setSelectedCalendarBooking(null); 
-                                        }}>Complete Pickup</button>
-                                      );
-                                    } else if (!selectedCalendarBooking.returnCompleted) {
-                                      actions.push(
-                                        <button key="return" className="btn btn-success flex-1" onClick={() => { 
-                                          updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
-                                          setSelectedCalendarBooking(null); 
-                                        }}>Complete Return</button>
-                                      );
-                                    }
-                                  }
-                                } else {
-                                  // Single trip - complete the entire booking
-                                  actions.push(
-                                    <button key="complete" className="btn btn-success flex-1" onClick={() => { 
-                                      updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); 
-                                      setSelectedCalendarBooking(null); 
-                                    }}>Mark as Complete</button>
-                                  );
-                                }
-                              } else if (status === 'completed' && !inv) {
-                                actions.push(
-                                  <button key="invoice" className="btn btn-warning flex-1" onClick={() => { 
-                                    generateInvoiceFromBooking(selectedCalendarBooking); 
-                                    setSelectedCalendarBooking(null); 
-                                  }}>Generate Invoice</button>
-                                );
-                              } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
-                                actions.push(
-                                  <button key="paid" className="btn btn-success flex-1" onClick={() => { 
-                                    markInvoiceAsPaid(inv.id); 
-                                    setSelectedCalendarBooking(null); 
-                                  }}>Mark as Paid</button>
-                                );
-                              } else if (inv && inv.status === 'paid') {
-                                actions.push(<span key="paid-status" className="btn btn-disabled flex-1">Paid</span>);
-                              }
-                              
-                              return actions;
-                            })()}
-                            <button className="btn btn-outline flex-1" onClick={() => setSelectedCalendarBooking(null)}>Close</button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+        <div className="card p-4">
+          {/* Three-way toggle, Add Booking, and Filters for calendar view, above calendar */}
+          <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <ThreeWayToggle
+                options={[
+                  { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
+                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
+                  { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
+                ]}
+                selected={viewMode}
+                onChange={setViewMode}
+              />
+              <button 
+                className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
+                onClick={() => setShowModal(true)}
+              >
+                <PlusIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Add Booking</span>
+                <span className="sm:hidden">Add</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
+                <select
+                  value={selectedDriver}
+                  onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="">All Drivers</option>
+                  {drivers.map(driver => (
+                    <option key={driver.id} value={driver.name}>{driver.name}</option>
+                  ))}
+                </select>
               </div>
-              
-              {/* Invoice Status Block - Beside Calendar */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-4">
-                  <InvoiceStatusBlock 
-                    compact={true}
-                    showAddButtons={currentUser?.role === 'Admin'}
-                    showInvoiceList={true}
-                  />
+              <div className="flex gap-2 items-center text-sm">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                  <span>Priority</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span>Outsourced</span>
                 </div>
               </div>
             </div>
-          ) : (
-            /* Standard Layout with Invoice Status Block Below */
-            <div className="space-y-4">
-              <div className="card p-4">
-                {/* Three-way toggle, Add Booking, and Filters for calendar view, above calendar */}
-                <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
-                  <div className="flex items-center gap-2">
-                    <ThreeWayToggle
-                      options={[
-                        { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                        { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                        { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                      ]}
-                      selected={viewMode}
-                      onChange={setViewMode}
-                    />
-                    <button 
-                      className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                      onClick={() => setShowModal(true)}
-                    >
-                      <PlusIcon className="w-5 h-5" />
-                      <span className="hidden sm:inline">Add Booking</span>
-                      <span className="sm:hidden">Add</span>
-                    </button>
+          </div>
+          <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
+            {/* Compact Calendar Navigation */}
+            <div className="mb-4 p-4">
+              <CompactCalendarNav
+                currentDate={selectedDate || new Date()}
+                onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
+                onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
+                currentView="month"
+                views={['month', 'week', 'day']}
+                isMobile={isMobile}
+              />
+            </div>
+            
+            <Calendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
+              onSelectSlot={handleSelectSlot}
+              selectable
+              views={['month', 'week', 'day']}
+              defaultView="month"
+              eventPropGetter={(event) => ({
+                style: event.style
+              })}
+              popup
+              toolbar={false}
+              style={{
+                height: '100%',
+                fontFamily: 'Inter, system-ui, sans-serif'
+              }}
+              components={{
+                event: ({ event }) => (
+                  <BookingEventWithInvoices 
+                    event={event} 
+                    invoices={invoices} 
+                    compact={false} 
+                    isMobile={isMobile} 
+                  />
+                )
+              }}
+            />
+            {/* Booking Card Popup */}
+            {selectedCalendarBooking && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" onClick={() => setSelectedCalendarBooking(null)}>
+                <div className="bg-white rounded-xl shadow-xl p-6 min-w-[320px] max-w-[90vw] relative" onClick={e => e.stopPropagation()}>
+                  {/* Status badge */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-slate-100`} style={{background: combinedStatusColors[getCombinedStatus(selectedCalendarBooking)] || '#f3f4f6', color: '#222'}}>
+                      {getCombinedStatus(selectedCalendarBooking)}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-2 items-center">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-lg font-bold text-slate-600">
+                      {selectedCalendarBooking.customer?.[0]}
+                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
-                      <select
-                        value={selectedDriver}
-                        onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
-                        className="border rounded px-2 py-1"
-                      >
-                        <option value="">All Drivers</option>
-                        {drivers.map(driver => (
-                          <option key={driver.id} value={driver.name}>{driver.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex gap-2 items-center text-sm">
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                        <span>Priority</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                        <span>Outsourced</span>
-                      </div>
+                      <div className="font-semibold text-base">{selectedCalendarBooking.customer}</div>
+                      <div className="text-xs text-slate-500">{selectedCalendarBooking.pickup} → {selectedCalendarBooking.destination}</div>
                     </div>
                   </div>
-                </div>
-                <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
-                  {/* Compact Calendar Navigation */}
-                  <div className="mb-4 p-4">
-                    <CompactCalendarNav
-                      currentDate={selectedDate || new Date()}
-                      onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
-                      onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
-                      currentView="month"
-                      views={['month', 'week', 'day']}
-                      isMobile={isMobile}
-                    />
+                  <div className="text-xs text-slate-500 mb-2">
+                    <span className="font-medium">Date:</span> {selectedCalendarBooking.date} {selectedCalendarBooking.time}
                   </div>
-                  
-                  <Calendar
-                    localizer={localizer}
-                    events={calendarEvents}
-                    startAccessor="start"
-                    endAccessor="end"
-                    onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
-                    onSelectSlot={handleSelectSlot}
-                    selectable
-                    views={['month', 'week', 'day']}
-                    defaultView="month"
-                    eventPropGetter={(event) => ({
-                      style: event.style
-                    })}
-                    popup
-                    toolbar={false}
-                    style={{
-                      height: '100%',
-                      fontFamily: 'Inter, system-ui, sans-serif'
-                    }}
-                    components={{
-                      event: ({ event }) => (
-                        <BookingEventWithInvoices 
-                          event={event} 
-                          invoices={invoices} 
-                          compact={false} 
-                          isMobile={isMobile} 
-                        />
-                      )
-                    }}
-                  />
-                  {/* Same booking popup code as above... */}
+                  <div className="flex gap-2 mb-2">
+                    <span className="text-xs"><span className="font-medium">Driver:</span> {selectedCalendarBooking.driver}</span>
+                    <span className="text-xs"><span className="font-medium">Vehicle:</span> {selectedCalendarBooking.vehicle}</span>
+                  </div>
+                  {/* Show completion status for confirmed bookings */}
+                  {selectedCalendarBooking.status === 'confirmed' && (
+                    <div className="flex gap-2 mb-2 text-xs">
+                      <span className={`px-2 py-1 rounded-full font-medium ${
+                        selectedCalendarBooking.pickupCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        Pickup {selectedCalendarBooking.pickupCompleted ? '✓' : '○'}
+                      </span>
+                      {selectedCalendarBooking.hasReturn && (
+                        <span className={`px-2 py-1 rounded-full font-medium ${
+                          selectedCalendarBooking.returnCompleted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          Return {selectedCalendarBooking.returnCompleted ? '✓' : '○'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Show return trip info if this is a return leg */}
+                  {selectedCalendarBooking.legType === 'return' && selectedCalendarBooking.returnDate && (
+                    <div className="mb-2 p-2 bg-cyan-50 rounded-lg border border-cyan-200">
+                      <div className="text-xs font-semibold text-cyan-800 mb-1">Return Trip Details</div>
+                      <div className="text-xs text-cyan-700">
+                        <div>Return Date: {selectedCalendarBooking.returnDate} at {selectedCalendarBooking.returnTime}</div>
+                        {selectedCalendarBooking.returnPickup && <div>From: {selectedCalendarBooking.returnPickup}</div>}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2 mb-4">
+                    <span className="text-xs"><span className="font-medium">Type:</span> {getBookingTypeDisplay(selectedCalendarBooking.type)}</span>
+                    <span className="text-xs"><span className="font-medium">Price:</span> {formatCurrency(selectedCalendarBooking.price || 45)}</span>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-2">
+                    {/* Render action button based on status and completion state */}
+                    {(() => {
+                      const status = selectedCalendarBooking.status;
+                      const inv = invoices.find(inv => inv.bookingId === selectedCalendarBooking.id);
+                      const actions = [];
+                      
+                      if (status === 'pending') {
+                        actions.push(
+                          <button key="confirm" className="btn btn-success flex-1" onClick={() => { 
+                            updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'confirmed' }); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Confirm</button>
+                        );
+                      } else if (status === 'confirmed') {
+                        // Handle return transfer bookings with proper leg differentiation
+                        if (selectedCalendarBooking.hasReturn) {
+                          const legType = selectedCalendarBooking.legType;
+                          
+                          if (legType === 'pickup' && !selectedCalendarBooking.pickupCompleted) {
+                            // Only show "Complete Pickup" for pickup leg when pickup not completed
+                            actions.push(
+                              <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
+                                updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
+                                setSelectedCalendarBooking(null); 
+                              }}>Complete Pickup</button>
+                            );
+                          } else if (legType === 'return') {
+                            if (selectedCalendarBooking.pickupCompleted && !selectedCalendarBooking.returnCompleted) {
+                              // Only show "Complete" for return leg when pickup is completed
+                              actions.push(
+                                <button key="return" className="btn btn-success flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete</button>
+                              );
+                            } else if (!selectedCalendarBooking.pickupCompleted) {
+                              // Show informational message for return leg when pickup not completed
+                              actions.push(
+                                <div key="waiting" className="btn btn-disabled flex-1 bg-yellow-100 text-yellow-800 cursor-not-allowed">
+                                  Waiting for pickup completion
+                                </div>
+                              );
+                            }
+                          } else if (!legType) {
+                            // Fallback for general booking view (no specific leg)
+                            if (!selectedCalendarBooking.pickupCompleted) {
+                              actions.push(
+                                <button key="pickup" className="btn btn-primary flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, pickupCompleted: true }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete Pickup</button>
+                              );
+                            } else if (!selectedCalendarBooking.returnCompleted) {
+                              actions.push(
+                                <button key="return" className="btn btn-success flex-1" onClick={() => { 
+                                  updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, returnCompleted: true, status: 'completed' }); 
+                                  setSelectedCalendarBooking(null); 
+                                }}>Complete Return</button>
+                              );
+                            }
+                          }
+                        } else {
+                          // Single trip - complete the entire booking
+                          actions.push(
+                            <button key="complete" className="btn btn-success flex-1" onClick={() => { 
+                              updateBooking(selectedCalendarBooking.id, { ...selectedCalendarBooking, status: 'completed' }); 
+                              setSelectedCalendarBooking(null); 
+                            }}>Mark as Complete</button>
+                          );
+                        }
+                      } else if (status === 'completed' && !inv) {
+                        actions.push(
+                          <button key="invoice" className="btn btn-warning flex-1" onClick={() => { 
+                            generateInvoiceFromBooking(selectedCalendarBooking); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Generate Invoice</button>
+                        );
+                      } else if (inv && (inv.status === 'pending' || inv.status === 'sent')) {
+                        actions.push(
+                          <button key="paid" className="btn btn-success flex-1" onClick={() => { 
+                            markInvoiceAsPaid(inv.id); 
+                            setSelectedCalendarBooking(null); 
+                          }}>Mark as Paid</button>
+                        );
+                      } else if (inv && inv.status === 'paid') {
+                        actions.push(<span key="paid-status" className="btn btn-disabled flex-1">Paid</span>);
+                      }
+                      
+                      return actions;
+                    })()}
+                    <button className="btn btn-outline flex-1" onClick={() => setSelectedCalendarBooking(null)}>Close</button>
+                  </div>
                 </div>
               </div>
-              
-              {/* Invoice Status Block - Positioned Based on Switcher */}
-              {invoiceStatusPosition === 'dropdown' && (
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                  <InvoiceStatusBlock 
-                    compact={false}
-                    showAddButtons={currentUser?.role === 'Admin'}
-                    showInvoiceList={true}
-                  />
-                </div>
-              )}
-              
-              {invoiceStatusPosition === 'replacement' && (
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                  <InvoiceStatusBlock 
-                    compact={false}
-                    showAddButtons={currentUser?.role === 'Admin'}
-                    showInvoiceList={true}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         // Resources view
