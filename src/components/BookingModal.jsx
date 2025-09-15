@@ -3,6 +3,7 @@ import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
 import ModalPortal from './ModalPortal';
+import DateTimePicker from './DateTimePicker';
 
 export default function BookingModal({ 
   isOpen, 
@@ -21,6 +22,7 @@ export default function BookingModal({
     destination: "",
     date: initialDate,
     time: initialTime,
+    pickupDateTime: "", // Combined date/time for pickup
     driver: "",
     vehicle: "",
     partner: "",
@@ -36,7 +38,8 @@ export default function BookingModal({
     returnPickup: "",
     returnDestination: "",
     returnDate: "",
-    returnTime: ""
+    returnTime: "",
+    returnDateTime: "" // Combined date/time for return
   });
 
   const [conflicts, setConflicts] = useState({
@@ -162,18 +165,38 @@ export default function BookingModal({
         source = editingBooking.source || 'internal'; // Default to internal if not specified
       }
       
+      // Initialize combined datetime fields from existing date/time fields
+      let pickupDateTime = '';
+      if (editingBooking.date && editingBooking.time) {
+        pickupDateTime = moment(`${editingBooking.date} ${editingBooking.time}`, 'YYYY-MM-DD HH:mm').toISOString();
+      }
+      
+      let returnDateTime = '';
+      if (editingBooking.returnDate && editingBooking.returnTime) {
+        returnDateTime = moment(`${editingBooking.returnDate} ${editingBooking.returnTime}`, 'YYYY-MM-DD HH:mm').toISOString();
+      }
+      
       setFormData({ 
         ...editingBooking,
         type,
-        source
+        source,
+        pickupDateTime,
+        returnDateTime
       });
     } else {
+      // Initialize with current date/time if provided
+      let pickupDateTime = '';
+      if (initialDate && initialTime) {
+        pickupDateTime = moment(`${initialDate} ${initialTime}`, 'YYYY-MM-DD HH:mm').toISOString();
+      }
+      
       setFormData({
         customer: "",
         pickup: "",
         destination: "",
         date: initialDate,
         time: initialTime,
+        pickupDateTime,
         driver: "",
         vehicle: "",
         partner: "",
@@ -189,20 +212,44 @@ export default function BookingModal({
         returnPickup: "",
         returnDestination: "",
         returnDate: "",
-        returnTime: ""
+        returnTime: "",
+        returnDateTime: ""
       });
     }
   }, [editingBooking, initialDate, initialTime, isOpen]);
 
-  // Auto-fill return pickup with destination when return trip is enabled
+  // Auto-fill return trip data when return trip is enabled
   useEffect(() => {
-    if (formData.hasReturn && formData.destination && !formData.returnPickup) {
-      setFormData(prev => ({
-        ...prev,
-        returnPickup: prev.destination
-      }));
+    if (formData.hasReturn) {
+      const updates = {};
+      
+      // Auto-fill return pickup with destination
+      if (formData.destination && !formData.returnPickup) {
+        updates.returnPickup = formData.destination;
+      }
+      
+      // Auto-fill return destination with original pickup
+      if (formData.pickup && !formData.returnDestination) {
+        updates.returnDestination = formData.pickup;
+      }
+      
+      // Auto-fill return date/time based on pickup date/time (add 4 hours by default)
+      if (formData.pickupDateTime && !formData.returnDateTime) {
+        const returnMoment = moment(formData.pickupDateTime).add(4, 'hours');
+        updates.returnDateTime = returnMoment.toISOString();
+        updates.returnDate = returnMoment.format('YYYY-MM-DD');
+        updates.returnTime = returnMoment.format('HH:mm');
+      }
+      
+      // Apply updates if any
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          ...updates
+        }));
+      }
     }
-  }, [formData.hasReturn, formData.destination]);
+  }, [formData.hasReturn, formData.destination, formData.pickup, formData.pickupDateTime]);
 
   // Check for conflicts when relevant form data changes
   useEffect(() => {
@@ -222,13 +269,26 @@ export default function BookingModal({
       return;
     }
     
-    // Create submission data with legacy compatibility
-    const submissionData = {
-      ...formData,
-      // For backwards compatibility, map to the old single type field
-      // Keep the new fields for future use
-      type: formData.source === 'outsourced' ? 'outsourced' : formData.type
-    };
+    // Extract date/time from datetime fields for backwards compatibility
+    const submissionData = { ...formData };
+    
+    // Handle pickup datetime
+    if (formData.pickupDateTime) {
+      const pickupMoment = moment(formData.pickupDateTime);
+      submissionData.date = pickupMoment.format('YYYY-MM-DD');
+      submissionData.time = pickupMoment.format('HH:mm');
+    }
+    
+    // Handle return datetime
+    if (formData.returnDateTime) {
+      const returnMoment = moment(formData.returnDateTime);
+      submissionData.returnDate = returnMoment.format('YYYY-MM-DD');
+      submissionData.returnTime = returnMoment.format('HH:mm');
+    }
+    
+    // For backwards compatibility, map to the old single type field
+    // Keep the new fields for future use
+    submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
     
     if (editingBooking) {
       updateBooking(editingBooking.id, submissionData);
@@ -245,6 +305,7 @@ export default function BookingModal({
       destination: "",
       date: "",
       time: "",
+      pickupDateTime: "",
       driver: "",
       vehicle: "",
       partner: "",
@@ -258,10 +319,52 @@ export default function BookingModal({
       tourReturnPickupTime: "",
       hasReturn: false,
       returnPickup: "",
+      returnDestination: "",
       returnDate: "",
-      returnTime: ""
+      returnTime: "",
+      returnDateTime: ""
     });
     onClose();
+  };
+
+  // Handler for pickup datetime changes
+  const handlePickupDateTimeChange = (datetime) => {
+    if (datetime) {
+      const momentValue = moment(datetime);
+      setFormData(prev => ({
+        ...prev,
+        pickupDateTime: datetime,
+        date: momentValue.format('YYYY-MM-DD'),
+        time: momentValue.format('HH:mm')
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        pickupDateTime: '',
+        date: '',
+        time: ''
+      }));
+    }
+  };
+
+  // Handler for return datetime changes
+  const handleReturnDateTimeChange = (datetime) => {
+    if (datetime) {
+      const momentValue = moment(datetime);
+      setFormData(prev => ({
+        ...prev,
+        returnDateTime: datetime,
+        returnDate: momentValue.format('YYYY-MM-DD'),
+        returnTime: momentValue.format('HH:mm')
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        returnDateTime: '',
+        returnDate: '',
+        returnTime: ''
+      }));
+    }
   };
 
   return (
@@ -399,6 +502,7 @@ export default function BookingModal({
                   </div>
                 </div>
               </fieldset>
+
               {/* Tour Date Fields - Show for tour bookings with enhanced UX */}
               {formData.type === 'tour' && (
                 <fieldset className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-blue-200/50 shadow-inner">
@@ -477,283 +581,284 @@ export default function BookingModal({
                 </fieldset>
               )}
 
-              {/* Customer and Resource Assignment */}
-              <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <legend className="sr-only">Customer and Resource Assignment</legend>
+              {/* Customer Information */}
+              <fieldset className="space-y-6">
+                <legend className="text-lg font-semibold text-gray-900 mb-4">Customer Information</legend>
                 
-                <div>
-                  <label htmlFor="customer-name" className="block mb-2 text-sm font-bold text-gray-800">
-                    Customer <span className="text-red-500" aria-label="required">*</span>
-                  </label>
-                  <input
-                    id="customer-name"
-                    type="text"
-                    value={formData.customer}
-                    onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
-                    placeholder="Enter customer name..."
-                    required
-                    aria-describedby="customer-name-help"
-                  />
-                  <p id="customer-name-help" className="mt-1 text-xs text-gray-600">Full name of the customer or company</p>
-                </div>
-                
-                {/* Driver field - Show for Internal bookings only */}
-                {formData.source === 'internal' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="driver-select" className="block mb-2 text-sm font-bold text-gray-800">
-                      Driver <span className="text-red-500" aria-label="required">*</span>
+                    <label htmlFor="customer-name" className="block mb-2 text-sm font-bold text-gray-800">
+                      Customer <span className="text-red-500" aria-label="required">*</span>
                     </label>
-                    <select
-                      id="driver-select"
-                      value={formData.driver}
-                      onChange={(e) => setFormData({...formData, driver: e.target.value})}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400 ${conflicts.driver.length > 0 ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
-                      required={formData.source === 'internal'}
-                      aria-describedby="driver-select-help driver-conflicts"
-                      aria-invalid={conflicts.driver.length > 0 ? 'true' : 'false'}
-                    >
-                      <option value="">Select a driver...</option>
-                      {drivers.map(driver => (
-                        <option key={driver.id} value={driver.name}>{driver.name}</option>
-                      ))}
-                    </select>
-                    <p id="driver-select-help" className="mt-1 text-xs text-gray-600">
-                      Assign a driver from your internal team
-                    </p>
-                    {conflicts.driver.length > 0 && (
-                      <div id="driver-conflicts" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert">
-                        <p className="text-sm font-bold text-red-800 mb-2">Driver Conflict Detected</p>
-                        {conflicts.driver.map((conflict, index) => (
-                          <p key={index} className="text-xs text-red-600">
-                            {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
-                          </p>
+                    <input
+                      id="customer-name"
+                      type="text"
+                      value={formData.customer}
+                      onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
+                      placeholder="Enter customer name..."
+                      required
+                      aria-describedby="customer-name-help"
+                    />
+                    <p id="customer-name-help" className="mt-1 text-xs text-gray-600">Full name of the customer or company</p>
+                  </div>
+                  
+                  {/* Driver field - Show for Internal bookings only */}
+                  {formData.source === 'internal' && (
+                    <div>
+                      <label htmlFor="driver-select" className="block mb-2 text-sm font-bold text-gray-800">
+                        Driver <span className="text-red-500" aria-label="required">*</span>
+                      </label>
+                      <select
+                        id="driver-select"
+                        value={formData.driver}
+                        onChange={(e) => setFormData({...formData, driver: e.target.value})}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400 ${conflicts.driver.length > 0 ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
+                        required={formData.source === 'internal'}
+                        aria-describedby="driver-select-help driver-conflicts"
+                        aria-invalid={conflicts.driver.length > 0 ? 'true' : 'false'}
+                      >
+                        <option value="">Select a driver...</option>
+                        {drivers.map(driver => (
+                          <option key={driver.id} value={driver.name}>{driver.name}</option>
                         ))}
-                        <p className="text-xs text-red-600 mt-1 font-medium">This driver is already scheduled for another booking during this time.</p>
+                      </select>
+                      <p id="driver-select-help" className="mt-1 text-xs text-gray-600">
+                        Assign a driver from your internal team
+                      </p>
+                      {conflicts.driver.length > 0 && (
+                        <div id="driver-conflicts" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert">
+                          <p className="text-sm font-bold text-red-800 mb-2">Driver Conflict Detected</p>
+                          {conflicts.driver.map((conflict, index) => (
+                            <p key={index} className="text-xs text-red-600">
+                              {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
+                            </p>
+                          ))}
+                          <p className="text-xs text-red-600 mt-1 font-medium">This driver is already scheduled for another booking during this time.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Partner field - Show for Outsourced bookings only */}
+                  {formData.source === 'outsourced' && (
+                    <div>
+                      <label htmlFor="partner-select" className="block mb-2 text-sm font-bold text-gray-800">
+                        Partner/External Provider <span className="text-red-500" aria-label="required">*</span>
+                      </label>
+                      <select
+                        id="partner-select"
+                        value={formData.partner || ''}
+                        onChange={(e) => setFormData({...formData, partner: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400"
+                        required={formData.source === 'outsourced'}
+                        aria-describedby="partner-select-help"
+                      >
+                        <option value="">Select a partner...</option>
+                        {partners.filter(partner => partner.status === 'active').map(partner => (
+                          <option key={partner.id} value={partner.name}>{partner.name}</option>
+                        ))}
+                      </select>
+                      <p id="partner-select-help" className="mt-1 text-xs text-gray-600">
+                        Select from your approved external service providers
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </fieldset>
+
+              {/* Trip Details Section */}
+              <fieldset className="space-y-8 p-6 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 rounded-xl border-2 border-gray-200/50 shadow-inner">
+                <legend className="text-lg font-semibold text-gray-900 mb-4">Trip Details</legend>
+                
+                {/* Pickup Information Group */}
+                <div className="space-y-6 p-4 bg-white/60 rounded-lg border border-blue-200/30">
+                  <h4 className="text-md font-semibold text-blue-900 border-b border-blue-200 pb-2">Pickup Information</h4>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="pickup-location" className="block mb-2 text-sm font-bold text-gray-800">
+                        Pickup Location <span className="text-red-500" aria-label="required">*</span>
+                      </label>
+                      <input
+                        id="pickup-location"
+                        type="text"
+                        value={formData.pickup}
+                        onChange={(e) => setFormData({...formData, pickup: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
+                        placeholder="Enter pickup address or location..."
+                        required
+                        aria-describedby="pickup-location-help"
+                      />
+                      <p id="pickup-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark where passenger will be picked up</p>
+                    </div>
+
+                    {/* Pickup Date/Time - Show for Transfer bookings only */}
+                    {formData.type === 'single' && (
+                      <DateTimePicker
+                        id="pickup-datetime"
+                        label="Pickup Date & Time"
+                        value={formData.pickupDateTime}
+                        onChange={handlePickupDateTimeChange}
+                        placeholder="Select pickup date and time..."
+                        required
+                        minDate={new Date().toISOString().split('T')[0]}
+                        helpText="When to pick up the passenger"
+                        aria-describedby="pickup-datetime-help"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Destination Information */}
+                <div className="space-y-6 p-4 bg-white/60 rounded-lg border border-green-200/30">
+                  <h4 className="text-md font-semibold text-green-900 border-b border-green-200 pb-2">Destination</h4>
+                  
+                  <div>
+                    <label htmlFor="destination-location" className="block mb-2 text-sm font-bold text-gray-800">
+                      Destination <span className="text-red-500" aria-label="required">*</span>
+                    </label>
+                    <input
+                      id="destination-location"
+                      type="text"
+                      value={formData.destination}
+                      onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
+                      placeholder="Enter destination address or location..."
+                      required
+                      aria-describedby="destination-location-help"
+                    />
+                    <p id="destination-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark for the final destination</p>
+                  </div>
+                </div>
+
+                {/* Return Transfer Toggle and Fields - Only show for single/transfer trips */}
+                {formData.type === 'single' && (
+                  <div className="space-y-6">
+                    <label className="flex items-center space-x-3 cursor-pointer group p-4 bg-white/60 rounded-lg border border-purple-200/30 hover:bg-purple-50/30 transition-all duration-200">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={formData.hasReturn}
+                          onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
+                          className="w-5 h-5 text-purple-600 bg-white border-2 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800 group-hover:text-purple-600 transition-colors">This booking has a return trip</span>
+                    </label>
+
+                    {formData.hasReturn && (
+                      <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 rounded-xl border-2 border-purple-200/50 shadow-inner">
+                        <h4 className="text-lg font-semibold text-purple-900 border-b border-purple-200 pb-2">Return Trip Details</h4>
+                        <p className="text-sm text-purple-700 mb-4 bg-purple-100/50 p-3 rounded-lg">
+                          <strong>Return trip information.</strong> These fields are auto-filled based on your pickup details, but you can customize them.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div>
+                            <label htmlFor="return-pickup" className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
+                            <input
+                              id="return-pickup"
+                              type="text"
+                              value={formData.returnPickup}
+                              onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
+                              className="w-full px-4 py-3 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                              placeholder="Where to pick up for return trip..."
+                              aria-describedby="return-pickup-help"
+                            />
+                            <p id="return-pickup-help" className="mt-1 text-xs text-gray-600">Auto-filled with destination</p>
+                          </div>
+
+                          <DateTimePicker
+                            id="return-datetime"
+                            label="Return Pickup Date & Time"
+                            value={formData.returnDateTime}
+                            onChange={handleReturnDateTimeChange}
+                            placeholder="Select return pickup date and time..."
+                            minDate={formData.pickupDateTime ? moment(formData.pickupDateTime).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0]}
+                            helpText="When to pick up for the return trip"
+                            aria-describedby="return-datetime-help"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="return-destination" className="block mb-2 text-sm font-bold text-gray-800">Return Destination</label>
+                          <input
+                            id="return-destination"
+                            type="text"
+                            value={formData.returnDestination}
+                            onChange={(e) => setFormData({...formData, returnDestination: e.target.value})}
+                            className="w-full px-4 py-3 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
+                            placeholder="Final return destination..."
+                            aria-describedby="return-destination-help"
+                          />
+                          <p id="return-destination-help" className="mt-1 text-xs text-gray-600">Where the return trip ends (auto-filled with original pickup)</p>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
-                
-                {/* Partner field - Show for Outsourced bookings only */}
-                {formData.source === 'outsourced' && (
+              </fieldset>
+
+              {/* Vehicle Assignment - Show for Internal bookings only */}
+              {formData.source === 'internal' && (
+                <fieldset className="space-y-4">
+                  <legend className="text-lg font-semibold text-gray-900">Vehicle Assignment</legend>
                   <div>
-                    <label htmlFor="partner-select" className="block mb-2 text-sm font-bold text-gray-800">
-                      Partner/External Provider <span className="text-red-500" aria-label="required">*</span>
-                    </label>
+                    <label htmlFor="vehicle-select" className="block mb-2 text-sm font-bold text-gray-800">Vehicle</label>
                     <select
-                      id="partner-select"
-                      value={formData.partner || ''}
-                      onChange={(e) => setFormData({...formData, partner: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:border-gray-400"
-                      required={formData.source === 'outsourced'}
-                      aria-describedby="partner-select-help"
+                      id="vehicle-select"
+                      value={formData.vehicle}
+                      onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 ${conflicts.vehicle.length > 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
+                      required={formData.source === 'internal'}
+                      aria-describedby="vehicle-select-help vehicle-conflicts"
                     >
-                      <option value="">Select a partner...</option>
-                      {partners.filter(partner => partner.status === 'active').map(partner => (
-                        <option key={partner.id} value={partner.name}>{partner.name}</option>
+                      <option value="">Select Vehicle</option>
+                      {fleet.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.name}>{vehicle.name}</option>
                       ))}
                     </select>
-                    <p id="partner-select-help" className="mt-1 text-xs text-gray-600">
-                      Select from your approved external service providers
-                    </p>
-                  </div>
-                )}
-              </fieldset>
-
-              {/* Location Information */}
-              <fieldset className="space-y-6">
-                <legend className="text-lg font-semibold text-gray-900 mb-4">Location Details</legend>
-                
-                <div>
-                  <label htmlFor="pickup-location" className="block mb-2 text-sm font-bold text-gray-800">
-                    Pickup Location <span className="text-red-500" aria-label="required">*</span>
-                  </label>
-                  <input
-                    id="pickup-location"
-                    type="text"
-                    value={formData.pickup}
-                    onChange={(e) => setFormData({...formData, pickup: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
-                    placeholder="Enter pickup address or location..."
-                    required
-                    aria-describedby="pickup-location-help"
-                  />
-                  <p id="pickup-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark where passenger will be picked up</p>
-                </div>
-
-                <div>
-                  <label htmlFor="destination-location" className="block mb-2 text-sm font-bold text-gray-800">
-                    Destination <span className="text-red-500" aria-label="required">*</span>
-                  </label>
-                  <input
-                    id="destination-location"
-                    type="text"
-                    value={formData.destination}
-                    onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400"
-                    placeholder="Enter destination address or location..."
-                    required
-                    aria-describedby="destination-location-help"
-                  />
-                  <p id="destination-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark for the final destination</p>
-                </div>
-              </fieldset>
-
-              {/* Pickup Date and Time - Show for Transfer bookings only */}
-              {formData.type === 'single' && (
-                <fieldset className="space-y-6 p-6 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 rounded-xl border-2 border-gray-200/50 shadow-inner">
-                  <legend className="text-lg font-bold text-gray-900 mb-4">Transfer Schedule</legend>
-                  <p className="text-sm text-gray-700 mb-6 bg-blue-100/50 p-3 rounded-lg">
-                    <strong>Transfer bookings</strong> are single journeys on a specific date and time.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="pickup-date" className="block mb-2 text-sm font-bold text-gray-800">
-                        Pickup Date <span className="text-red-500" aria-label="required">*</span>
-                      </label>
-                      <input
-                        id="pickup-date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({...formData, date: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
-                        required={formData.type === 'single'}
-                        aria-describedby="pickup-date-help"
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                      <p id="pickup-date-help" className="mt-1 text-xs text-gray-600">Date of the pickup</p>
-                    </div>
-                    <div>
-                      <label htmlFor="pickup-time" className="block mb-2 text-sm font-bold text-gray-800">
-                        Pickup Time <span className="text-red-500" aria-label="required">*</span>
-                      </label>
-                      <input
-                        id="pickup-time"
-                        type="time"
-                        value={formData.time}
-                        onChange={(e) => setFormData({...formData, time: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
-                        required={formData.type === 'single'}
-                        aria-describedby="pickup-time-help"
-                      />
-                      <p id="pickup-time-help" className="mt-1 text-xs text-gray-600">Time of the pickup</p>
-                    </div>
+                    <p id="vehicle-select-help" className="mt-1 text-xs text-gray-600">Choose a vehicle from your fleet</p>
+                    {conflicts.vehicle.length > 0 && (
+                      <div id="vehicle-conflicts" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert">
+                        <p className="text-sm font-bold text-red-800 mb-2">Vehicle Conflict Detected</p>
+                        {conflicts.vehicle.map((conflict, index) => (
+                          <p key={index} className="text-xs text-red-600">
+                            {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
+                          </p>
+                        ))}
+                        <p className="text-xs text-red-600 mt-1 font-medium">This vehicle is already scheduled for another booking during this time.</p>
+                      </div>
+                    )}
                   </div>
                 </fieldset>
               )}
 
-              {/* Vehicle field - Show for Internal bookings only */}
-              {formData.source === 'internal' && (
-                <div>
-                  <label className="block mb-2 text-sm font-bold text-gray-800">Vehicle</label>
-                  <select
-                    value={formData.vehicle}
-                    onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 ${conflicts.vehicle.length > 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
-                    required={formData.source === 'internal'}
-                  >
-                    <option value="">Select Vehicle</option>
-                    {fleet.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.name}>{vehicle.name}</option>
-                    ))}
-                  </select>
-                  {conflicts.vehicle.length > 0 && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm font-bold text-red-800 mb-2">Vehicle Conflict Detected</p>
-                      {conflicts.vehicle.map((conflict, index) => (
-                        <p key={index} className="text-xs text-red-600">
-                          {conflict.booking.customer} on {conflict.conflictDate} at {conflict.conflictTime}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Return Trip Fields - Only show for single/transfer trips */}
-              {formData.type === 'single' && (
-                <div className="space-y-6">
-                  <label className="flex items-center space-x-3 cursor-pointer group">
+              {/* Price */}
+              <fieldset className="space-y-4">
+                <legend className="text-lg font-semibold text-gray-900">Pricing</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="price-input" className="block mb-2 text-sm font-semibold text-gray-700">Price (€)</label>
                     <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">€</span>
                       <input
-                        type="checkbox"
-                        checked={formData.hasReturn}
-                        onChange={(e) => setFormData({...formData, hasReturn: e.target.checked})}
-                        className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        id="price-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
+                        placeholder="45.00"
+                        aria-describedby="price-input-help"
                       />
                     </div>
-                    <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">This booking has a return trip</span>
-                  </label>
-
-                  {formData.hasReturn && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-50 rounded-xl border-2 border-emerald-200/50 shadow-inner">
-                      <div>
-                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Location</label>
-                        <input
-                          type="text"
-                          value={formData.returnPickup}
-                          onChange={(e) => setFormData({...formData, returnPickup: e.target.value})}
-                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                          placeholder="Where to pick up for return trip..."
-                        />
-                        <p className="mt-1 text-xs text-gray-600">Auto-filled with destination</p>
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Destination</label>
-                        <input
-                          type="text"
-                          value={formData.returnDestination}
-                          onChange={(e) => setFormData({...formData, returnDestination: e.target.value})}
-                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200 placeholder-gray-400"
-                          placeholder="Final return destination..."
-                        />
-                        <p className="mt-1 text-xs text-gray-600">Where the return trip ends</p>
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Date</label>
-                        <input
-                          type="date"
-                          value={formData.returnDate}
-                          onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
-                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                        />
-                        <p className="mt-1 text-xs text-gray-600">Date of the return trip</p>
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-sm font-bold text-gray-800">Return Pickup Time</label>
-                        <input
-                          type="time"
-                          value={formData.returnTime}
-                          onChange={(e) => setFormData({...formData, returnTime: e.target.value})}
-                          className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/90 backdrop-blur-sm transition-all duration-200"
-                        />
-                        <p className="mt-1 text-xs text-gray-600">Time to pick up for return</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-gray-700">Price (€)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">€</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                      className="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
-                      placeholder="45.00"
-                    />
+                    <p id="price-input-help" className="mt-1 text-xs text-gray-600">Total price for this booking</p>
                   </div>
                 </div>
-              </div>
+              </fieldset>
             </form>
           </div>
 
