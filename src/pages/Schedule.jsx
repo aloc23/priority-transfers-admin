@@ -16,6 +16,8 @@ import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
 import ResourceScheduleView from "../components/ResourceScheduleView";
+import { BookingEventWithInvoices } from "../components/BookingEventComponent";
+
 
 const localizer = momentLocalizer(moment);
 
@@ -573,6 +575,8 @@ export default function Schedule() {
       </div>
 
 
+
+
   {viewMode === 'table' ? (
         isMobile ? (
           <div className="space-y-2">
@@ -965,31 +969,14 @@ export default function Schedule() {
                 fontFamily: 'Inter, system-ui, sans-serif'
               }}
               components={{
-                event: ({ event }) => {
-                  const status = getCombinedStatus(event.resource || event);
-                  const colorMap = {
-                    Pending: '#fbbf24',
-                    Confirmed: '#22c55e',
-                    Completed: '#3b82f6',
-                    Invoiced: '#f59e42',
-                    Paid: '#2563eb',
-                    Overdue: '#ef4444',
-                    Cancelled: '#64748b',
-                    Other: '#a3a3a3'
-                  };
-                  return (
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16 }}>
-                      <span style={{
-                        display: 'inline-block',
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        background: colorMap[status] || '#a3a3a3',
-                        margin: 2
-                      }} />
-                    </span>
-                  );
-                }
+                event: ({ event }) => (
+                  <BookingEventWithInvoices 
+                    event={event} 
+                    invoices={invoices} 
+                    compact={false} 
+                    isMobile={isMobile} 
+                  />
+                )
               }}
             />
             {/* Booking Card Popup */}
