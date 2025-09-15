@@ -16,6 +16,7 @@ import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
 import BookingModal from "../components/BookingModal";
 import ResourceScheduleView from "../components/ResourceScheduleView";
+import ScheduleToolbar from "../components/ScheduleToolbar";
 
 const localizer = momentLocalizer(moment);
 
@@ -501,56 +502,16 @@ export default function Schedule() {
     );
   };
 
-  const scheduleActions = (
-    <>
-      <ThreeWayToggle
-        options={[
-          { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-          { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-          { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-        ]}
-        selected={viewMode}
-        onChange={setViewMode}
-      />
-      {/* Quick Invoice Creation - Only show for Admin */}
-      {currentUser?.role === 'Admin' && (
-        <Link
-          to="/finance"
-          className="btn btn-outline flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
-        >
-          <InvoiceIcon className="w-4 h-4" />
-          Create Estimate
-        </Link>
-      )}
-      <button
-        onClick={() => setShowModal(true)}
-        className="btn btn-primary btn-floating flex items-center gap-2"
-      >
-        <PlusIcon className="w-4 h-4" />
-        New Booking
-      </button>
-    </>
-  );
-
-  const statusTabs = [
-    { id: 'all', label: 'All', count: statusCounts.all },
-    { id: 'pending', label: 'Pending', count: statusCounts.pending },
-    { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
-    { id: 'completed', label: 'Completed', count: statusCounts.completed },
-    { id: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled },
-  ];
-
-
   return (
-  <div className="space-y-4">
+  <div className="space-y-6">
       <PageHeader
         title="Bookings & Calendar"
         plain={true}
-        className="mb-2"
+        className="mb-4"
       />
 
-    {/* Compact Status Chips - Single row layout */}
-      <div className="mb-4">
+    {/* Consolidated Status Overview - Clean single row */}
+      <div className="mb-6">
         <CompactStatusChips
           statusData={[
             { id: 'pending', label: 'Pending', count: statusCounts.pending },
@@ -561,40 +522,27 @@ export default function Schedule() {
           ]}
           selectedStatus={filterStatus}
           onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
-          className="flex-wrap gap-2"
+          className="flex-wrap gap-3 justify-center sm:justify-start"
           isMobile={isMobile}
         />
       </div>
 
-
-
-      {/* Status Filters - moved below switcher */}
-      <div className="border-b border-slate-200 mb-2">
-        <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-6 px-2 md:px-0" aria-label="Status Filter Tabs">
-          {statusTabs.map((tab) => (
-            <button 
-              key={tab.id}
-              onClick={() => updateGlobalCalendarState({ selectedStatus: tab.id === 'all' ? null : tab.id })} 
-              className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
-                filterStatus === tab.id 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
-              }`}
-              aria-selected={filterStatus === tab.id}
-              role="tab"
-            >
-              {tab.label} ({tab.count})
-            </button>
-          ))}
-        </nav>
+      {/* Unified Toolbar for all views */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <ScheduleToolbar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onAddBooking={() => setShowModal(true)}
+          showFilters={true}
+        />
       </div>
 
 
   {viewMode === 'table' ? (
         isMobile ? (
-          <div className="space-y-2">
-            {/* Sticky section header for mobile */}
-            <div className="sticky-header mb-1">
+          <div className="space-y-4">
+            {/* Clean mobile header */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
               <h2 className="text-lg font-semibold text-slate-800">
                 {filterStatus === 'all' ? 'All Bookings' : `${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)} Bookings`}
                 <span className="ml-2 text-sm text-slate-500">
@@ -602,110 +550,20 @@ export default function Schedule() {
                 </span>
               </h2>
             </div>
-            {/* Three-way toggle, Add Booking, and Filters for mobile, above cards */}
-            <div className="mb-1 flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <ThreeWayToggle
-                  options={[
-                    { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                    { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                  ]}
-                  selected={viewMode}
-                  onChange={setViewMode}
-                />
-                <button 
-                  className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                  onClick={() => setShowModal(true)}
-                >
-                  <PlusIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Add Booking</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
-                  <select
-                    value={selectedDriver}
-                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
-                    className="border rounded px-2 py-1"
-                  >
-                    <option value="">All Drivers</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.name}>{driver.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 items-center text-sm">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>Priority</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                    <span>Outsourced</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
             {/* Mobile cards */}
-            {filteredBookings.map(renderMobileCard)}
-            {filteredBookings.length === 0 && (
-              <div className="text-center py-6 text-slate-500">
-                No bookings found for the selected filters.
-              </div>
-            )}
+            <div className="space-y-3">
+              {filteredBookings.map(renderMobileCard)}
+              {filteredBookings.length === 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-slate-500">
+                  <div className="text-4xl mb-2">📅</div>
+                  <div>No bookings found for the selected filters.</div>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="card p-4" ref={tableRef}>
-            {/* Three-way toggle, Add Booking, and Filters for desktop, above table */}
-            <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
-              <div className="flex items-center gap-2">
-                <ThreeWayToggle
-                  options={[
-                    { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                    { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                  ]}
-                  selected={viewMode}
-                  onChange={setViewMode}
-                />
-                <button 
-                  className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                  onClick={() => setShowModal(true)}
-                >
-                  <PlusIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Add Booking</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
-                  <select
-                    value={selectedDriver}
-                    onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
-                    className="border rounded px-2 py-1"
-                  >
-                    <option value="">All Drivers</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.name}>{driver.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 items-center text-sm">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>Priority</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                    <span>Outsourced</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6" ref={tableRef}>
             <div className="overflow-x-auto">
               <table className="table schedule-table-mobile">
                 <thead className="sticky top-0 bg-white z-10">
@@ -901,54 +759,7 @@ export default function Schedule() {
           </div>
         )
       ) : viewMode === 'calendar' ? (
-        <div className="card p-4">
-          {/* Three-way toggle, Add Booking, and Filters for calendar view, above calendar */}
-          <div className="mb-1 flex flex-wrap items-center gap-2 justify-between">
-            <div className="flex items-center gap-2">
-              <ThreeWayToggle
-                options={[
-                  { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                  { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                ]}
-                selected={viewMode}
-                onChange={setViewMode}
-              />
-              <button 
-                className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                onClick={() => setShowModal(true)}
-              >
-                <PlusIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Add Booking</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-0.5">Filter by Driver</label>
-                <select
-                  value={selectedDriver}
-                  onChange={(e) => updateGlobalCalendarState({ selectedDriver: e.target.value })}
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="">All Drivers</option>
-                  {drivers.map(driver => (
-                    <option key={driver.id} value={driver.name}>{driver.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2 items-center text-sm">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span>Priority</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                  <span>Outsourced</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
             {/* Compact Calendar Navigation */}
             <div className="mb-4 p-4">
@@ -1167,29 +978,7 @@ export default function Schedule() {
         </div>
       ) : (
         // Resources view
-        <div className="card p-4">
-          <div className="mb-4 flex flex-wrap items-center gap-2 justify-between">
-            <div className="flex items-center gap-2">
-              <ThreeWayToggle
-                options={[
-                  { id: 'table', label: 'Table', icon: TableIcon, mobileLabel: 'Table' },
-                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon, mobileLabel: 'Cal' },
-                  { id: 'resources', label: 'Resources', icon: DriverIcon, mobileLabel: 'Res' }
-                ]}
-                selected={viewMode}
-                onChange={setViewMode}
-              />
-              <button 
-                className="btn btn-primary gap-2 font-medium hover:scale-105 transition-transform duration-200" 
-                onClick={() => setShowModal(true)}
-              >
-                <PlusIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Add Booking</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-            </div>
-          </div>
-          
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <ResourceScheduleView />
         </div>
       )}
