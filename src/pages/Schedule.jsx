@@ -10,7 +10,7 @@ import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, DriverIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
 import StatusBlockGrid from "../components/StatusBlockGrid";
-import CompactStatusChips from "../components/CompactStatusChips";
+import CompactStatusChipsWithDropdown from "../components/CompactStatusChipsWithDropdown";
 import CompactCalendarNav from "../components/CompactCalendarNav";
 import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
@@ -549,9 +549,9 @@ export default function Schedule() {
         className="mb-2"
       />
 
-    {/* Compact Status Chips - Single row layout */}
-      <div className="mb-4">
-        <CompactStatusChips
+    {/* Enhanced Compact Status Chips with Dropdown - Single unified status interface */}
+      <div className="mb-6">
+        <CompactStatusChipsWithDropdown
           statusData={[
             { id: 'pending', label: 'Pending', count: statusCounts.pending },
             { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
@@ -561,32 +561,15 @@ export default function Schedule() {
           ]}
           selectedStatus={filterStatus}
           onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
+          bookings={bookings}
           className="flex-wrap gap-2"
+          chipClassName="shadow-sm"
           isMobile={isMobile}
+          onBookingClick={(booking) => {
+            // Handle booking click - could open modal or navigate
+            console.log('Selected booking:', booking);
+          }}
         />
-      </div>
-
-
-
-      {/* Status Filters - moved below switcher */}
-      <div className="border-b border-slate-200 mb-2">
-        <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-6 px-2 md:px-0" aria-label="Status Filter Tabs">
-          {statusTabs.map((tab) => (
-            <button 
-              key={tab.id}
-              onClick={() => updateGlobalCalendarState({ selectedStatus: tab.id === 'all' ? null : tab.id })} 
-              className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
-                filterStatus === tab.id 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
-              }`}
-              aria-selected={filterStatus === tab.id}
-              role="tab"
-            >
-              {tab.label} ({tab.count})
-            </button>
-          ))}
-        </nav>
       </div>
 
 
