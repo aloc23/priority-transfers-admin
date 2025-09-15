@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+// Google Maps DirectionsService for journey estimation
 import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { calculateTotalPrice } from "../utils/priceCalculator";
@@ -28,6 +29,76 @@ export default function Estimations() {
     dateFrom: '',
     dateTo: '',
   });
+  // State for journey info (distance/duration/error)
+  const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
+  // Google Maps script loader (shared with BookingModal)
+  function loadGoogleMapsScript(apiKey, callback) {
+    if (window.google && window.google.maps) {
+      callback();
+      return;
+    }
+    const existingScript = document.getElementById('googleMapsScript');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+      script.id = 'googleMapsScript';
+      script.async = true;
+      script.onload = callback;
+      document.body.appendChild(script);
+    } else {
+      existingScript.onload = callback;
+    }
+  }
+
+  // Fetch journey info using DirectionsService
+  function fetchJourneyInfo(pickup, destination) {
+    if (!pickup || !destination) return;
+    const apiKey = 'AIzaSyDoCk3Y84BUdtuOQNNjSm7rPOOZzenrkkw'; // <-- Your API key
+    loadGoogleMapsScript(apiKey, () => {
+      if (!(window.google && window.google.maps && window.google.maps.DirectionsService)) {
+        setJourneyInfo({ distance: '', duration: '', error: 'Google Maps failed to load.' });
+        return;
+      }
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: pickup,
+          destination: destination,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === 'OK' && result.routes.length > 0) {
+            const leg = result.routes[0].legs[0];
+            setJourneyInfo({
+              distance: leg.distance.text,
+              duration: leg.duration.text,
+              error: ''
+            });
+            // Optionally auto-fill form fields
+            setForm(form => ({
+              ...form,
+              distance: leg.distance.value ? (leg.distance.value / 1609.34).toFixed(2) : '', // meters to miles
+              duration: leg.duration.value ? (leg.duration.value / 3600).toFixed(2) : '' // seconds to hours
+            }));
+          } else {
+            setJourneyInfo({ distance: '', duration: '', error: 'No route found.' });
+          }
+        }
+      );
+    });
+  }
+  // Pickup and destination fields for estimation
+  const [locations, setLocations] = useState({ pickup: '', destination: '' });
+
+  // Fetch journey info when pickup or destination changes
+  useEffect(() => {
+    if (locations.pickup && locations.destination) {
+      fetchJourneyInfo(locations.pickup, locations.destination);
+    } else {
+      setJourneyInfo({ distance: '', duration: '', error: '' });
+    }
+    // eslint-disable-next-line
+  }, [locations.pickup, locations.destination]);
   // Example state for form and results (replace with your actual logic)
   const [form, setForm] = useState({
     serviceType: 'priority',
@@ -335,6 +406,14 @@ export default function Estimations() {
               </select>
             </div>
             <div>
+              <label className="block mb-1">Pickup Location</label>
+              <input type="text" value={locations.pickup} onChange={e => setLocations(l => ({ ...l, pickup: e.target.value }))} placeholder="Enter pickup address..." />
+            </div>
+            <div>
+              <label className="block mb-1">Destination</label>
+              <input type="text" value={locations.destination} onChange={e => setLocations(l => ({ ...l, destination: e.target.value }))} placeholder="Enter destination address..." />
+            </div>
+            <div>
               <label className="block mb-1">Distance (miles)</label>
               <input type="number" value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} />
             </div>
@@ -342,6 +421,20 @@ export default function Estimations() {
               <label className="block mb-1">Duration (hours)</label>
               <input type="number" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} />
             </div>
+            {/* Journey Info Display */}
+            {(journeyInfo.distance || journeyInfo.duration || journeyInfo.error) && (
+              <div className="col-span-2 mt-2 p-3 bg-blue-50 rounded border border-blue-200">
+                <span className="font-semibold text-blue-800">Journey Estimate:</span>
+                {journeyInfo.error ? (
+                  <span className="text-red-500 ml-2">{journeyInfo.error}</span>
+                ) : (
+                  <>
+                    {journeyInfo.distance && <span className="ml-2">Distance: <b>{journeyInfo.distance}</b></span>}
+                    {journeyInfo.duration && <span className="ml-4">Duration: <b>{journeyInfo.duration}</b></span>}
+                  </>
+                )}
+              </div>
+            )}
             <div>
               <label className="block mb-1">Passengers</label>
               <input type="number" value={form.passengers} onChange={e => setForm({ ...form, passengers: e.target.value })} />
