@@ -326,16 +326,16 @@ export default function Dashboard() {
             <BookingsCalendarWidget fullWidth={true} />
           </div>
 
-          {/* Booking Status / Invoice Status - Second position */}
-          <BookingInvoiceStatusTabs compact={true} />
-
-          {/* Combined Booking & Invoice Status - Third position */}
-          <CombinedStatusSummary compact={true} />
-
-          {/* Recent Activity - Fourth position */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
-            <ActivityList activities={recentActivity} />
+          {/* Streamlined Status Summary - Consolidated single view */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Combined Status Overview */}
+            <CombinedStatusSummary compact={true} />
+            
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-800 text-lg mb-4">Recent Activity</h3>
+              <ActivityList activities={recentActivity} />
+            </div>
           </div>
         </div>
       )}

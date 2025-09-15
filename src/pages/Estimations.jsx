@@ -298,25 +298,25 @@ export default function Estimations() {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          {/* Job Details Card */}
-          <div className="bg-white rounded-2xl shadow-lg mb-8">
-            {/* Sticky Header - responsive */}
-            <div className="sticky top-0 lg:top-0 bg-white rounded-t-2xl shadow-sm z-10 px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-100">
-              <div className="flex items-center">
-                <div className="bg-purple-100 p-3 rounded-full mr-4">
-                  <EstimationIcon className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
-                  <p className="text-gray-600">Enter service parameters for accurate pricing</p>
-                </div>
-              </div>
+      {/* Job Details Card - Now at the top */}
+      <div className="bg-white rounded-2xl shadow-lg mb-8">
+        <div className="px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-100">
+          <div className="flex items-center">
+            <div className="bg-purple-100 p-3 rounded-full mr-4">
+              <EstimationIcon className="w-6 h-6 text-purple-600" />
             </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
+              <p className="text-gray-600">Enter service parameters for accurate pricing</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Form and Cost Analysis Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 p-4 lg:p-8">
+          <div className="lg:col-span-2">
             {/* Form Content */}
-            <div className="px-4 lg:px-8 pb-6 lg:pb-8 pt-2">
-              <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-1">Service Type</label>
               <select value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
@@ -411,12 +411,11 @@ export default function Estimations() {
                 </button>
               </div>
             </form>
-            </div>
           </div>
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          {/* Live Cost Analysis - Sticky on desktop only */}
-          <div className="lg:sticky lg:top-4">
-            <div className="bg-white rounded-2xl shadow-lg p-4 lg:p-6">
+
+          <div className="lg:col-span-1">
+            {/* Live Cost Analysis - Now positioned side by side */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 lg:p-6 h-fit">
               <div className="flex items-center mb-4">
                 <div className="bg-green-100 p-3 rounded-full mr-4">
                   <RevenueIcon className="w-6 h-6 text-green-600" />
@@ -427,9 +426,9 @@ export default function Estimations() {
                 </div>
               </div>
           {results ? (
-            <div className="space-y-4 cost-analysis-mobile">
+            <div className="space-y-4">
               {/* Service Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg border border-green-200">
                 <h4 className="font-medium text-gray-700 mb-2">Service Summary</h4>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
@@ -448,7 +447,7 @@ export default function Estimations() {
               </div>
 
               {/* Cost Breakdown */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-800 mb-2">Cost Breakdown</h4>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
@@ -483,7 +482,7 @@ export default function Estimations() {
               </div>
 
               {/* Pricing Summary */}
-              <div className="bg-green-50 p-4 rounded-lg">
+              <div className="bg-gradient-to-br from-green-100 to-emerald-100 p-4 rounded-lg border border-green-300">
                 <h4 className="font-medium text-green-800 mb-2">Pricing Summary</h4>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
@@ -507,7 +506,7 @@ export default function Estimations() {
                     </div>
                   )}
                 </div>
-                <div className="border-t pt-2 mt-2">
+                <div className="border-t border-green-300 pt-2 mt-2">
                   <div className="flex justify-between text-lg font-bold text-green-700">
                     <span>Final Quote Price:</span>
                     <span>€{results.finalPrice}</span>
@@ -519,17 +518,16 @@ export default function Estimations() {
                   )}
                 </div>
               </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Fill in the form to see live cost analysis</p>
-              </div>
-            )}
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Fill in the form to see live cost analysis</p>
+            </div>
+          )}
         </div>
       </div>
+    </div>
       <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
         <button onClick={exportEstimations} className="btn btn-outline flex items-center gap-2">
           <DownloadIcon className="w-4 h-4" /> Export
