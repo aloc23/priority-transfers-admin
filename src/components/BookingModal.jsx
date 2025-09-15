@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+// Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
@@ -15,6 +16,59 @@ export default function BookingModal({
 }) {
   const { addBooking, updateBooking, customers, drivers, partners, bookings } = useAppStore();
   const { fleet } = useFleet();
+
+  // State for journey info
+  const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
+
+  // Google Maps JavaScript API DirectionsService fetch function
+  function loadGoogleMapsScript(apiKey, callback) {
+    if (window.google && window.google.maps) {
+      callback();
+      return;
+    }
+    const existingScript = document.getElementById('googleMapsScript');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+      script.id = 'googleMapsScript';
+      script.async = true;
+      script.onload = callback;
+      document.body.appendChild(script);
+    } else {
+      existingScript.onload = callback;
+    }
+  }
+
+  function fetchJourneyInfo(pickup, destination) {
+    if (!pickup || !destination) return;
+    const apiKey = 'AIzaSyDoCk3Y84BUdtuOQNNjSm7rPOOZzenrkkw'; // <-- Your API key
+    loadGoogleMapsScript(apiKey, () => {
+      if (!(window.google && window.google.maps && window.google.maps.DirectionsService)) {
+        setJourneyInfo({ distance: '', duration: '', error: 'Google Maps failed to load.' });
+        return;
+      }
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: pickup,
+          destination: destination,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === 'OK' && result.routes.length > 0) {
+            const leg = result.routes[0].legs[0];
+            setJourneyInfo({
+              distance: leg.distance.text,
+              duration: leg.duration.text,
+              error: ''
+            });
+          } else {
+            setJourneyInfo({ distance: '', duration: '', error: 'No route found.' });
+          }
+        }
+      );
+    });
+  }
 
   const [formData, setFormData] = useState({
     customer: "",
@@ -257,6 +311,16 @@ export default function BookingModal({
       checkForConflicts(formData);
     }
   }, [formData.driver, formData.vehicle, formData.date, formData.time, formData.returnDate, formData.returnTime, formData.tourStartDate, formData.tourEndDate, formData.tourPickupTime, formData.tourReturnPickupTime, formData.type, formData.source, formData.hasReturn, isOpen]);
+
+  // Fetch journey info when pickup or destination changes
+  useEffect(() => {
+    if (formData.pickup && formData.destination) {
+      fetchJourneyInfo(formData.pickup, formData.destination);
+    } else {
+      setJourneyInfo({ distance: '', duration: '', error: '' });
+    }
+    // eslint-disable-next-line
+  }, [formData.pickup, formData.destination]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -730,6 +794,21 @@ export default function BookingModal({
                     />
                     <p id="destination-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark for the final destination</p>
                   </div>
+
+                  {/* Journey Info (Distance & Duration) */}
+                  {(journeyInfo.distance || journeyInfo.duration || journeyInfo.error) && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col gap-1">
+                      <span className="font-semibold text-blue-800">Journey Info:</span>
+                      {journeyInfo.error ? (
+                        <span className="text-red-500">{journeyInfo.error}</span>
+                      ) : (
+                        <>
+                          {journeyInfo.distance && <span>Distance: <b>{journeyInfo.distance}</b></span>}
+                          {journeyInfo.duration && <span>Estimated Duration: <b>{journeyInfo.duration}</b></span>}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Return Transfer Toggle and Fields - Only show for single/transfer trips */}
