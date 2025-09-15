@@ -298,20 +298,25 @@ export default function Estimations() {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="lg:col-span-2 order-2 lg:order-1">
           {/* Job Details Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-            <div className="flex items-center mb-6">
-              <div className="bg-purple-100 p-3 rounded-full mr-4">
-                <EstimationIcon className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
-                <p className="text-gray-600">Enter service parameters for accurate pricing</p>
+          <div className="bg-white rounded-2xl shadow-lg mb-8">
+            {/* Sticky Header - responsive */}
+            <div className="sticky top-0 lg:top-0 bg-white rounded-t-2xl shadow-sm z-10 px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-100">
+              <div className="flex items-center">
+                <div className="bg-purple-100 p-3 rounded-full mr-4">
+                  <EstimationIcon className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Job Details & Costs</h2>
+                  <p className="text-gray-600">Enter service parameters for accurate pricing</p>
+                </div>
               </div>
             </div>
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
+            {/* Form Content */}
+            <div className="px-4 lg:px-8 pb-6 lg:pb-8 pt-2">
+              <form className="grid grid-cols-1 md:grid-cols-2 gap-6 estimation-form-mobile" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-1">Service Type</label>
               <select value={form.serviceType} onChange={e => setForm({ ...form, serviceType: e.target.value })}>
@@ -400,15 +405,27 @@ export default function Estimations() {
                 </div>
               </div>
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-4 justify-end">
-              <button type="submit" className="btn btn-primary shadow-md hover:shadow-lg">
-                Save
-              </button>
+              <div className="md:col-span-2 flex gap-2 pt-4 justify-end">
+                <button type="submit" className="btn btn-primary shadow-md hover:shadow-lg">
+                  Save
+                </button>
+              </div>
+            </form>
             </div>
-          </form>
-        </div>
-        <div className="card p-6">
-          <h3 className="font-semibold mb-4 text-lg text-gray-800">Live Cost Analysis</h3>
+          </div>
+        <div className="lg:col-span-1 order-1 lg:order-2">
+          {/* Live Cost Analysis - Sticky on desktop only */}
+          <div className="lg:sticky lg:top-4">
+            <div className="bg-white rounded-2xl shadow-lg p-4 lg:p-6">
+              <div className="flex items-center mb-4">
+                <div className="bg-green-100 p-3 rounded-full mr-4">
+                  <RevenueIcon className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Live Cost Analysis</h3>
+                  <p className="text-sm text-gray-600">Real-time pricing breakdown</p>
+                </div>
+              </div>
           {results ? (
             <div className="space-y-4 cost-analysis-mobile">
               {/* Service Summary */}
@@ -502,13 +519,15 @@ export default function Estimations() {
                   )}
                 </div>
               </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Fill in the form to see live cost analysis</p>
+              </div>
+            )}
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <EstimationIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Fill in the form to see live cost analysis</p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
