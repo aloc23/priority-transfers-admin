@@ -511,7 +511,7 @@ export default function Schedule() {
       />
 
     {/* Consolidated Status Overview - Clean single row */}
-      <div className="mb-6">
+      <div className={isMobile ? "mb-3" : "mb-6"}>
         <CompactStatusChips
           statusData={[
             { id: 'pending', label: 'Pending', count: statusCounts.pending },
@@ -522,13 +522,13 @@ export default function Schedule() {
           ]}
           selectedStatus={filterStatus}
           onStatusClick={(status) => updateGlobalCalendarState({ selectedStatus: status === 'all' ? null : status })}
-          className="flex-wrap gap-3 justify-center sm:justify-start"
+          className={isMobile ? "flex-wrap gap-1.5 justify-center" : "flex-wrap gap-3 justify-center sm:justify-start"}
           isMobile={isMobile}
         />
       </div>
 
       {/* Unified Toolbar for all views */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+      <div className={`bg-white rounded-xl shadow-sm border border-gray-200 ${isMobile ? 'p-3 mb-4' : 'p-4 mb-6'}`}>
         <ScheduleToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}

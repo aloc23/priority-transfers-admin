@@ -53,24 +53,24 @@ const CompactStatusChips = ({
             key={status.id}
             onClick={() => onStatusClick(status.id)}
             className={`
-              inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full 
-              text-xs font-semibold border transition-all duration-200 
+              inline-flex items-center rounded-full 
+              font-semibold border transition-all duration-200 
               transform hover:scale-105 focus:outline-none focus:ring-2 
               focus:ring-blue-300 focus:ring-offset-1
               ${baseColors}
               ${chipClassName}
-              ${isMobile ? 'min-h-[32px]' : 'min-h-[28px]'}
+              ${isMobile ? 'gap-1 px-2 py-1 min-h-[24px]' : 'gap-1.5 px-3 py-1.5 min-h-[28px]'}
             `}
           >
             <span className={`
               inline-flex items-center justify-center 
-              ${isMobile ? 'w-5 h-5' : 'w-4 h-4'} 
-              rounded-full text-xs font-bold
+              rounded-full font-bold
+              ${isMobile ? 'w-3.5 h-3.5 text-[10px]' : 'w-4 h-4 text-xs'} 
               ${isSelected ? 'bg-white/20' : 'bg-current opacity-20'}
             `}>
               {status.count || 0}
             </span>
-            <span className={`${isMobile ? 'text-xs' : 'text-xs'} font-semibold`}>
+            <span className={`font-semibold ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
               {status.label}
             </span>
           </button>
