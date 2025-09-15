@@ -79,18 +79,27 @@ export default function BookingModal({
         return;
       }
       const directionsService = new window.google.maps.DirectionsService();
+      // If tour, use stops as waypoints
+      const waypoints = (formData.type === 'tour' && Array.isArray(formData.stops))
+        ? formData.stops.filter(s => s).map(stop => ({ location: stop, stopover: true }))
+        : [];
       directionsService.route(
         {
           origin: pickup,
           destination: destination,
+          waypoints,
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
           if (status === 'OK' && result.routes.length > 0) {
-            const leg = result.routes[0].legs[0];
-            // meters to km, seconds to min
-            let distanceKm = leg.distance.value / 1000;
-            let durationMin = leg.duration.value / 60;
+            // Sum all legs for total tour distance/duration
+            let distanceMeters = 0, durationSeconds = 0;
+            result.routes[0].legs.forEach(leg => {
+              distanceMeters += leg.distance.value;
+              durationSeconds += leg.duration.value;
+            });
+            let distanceKm = distanceMeters / 1000;
+            let durationMin = durationSeconds / 60;
             if (hasReturn) {
               distanceKm *= 2;
               durationMin *= 2;
@@ -133,6 +142,7 @@ export default function BookingModal({
     customer: "",
     pickup: "",
     destination: "",
+    stops: [], // Array of stops for tours
     date: initialDate,
     time: initialTime,
     pickupDateTime: "", // Combined date/time for pickup
@@ -379,7 +389,7 @@ export default function BookingModal({
       setJourneyInfo({ distance: '', duration: '', error: '' });
     }
     // eslint-disable-next-line
-  }, [formData.pickup, formData.destination, formData.hasReturn]);
+  }, [formData.pickup, formData.destination, formData.hasReturn, formData.stops]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -434,6 +444,7 @@ export default function BookingModal({
       customer: "",
       pickup: "",
       destination: "",
+      stops: [], // Always reset stops to empty array
       date: "",
       time: "",
       pickupDateTime: "",
@@ -843,8 +854,7 @@ export default function BookingModal({
 
                 {/* Destination Information */}
                 <div className="space-y-6 p-4 bg-white/60 rounded-lg border border-green-200/30">
-                  <h4 className="text-md font-semibold text-green-900 border-b border-green-200 pb-2">Destination</h4>
-                  
+                  <h4 className="text-md font-semibold text-green-900 border-b border-green-200 pb-2">Destination & Stops</h4>
                   <div>
                     <label htmlFor="destination-location" className="block mb-2 text-sm font-bold text-gray-800">
                       Destination <span className="text-red-500" aria-label="required">*</span>
@@ -861,7 +871,44 @@ export default function BookingModal({
                     />
                     <p id="destination-location-help" className="mt-1 text-xs text-gray-600">Full address or landmark for the final destination</p>
                   </div>
-
+                  {/* Stops for tours */}
+                  {formData.type === 'tour' && (
+                    <div className="mt-4">
+                      <label className="block mb-2 text-sm font-bold text-gray-800">Tour Stops (optional)</label>
+                  {(formData.stops && formData.stops.length > 0) ? (
+                    formData.stops.map((stop, idx) => (
+                      <div key={idx} className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={stop}
+                          onChange={e => {
+                            const newStops = [...formData.stops];
+                            newStops[idx] = e.target.value;
+                            setFormData({ ...formData, stops: newStops });
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder={`Stop ${idx + 1} address...`}
+                        />
+                        <button
+                          type="button"
+                          className="px-2 py-1 bg-red-100 text-red-700 rounded border border-red-300 text-xs font-semibold"
+                          onClick={() => {
+                            const newStops = formData.stops.filter((_, i) => i !== idx);
+                            setFormData({ ...formData, stops: newStops });
+                          }}
+                        >Remove</button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-2">No stops added yet.</p>
+                  )}
+                  <button
+                    type="button"
+                    className="mt-2 px-3 py-2 bg-green-100 text-green-700 rounded border border-green-300 text-xs font-semibold"
+                    onClick={() => setFormData({ ...formData, stops: [...(formData.stops || []), ""] })}
+                  >Add Stop</button>
+                    </div>
+                  )}
                   {/* Journey Info (Distance & Duration) */}
                   {(journeyInfo.distance || journeyInfo.duration || journeyInfo.error) && (
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col gap-1">
