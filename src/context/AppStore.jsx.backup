@@ -14,7 +14,6 @@ export function useAppStore() {
 }
 
 export function AppStoreProvider({ children }) {
-  // Initialize state
   const [currentUser, setCurrentUser] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);

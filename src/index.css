@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent horizontal scrolling globally */
+body, html {
+  overflow-x: hidden;
+}
+
+/* Prevent horizontal scrolling in main content areas */
+main, .main-content {
+  overflow-x: hidden;
+}
+
 :root {
   /* Professional Slate Palette */
   --slate-50: #f8fafc;
