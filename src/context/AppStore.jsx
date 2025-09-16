@@ -1840,8 +1840,8 @@ export function AppStoreProvider({ children }) {
     deleteEstimation,
     convertEstimationToBooking,
     updateGlobalCalendarState,
-    resetGlobalCalendarFilters
-  };
+  resetGlobalCalendarFilters
+  }
 
   return (
     <AppStoreContext.Provider value={value}>
