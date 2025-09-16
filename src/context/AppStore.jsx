@@ -1848,3 +1848,5 @@ export function AppStoreProvider({ children }) {
     </AppStoreContext.Provider>
   );
 }
+
+export default AppStoreProvider;
