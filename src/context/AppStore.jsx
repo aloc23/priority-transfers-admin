@@ -287,40 +287,13 @@ export function AppStoreProvider({ children }) {
   };
 
   const initializeDrivers = () => {
-    const driverColors = [
-      '#3b82f6', // blue
-      '#10b981', // emerald
-      '#f59e42', // orange
-      '#6366f1', // indigo
-      '#ef4444', // red
-      '#f43f5e', // pink
-      '#22d3ee', // cyan
-      '#a3e635', // lime
-      '#eab308', // yellow
-      '#8b5cf6'  // violet
-    ];
     const sampleDrivers = [
-      { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8, color: driverColors[0] },
-      { id: 2, name: "Sarah Wilson", email: "sarah@example.com", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9, color: driverColors[1] },
-      { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7, color: driverColors[2] }
+      { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
+      { id: 2, name: "Sarah Wilson", email: "sarah@example.com", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
+      { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
     ];
     setDrivers(sampleDrivers);
     safeLocalStorage.setItem("drivers", JSON.stringify(sampleDrivers));
-  };
-
-  // Assign a color to a new driver automatically
-  const addDriver = (newDriver) => {
-    const driverColors = [
-      '#3b82f6', '#10b981', '#f59e42', '#6366f1', '#ef4444', '#f43f5e', '#22d3ee', '#a3e635', '#eab308', '#8b5cf6'
-    ];
-    // Find used colors
-    const usedColors = drivers.map(d => d.color);
-    // Pick next available color
-    const availableColor = driverColors.find(c => !usedColors.includes(c)) || driverColors[0];
-    const driverWithColor = { ...newDriver, color: availableColor };
-    const updatedDrivers = [...drivers, driverWithColor];
-    setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const initializeVehicles = () => {
@@ -893,6 +866,13 @@ export function AppStoreProvider({ children }) {
     const updatedCustomers = customers.filter(customer => customer.id !== id);
     setCustomers(updatedCustomers);
     safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+  };
+
+  const addDriver = (driver) => {
+    const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
+    const updatedDrivers = [...drivers, newDriver];
+    setDrivers(updatedDrivers);
+    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const updateDriver = (id, updates) => {

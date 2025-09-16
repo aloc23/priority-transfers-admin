@@ -118,16 +118,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
   return (
     <>
-      {/* Backdrop - now works on all screen sizes */}
-      {sidebarOpen && (
+      {/* Mobile backdrop */}
+      {sidebarOpen && isMobile && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close sidebar backdrop"
         />
       )}
-      {/* Hamburger menu - always visible when sidebar is closed */}
-      {!sidebarOpen && (
+      {/* Mobile floating hamburger to open sidebar if closed */}
+      {isMobile && !sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
           className="fixed top-4 left-4 z-60 p-3 bg-white rounded shadow-lg"

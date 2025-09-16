@@ -236,22 +236,45 @@ export default function Schedule() {
             }
           });
         }
-        } else {
-          // Handle non-tour bookings  
-          if (booking.date && booking.time) {
-            const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
-            const baseColor = isOutsourced ? '#f97316' : driverColor;
-            const baseBorderColor = isOutsourced ? '#ea580c' : driverColor;
-            const statusOpacity = booking.status === 'confirmed' ? '1' : 
-                                 booking.status === 'pending' ? '0.7' : 
-                                 booking.status === 'completed' ? '0.9' : '0.5';
-                                 
+      } else {
+        // Handle single/transfer bookings
+        if (booking.date && booking.time) {
+          const isOutsourced = booking.source === 'outsourced' || booking.type === 'outsourced';
+          const baseColor = isOutsourced ? '#f97316' : '#3b82f6'; // Orange for outsourced, blue for internal
+          const baseBorderColor = isOutsourced ? '#ea580c' : '#1d4ed8';
+          
+          // Apply opacity and visual cues based on status
+          const statusOpacity = booking.status === 'confirmed' ? '1' : 
+                               booking.status === 'pending' ? '0.7' : 
+                               booking.status === 'completed' ? '0.9' : '0.5';
+          
+          events.push({
+            id: `${booking.id}-pickup`,
+            title: `${booking.status === 'pending' ? '[PENDING] ' : ''}${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination}`,
+            start: moment(`${booking.date} ${booking.time}`).toDate(),
+            end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
+            resource: { ...booking, isReturn: false, legType: 'pickup' },
+            style: {
+              backgroundColor: baseColor,
+              borderColor: baseBorderColor,
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '12px',
+              borderRadius: '6px',
+              border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: statusOpacity
+            }
+          });
+          
+          // Add return event if applicable with enhanced styling
+          if (booking.hasReturn && booking.returnDate && booking.returnTime) {
             events.push({
-              id: `${booking.id}-pickup`,
-              title: `${booking.status === 'pending' ? '[PENDING] ' : ''}${getBookingTypeDisplay(booking.type)}: ${booking.customer} - ${booking.pickup} → ${booking.destination} | ${booking.driver}`,
-              start: moment(`${booking.date} ${booking.time}`).toDate(),
-              end: moment(`${booking.date} ${booking.time}`).add(2, 'hours').toDate(),
-              resource: { ...booking, isReturn: false, legType: 'pickup' },
+              id: `${booking.id}-return`,
+              title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup}`,
+              start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
+              end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
+              resource: { ...booking, isReturn: true, legType: 'return' },
               style: {
                 backgroundColor: baseColor,
                 borderColor: baseBorderColor,
@@ -259,44 +282,37 @@ export default function Schedule() {
                 fontWeight: '600',
                 fontSize: '12px',
                 borderRadius: '6px',
-                border: booking.status === 'pending' ? '2px dashed' : '2px solid',
+                border: booking.status === 'pending' ? '3px dashed' : '2px dashed', // Always dashed for return trips
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 opacity: statusOpacity
               }
             });
-            
-            // Handle return trips
-            if (booking.hasReturn && booking.returnDate && booking.returnTime) {
-              events.push({
-                id: `${booking.id}-return`,
-                title: `${booking.status === 'pending' ? '[PENDING] ' : ''}Return: ${booking.customer} - ${booking.returnPickup || booking.destination} → ${booking.pickup} | ${booking.driver}`,
-                start: moment(`${booking.returnDate} ${booking.returnTime}`).toDate(),
-                end: moment(`${booking.returnDate} ${booking.returnTime}`).add(2, 'hours').toDate(),
-                resource: { ...booking, isReturn: true, legType: 'return' },
-                style: {
-                  backgroundColor: baseColor,
-                  borderColor: baseBorderColor,
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: '12px',
-                  borderRadius: '6px',
-                  border: booking.status === 'pending' ? '3px dashed' : '2px dashed',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  opacity: statusOpacity
-                }
-              });
-            }
           }
         }
+      }
     });
     
     return events;
   }, [filteredBookings]);
 
-  // Get available actions for a booking
-  const getBookingActions = (booking) => {
-    const actions = [];
+  const handleSelectEvent = (event) => {
+    handleEdit(event.resource);
+  };
+
+  const handleSelectSlot = ({ start }) => {
+    const date = moment(start).format('YYYY-MM-DD');
+    const time = moment(start).format('HH:mm');
+    setInitialDate(date);
+    setInitialTime(time);
+    setEditingBooking(null);
+    setShowModal(true);
+  };
+
+  // Render mobile card for schedule items
+  const renderMobileCard = (booking) => {
+    // Find related invoice if exists
     const relatedInvoice = invoices.find(inv => inv.bookingId === booking.id);
+    const actions = [];
     
     // Determine available actions based on booking status and completion states
     if (booking.status === 'pending') {
@@ -341,12 +357,6 @@ export default function Schedule() {
         color: 'btn bg-green-600 text-white hover:bg-green-700'
       });
     }
-
-    return actions;
-  };
-
-  const renderBookingCard = (booking) => {
-    const actions = getBookingActions(booking);
 
     return (
       <div 

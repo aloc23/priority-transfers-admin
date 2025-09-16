@@ -47,7 +47,7 @@ function AuthenticatedShell() {
     <div className="flex h-screen bg-slate-50">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <main className={`flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
         <div className={`${isMobile ? 'p-2' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
