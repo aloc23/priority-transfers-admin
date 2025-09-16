@@ -14,7 +14,6 @@ export function useAppStore() {
 }
 
 export function AppStoreProvider({ children }) {
-  // Initialize state
   const [currentUser, setCurrentUser] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -1840,8 +1839,8 @@ export function AppStoreProvider({ children }) {
     deleteEstimation,
     convertEstimationToBooking,
     updateGlobalCalendarState,
-  resetGlobalCalendarFilters
-  }
+    resetGlobalCalendarFilters
+  };
 
   return (
     <AppStoreContext.Provider value={value}>
