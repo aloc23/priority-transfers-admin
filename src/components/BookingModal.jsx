@@ -451,19 +451,67 @@ export default function BookingModal({
     // Keep the new fields for future use
     submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
 
-    // Save booking
+    // Save booking and handle automatic email notifications
+    let bookingResult;
     if (editingBooking) {
-      updateBooking(editingBooking.id, submissionData);
+      bookingResult = updateBooking(editingBooking.id, submissionData);
     } else {
-      addBooking(submissionData);
+      bookingResult = addBooking(submissionData);
     }
 
-    // After booking is confirmed, send driver notification (demo integration)
-    if (formData.source === 'internal' && formData.driver) {
+    // Check if booking status changed to confirmed or if it's a new confirmed booking
+    const wasConfirmed = editingBooking && editingBooking.status === 'confirmed';
+    const isNowConfirmed = formData.status === 'confirmed';
+    const isStatusChangedToConfirmed = !wasConfirmed && isNowConfirmed;
+
+    // Send automatic emails when booking is confirmed (new confirmation or status change)
+    if (formData.source === 'internal' && formData.driver && isStatusChangedToConfirmed) {
+      const driverObj = drivers.find(d => d.name === formData.driver);
+      if (driverObj && driverObj.email && submissionData.date && submissionData.time) {
+        // Combine date and time for pickup datetime
+        const pickupDateTime = moment(`${submissionData.date} ${submissionData.time}`, 'YYYY-MM-DD HH:mm').toISOString();
+        
+        // Use the new confirmation API with automatic reminder scheduling
+        fetch('/api/confirm-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: editingBooking?.id || (bookingResult?.booking?.id || Date.now().toString()),
+            driverEmail: driverObj.email,
+            driverName: driverObj.name,
+            customer: formData.customer,
+            pickup: formData.pickup,
+            destination: formData.destination,
+            pickupDateTime,
+            bookingType: formData.type
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            console.log('✅ Confirmation email sent and reminder scheduled:', result);
+            // Optionally show a success message to the user
+            if (result.reminderScheduled) {
+              alert(`Driver notified! Reminder email scheduled for ${new Date(result.reminderTime).toLocaleString()}`);
+            } else {
+              alert('Driver confirmation email sent!');
+            }
+          } else {
+            console.error('❌ Failed to send confirmation email:', result.error);
+            alert('Booking saved but failed to notify driver. Please check email configuration.');
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error sending confirmation email:', error);
+          alert('Booking saved but failed to notify driver. Please check server connection.');
+        });
+      }
+    } else if (formData.source === 'internal' && formData.driver && formData.status === 'pending') {
+      // For pending bookings, still send the basic notification
       const driverObj = drivers.find(d => d.name === formData.driver);
       if (driverObj && driverObj.email) {
-        const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
-        const message = `Dear ${driverObj.name},\n\nYou have a new booking:\nPickup: ${formData.pickup}\nDestination: ${formData.destination}\nDate: ${formData.date} ${formData.time}\n\nPlease confirm availability.`;
+        const subject = `New Booking Assignment: ${formData.pickup} → ${formData.destination}`;
+        const message = `Dear ${driverObj.name},\n\nYou have been assigned a new booking:\nCustomer: ${formData.customer}\nPickup: ${formData.pickup}\nDestination: ${formData.destination}\nDate: ${submissionData.date} ${submissionData.time}\nStatus: Pending confirmation\n\nPlease review and confirm availability.`;
         fetch('/api/notify-driver', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,6 @@
 # Priority Transfers Admin Enterprise
 
-A modern React-based admin panel for ride bookings, drivers, fleet, invoices, and more.
+A modern React-based admin panel for ride bookings, drivers, fleet, invoices, and more with automatic driver email notifications.
 
 ## Features
 
@@ -9,6 +9,8 @@ A modern React-based admin panel for ride bookings, drivers, fleet, invoices, an
 - Customer, driver, fleet management
 - Invoices & billing
 - KPI dashboard with charts
+- **Automatic driver email notifications** ✨
+- **Scheduled pickup reminders** ✨
 - Notifications
 - Offline-ready (localStorage)
 - Easy-to-extend architecture
@@ -20,16 +22,78 @@ A modern React-based admin panel for ride bookings, drivers, fleet, invoices, an
 npm install
 ```
 
-### 2. Run the app locally
+### 2. Configure Email Settings (for driver notifications)
+Copy the environment configuration file:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and configure your email settings:
+```env
+# Gmail configuration (recommended)
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=your_app_specific_password
+
+# Reminder timing (hours before pickup)
+REMINDER_HOURS_BEFORE_PICKUP=1
+
+# Server port
+PORT=3001
+```
+
+**Note:** For Gmail, you'll need to:
+1. Enable 2-factor authentication
+2. Generate an App Password (not your regular password)
+3. Use the App Password in the `EMAIL_PASS` field
+
+### 3. Run the application
+
+#### Development Mode (Frontend + Backend)
+```bash
+npm run dev:full
+```
+This runs both the React frontend (port 5173) and Express backend (port 3001) simultaneously.
+
+#### Run Frontend Only
 ```bash
 npm run dev
 ```
 Then open [http://localhost:5173/priority-transfers-admin/](http://localhost:5173/priority-transfers-admin/) in your browser.
 
-### 3. Build for production
+#### Run Backend Only
+```bash
+npm run server
+```
+Server will be available at http://localhost:3001
+
+### 4. Build for production
 ```bash
 npm run build
 ```
+
+## Email Notification System
+
+The application now includes an automatic email notification system for drivers:
+
+### When Bookings are Confirmed
+1. **Immediate confirmation email** - Sent to the assigned driver when booking status changes to "confirmed"
+2. **Automatic reminder scheduling** - A pickup reminder is scheduled to be sent 1 hour before pickup time (configurable)
+
+### API Endpoints
+- `POST /api/confirm-booking` - Confirms booking and schedules reminder
+- `POST /api/notify-driver` - Sends immediate notification
+- `GET /api/scheduled-reminders` - Lists all scheduled reminders
+- `DELETE /api/cancel-reminder/:bookingId` - Cancels a scheduled reminder
+- `POST /api/test-email` - Tests email configuration
+- `GET /api/health` - Server health check
+
+### Features
+- ✅ Automatic confirmation emails when bookings are confirmed
+- ✅ Scheduled reminder emails before pickup time
+- ✅ Configurable reminder timing
+- ✅ Email template customization
+- ✅ Error handling and logging
+- ✅ In-memory scheduling (suitable for single-server deployments)
 
 ## Deploying
 
