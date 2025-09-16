@@ -317,11 +317,16 @@ export function AppStoreProvider({ children }) {
     const usedColors = drivers.map(d => d.color);
     // Pick next available color
     const availableColor = driverColors.find(c => !usedColors.includes(c)) || driverColors[0];
-    const driverWithColor = { ...newDriver, color: availableColor };
+    const driverWithColor = { 
+      ...newDriver, 
+      id: Date.now(), 
+      color: availableColor, 
+      status: "available", 
+      rating: 5.0 
+    };
     const updatedDrivers = [...drivers, driverWithColor];
     setDrivers(updatedDrivers);
     safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
-  };
   };
 
   const initializeVehicles = () => {
@@ -894,13 +899,6 @@ export function AppStoreProvider({ children }) {
     const updatedCustomers = customers.filter(customer => customer.id !== id);
     setCustomers(updatedCustomers);
     safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
-  };
-
-  const addDriver = (driver) => {
-    const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
-    const updatedDrivers = [...drivers, newDriver];
-    setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const updateDriver = (id, updates) => {
