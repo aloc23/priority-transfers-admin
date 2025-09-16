@@ -322,7 +322,6 @@ export function AppStoreProvider({ children }) {
     setDrivers(updatedDrivers);
     safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
-  };
 
   const initializeVehicles = () => {
     const sampleVehicles = [
@@ -894,13 +893,6 @@ export function AppStoreProvider({ children }) {
     const updatedCustomers = customers.filter(customer => customer.id !== id);
     setCustomers(updatedCustomers);
     safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
-  };
-
-  const addDriver = (driver) => {
-    const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
-    const updatedDrivers = [...drivers, newDriver];
-    setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
   };
 
   const updateDriver = (id, updates) => {
