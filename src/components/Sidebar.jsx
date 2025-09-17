@@ -111,8 +111,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     };
   }, [isMobile, sidebarOpen]);
   const getNavLinkClasses = (isActive) =>
-    `block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-    ${isActive ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105" : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700 hover:shadow-md"}
+    `block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
+    ${isActive ? "bg-sidebar-active text-white shadow-lg transform scale-105 border-l-4 border-accent" : "text-granite-200 hover:bg-sidebar-active-alt hover:text-white hover:shadow-md"}
     ${isMobile ? 'min-h-[48px] flex items-center' : ''}
     ${!sidebarOpen && !isMobile ? 'justify-center p-3' : ''}`;
 
@@ -131,27 +131,28 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           `${sidebarOpen ? "w-64" : "w-16"} ` +
           `${isMobile && !sidebarOpen ? 'hidden' : ''} ` +
           `${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'} ` +
-          `bg-white transition-all duration-300 ease-in-out ` +
+          `transition-all duration-300 ease-in-out ` +
           `${isMobile ? 'shadow-2xl' : 'shadow-lg'} ` +
-          `border-r border-slate-200 ` +
+          `border-r border-slate-600 ` +
           `${isSmallMobile && sidebarOpen ? 'w-full' : ''}`
-          // Removed mobile top margin since topbar is now hidden when sidebar is closed
+          // Use sidebar background color
         }
+        style={{ backgroundColor: 'var(--sidebar-bg)' }}
         aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
           {/* Header - add top padding on mobile when sidebar is open to avoid overlap with floating hamburger */}
-          <div className={`flex items-center justify-between p-4 border-b border-slate-200 ${isMobile && sidebarOpen ? 'pt-6' : ''}`}>
+          <div className={`flex items-center justify-between p-4 border-b border-slate-600 ${isMobile && sidebarOpen ? 'pt-6' : ''}`}>
             <div className="flex items-center gap-2">
               <img src="./logo.svg" alt="logo" className="w-9 h-9 rounded shadow-sm border border-slate-200 bg-white" />
-              {sidebarOpen && <span className="font-bold text-xl text-slate-800 tracking-tight">Priority</span>}
+              {sidebarOpen && <span className="font-bold text-xl text-white tracking-tight">Priority</span>}
             </div>
             <button 
               onClick={handleSidebarToggle} 
               className={
-                `px-3 py-2 text-slate-600 hover:text-slate-800 transition-colors ` +
-                `rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
-                `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : 'btn btn-outline'}`
+                `px-3 py-2 text-granite-300 hover:text-white transition-colors ` +
+                `rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ` +
+                `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`
               }
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
@@ -163,7 +164,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <ul className="space-y-2">
               {navSections.map(section => (
                 <li key={section.heading} className="mb-2">
-                  {sidebarOpen && <div className="text-xs font-semibold text-slate-400 uppercase px-2 mb-1 tracking-wider">{section.heading}</div>}
+                  {sidebarOpen && <div className="text-xs font-semibold text-granite-400 uppercase px-2 mb-1 tracking-wider">{section.heading}</div>}
                   <ul className="space-y-1">
                     {section.items.map(item => {
                       if (!shouldShowNavItem(item)) return null;
@@ -187,7 +188,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                       );
                     })}
                   </ul>
-                  {sidebarOpen && <div className="border-b border-slate-100 my-2" />}
+                  {sidebarOpen && <div className="border-b border-slate-600 my-2" />}
                 </li>
               ))}
               {/* Management Section - Grouped Navigation */}
@@ -200,27 +201,27 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           </nav>
           {/* User info with avatar */}
           <div className={
-            `p-4 border-t border-slate-200 bg-slate-50 ` +
+            `p-4 border-t border-slate-600 ` +
             `${sidebarOpen ? '' : 'text-center'} ` +
             `${isMobile ? 'min-h-[80px]' : ''}`
-          }>
+          } style={{ backgroundColor: 'var(--granite-800)' }}>
             {sidebarOpen ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-base border border-purple-200">
+                  <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-base border border-accent/30">
                     {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
                   <div>
-                    <div className="text-xs text-slate-600">
-                      Logged in as <span className="font-semibold text-slate-800">{currentUser?.name}</span>
+                    <div className="text-xs text-granite-300">
+                      Logged in as <span className="font-semibold text-white">{currentUser?.name}</span>
                     </div>
-                    <div className="text-xs text-slate-500">({currentUser?.role})</div>
+                    <div className="text-xs text-granite-400">({currentUser?.role})</div>
                   </div>
                 </div>
                 <button 
                   onClick={logout} 
                   className={
-                    `text-xs text-purple-600 hover:text-purple-800 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
+                    `text-xs text-accent hover:text-white hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ` +
                     `${isMobile ? 'min-h-[48px] w-full text-left flex items-center' : ''}`
                   }
                   aria-label="Logout"
@@ -232,7 +233,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               <button 
                 onClick={logout} 
                 className={
-                  `hover:text-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ` +
+                  `hover:text-accent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 text-granite-300 ` +
                   `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`
                 }
                 title="Logout"

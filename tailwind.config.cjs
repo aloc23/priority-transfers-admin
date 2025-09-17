@@ -37,14 +37,28 @@ module.exports = {
           orange: '#f59e0b',
           pink: '#ec4899',
           cyan: '#06b6d4'
-        }
+        },
+        // Theme-specific colors
+        sidebar: {
+          bg: '#2e3440',
+          active: '#444444',
+          'active-alt': '#616161',
+        },
+        surface: {
+          light: '#ffffff',
+          grey: '#f9fafb',
+        },
+        accent: '#00d4ff'
       },
       boxShadow: {
         'svg': '0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
         'svg-lg': '0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)',
         'neon-blue': '0 0 20px rgba(0, 212, 255, 0.3)',
         'neon-purple': '0 0 20px rgba(139, 92, 246, 0.3)',
-        'neon-green': '0 0 20px rgba(16, 185, 129, 0.3)'
+        'neon-green': '0 0 20px rgba(16, 185, 129, 0.3)',
+        'glow': '0 0 20px rgba(0, 212, 255, 0.3)',
+        'glow-lg': '0 0 30px rgba(0, 212, 255, 0.4)',
+        'hover': '0 4px 20px rgba(0, 0, 0, 0.15)'
       },
       backdropBlur: {
         xs: '2px'
