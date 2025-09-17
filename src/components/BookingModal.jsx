@@ -1,7 +1,6 @@
 import { sendDriverEmailNotification } from '../utils/email';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
-import supabase from '../utils/supabaseClient';
 // Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
