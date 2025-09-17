@@ -329,7 +329,7 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
               </div>
             ) : (
               filteredInvoices.map((invoice) => (
-                <div key={invoice.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                <div key={invoice.id} className="bg-gradient-to-br from-slate-100 via-slate-50 to-gray-200 border border-slate-300 rounded-xl p-3 shadow-md hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -367,7 +367,7 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="#64748b"/><circle cx="12" cy="12" r="2" fill="#64748b"/><circle cx="19" cy="12" r="2" fill="#64748b"/></svg>
                       </button>
                       {expandedKPI === invoice.id && (
-                        <div ref={dropdownRef} className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                        <div ref={dropdownRef} className="absolute right-0 mt-2 w-40 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-200 border border-slate-300 rounded-xl shadow-xl z-20">
                           <ul className="py-1 text-sm">
                             {invoice.status === 'pending' && (
                               <>
