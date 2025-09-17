@@ -17,37 +17,38 @@ import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import { FleetProvider } from "./context/FleetContext";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
+import MobileTopbar from "./components/MobileTopbar";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function AuthenticatedShell() {
   const { currentUser } = useAppStore();
   const { isMobile, isDesktop } = useResponsive();
-  const [sidebarOpen, setSidebarOpen] = useState(isDesktop);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
   
   // Handle responsive behavior for sidebar
-  // Only auto-open on desktop initially, allow manual collapse
   useEffect(() => {
-    // Only auto-open the first time when switching to desktop
-    // This allows users to manually collapse on desktop
-    if (isDesktop && sidebarOpen === false) {
-      // Check if this is the first load or switching from mobile
+    if (isDesktop) {
+      // On desktop, check if user manually collapsed it before
       const hasManuallyCollapsed = localStorage.getItem('sidebarManuallyCollapsed') === 'true';
       if (!hasManuallyCollapsed) {
-        setSidebarOpen(true);
+        setSidebarOpen(true); // Auto-open on desktop unless manually collapsed
       }
-    }
-    if (isMobile) {
-      // Clear the manually collapsed flag when on mobile
+    } else if (isMobile) {
+      // On mobile, always start closed and clear any manual collapse flags
+      setSidebarOpen(false);
       localStorage.removeItem('sidebarManuallyCollapsed');
     }
   }, [isDesktop, isMobile]);
   
   return (
     <div className="flex h-screen bg-slate-50">
+      {/* Mobile Topbar */}
+      <MobileTopbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full pt-0' : ''}`}>
         <div className={`${isMobile ? 'p-2' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />

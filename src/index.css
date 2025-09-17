@@ -669,6 +669,26 @@ label {
 
 /* Mobile and tablet responsiveness improvements */
 @media (max-width: 768px) {
+  /* Ensure main content takes full width and uses single column layout */
+  .grid {
+    @apply grid-cols-1 !important;
+  }
+  
+  /* Make all cards, lists, and calendars use full width */
+  .card, 
+  .calendar-container,
+  .booking-list,
+  .invoice-list,
+  .status-grid {
+    width: 100% !important;
+    @apply p-4 mx-0;
+  }
+  
+  /* Mobile topbar spacing */
+  main {
+    @apply pt-0; /* Remove top padding since we have topbar */
+  }
+  
   .card {
     @apply p-4 mx-2;
   }
@@ -680,6 +700,34 @@ label {
   /* Better mobile navigation */
   .sidebar-mobile {
     @apply w-full max-w-xs;
+  }
+  
+  /* Improved touch targets for mobile */
+  button, .btn, [role="button"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Mobile tab navigation - scrollable horizontally */
+  .tab-navigation {
+    @apply flex overflow-x-auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tab-navigation button {
+    @apply flex-shrink-0 px-4 py-3 min-w-[120px] min-h-[44px];
+    white-space: nowrap;
+  }
+  
+  /* Hide scrollbar but keep functionality */
+  .tab-navigation::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tab-navigation {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   
   /* Improved touch targets for mobile */

@@ -126,20 +126,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           aria-label="Close sidebar backdrop"
         />
       )}
-      {/* Mobile floating hamburger to open sidebar if closed */}
-      {isMobile && !sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-60 p-3 bg-white rounded shadow-lg"
-          style={{ 
-            paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)', 
-            paddingLeft: 'max(env(safe-area-inset-left, 0px), 1rem)' 
-          }}
-          aria-label="Open sidebar"
-        >
-          <HamburgerIcon className="w-6 h-6" />
-        </button>
-      )}
       <aside
         className={
           `${sidebarOpen ? "w-64" : "w-16"} ` +
@@ -148,7 +134,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           `bg-white transition-all duration-300 ease-in-out ` +
           `${isMobile ? 'shadow-2xl' : 'shadow-lg'} ` +
           `border-r border-slate-200 ` +
-          `${isSmallMobile && sidebarOpen ? 'w-full' : ''}`
+          `${isSmallMobile && sidebarOpen ? 'w-full' : ''} ` +
+          `${isMobile ? 'mt-16' : ''}` // Add top margin for mobile topbar
         }
         aria-label="Sidebar navigation"
       >
