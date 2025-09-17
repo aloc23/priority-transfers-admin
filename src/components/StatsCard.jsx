@@ -26,14 +26,14 @@ export default function StatsCard({ icon: Icon, label, value, className = '', on
   };
   const bgClass = colorMap[label] || 'bg-gradient-to-r from-slate-100 to-slate-200';
   
-  // Enhanced mobile styling
+  // Enhanced mobile styling and separation
   const cardClasses = `
     flex items-center gap-3 
-    ${isMobile ? 'p-4 min-h-[80px]' : 'p-5'} 
-    ${bgClass} rounded-xl shadow-lg border border-slate-100 
+    ${isMobile ? 'p-5 min-h-[90px]' : 'p-6'} 
+    ${bgClass} rounded-2xl shadow-2xl border-2 border-slate-300 mb-5 
     transition-all duration-200 
     ${onClick ? 'cursor-pointer' : ''} 
-    hover:scale-[1.02] hover:shadow-xl 
+    hover:scale-[1.03] hover:shadow-3xl 
     active:scale-[0.98] active:shadow-md
     ${isMobile ? 'active:bg-opacity-90' : ''}
     ${className}

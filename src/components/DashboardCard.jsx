@@ -29,7 +29,7 @@ export default function DashboardCard({
 }) {
   return (
     <div
-      className={`relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col gap-2 hover:shadow-2xl transition-all duration-200 group ${className}`}
+      className={`relative bg-slate-50 rounded-2xl shadow-2xl border-2 border-slate-300 p-8 flex flex-col gap-4 mb-6 hover:shadow-3xl transition-all duration-200 group ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">

@@ -261,7 +261,7 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
   }, [invoices, selectedStatus, showInvoiceList]);
 
   return (
-    <div className="space-y-4">
+  <div className="space-y-4 bg-slate-50 rounded-2xl shadow-2xl border-2 border-slate-300 p-8 mb-8">
       {/* Header with title and optional add buttons */}
       <div className="flex items-center justify-between">
         <h3 className={`font-semibold text-slate-800 ${compact ? 'text-base' : 'text-lg'}`}>
@@ -288,62 +288,19 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
       </div>
 
       {/* Status Pills - Now Expandable KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+      <div className="flex gap-2 border-b border-slate-200 mb-4">
         {statusConfig.map((status) => (
-          <div key={status.id} className="relative">
-            <button
-              onClick={() => handleKPIExpand(status.id)}
-              className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${status.color} hover:shadow-md`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-lg">{status.count}</div>
-                  <div className="text-xs">{status.label}</div>
-                </div>
-                {expandedKPI === status.id ? 
-                  <ChevronUpIcon className="w-4 h-4" /> : 
-                  <ChevronDownIcon className="w-4 h-4" />
-                }
-              </div>
-            </button>
-            {/* Expandable Content with backdrop for better UX */}
-            {expandedKPI === status.id && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  style={{background:'transparent'}} 
-                  onClick={() => setExpandedKPI(null)}
-                />
-                <div 
-                  ref={dropdownRef} 
-                  className="absolute top-full left-0 right-0 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 mt-1"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <h4 className="font-semibold text-sm mb-2">{status.label} Invoices Details</h4>
-                  <div className="text-xs text-slate-600 space-y-1">
-                    <p>Total Count: <span className="font-semibold">{status.count}</span></p>
-                    <p className="text-slate-500">{status.description}</p>
-                    <p>Total Value: <span className="font-semibold">
-                      €{invoices
-                        .filter(inv => status.id === 'all' || inv.status === status.id)
-                        .reduce((sum, inv) => sum + (inv.amount || 0), 0)
-                        .toFixed(2)
-                      }
-                    </span></p>
-                    {status.id === 'pending' && (
-                      <p className="text-amber-600">Only includes invoices for confirmed bookings</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleStatusClick(status.id)}
-                    className="mt-2 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200"
-                  >
-                    View {status.label} Invoices
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            key={status.id}
+            onClick={() => setSelectedStatus(selectedStatus === status.id ? null : status.id)}
+            className={`px-3 py-1 rounded-t-lg text-[12px] font-semibold transition-all duration-200 focus:outline-none min-w-[80px] max-w-[110px]
+              ${selectedStatus === status.id
+                ? `${status.color} border-b-2 border-slate-700 shadow`
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+          >
+            <span className="font-semibold text-[13px] mr-1">{status.count}</span>
+            <span className="text-xs">{status.label}</span>
+          </button>
         ))}
       </div>
 

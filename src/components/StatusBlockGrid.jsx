@@ -12,12 +12,11 @@ export default function StatusBlockGrid({
   const { isMobile } = useResponsive();
 
   return (
-    <div className={`card ${className}`}>
+    <div className={`bg-granite-50 rounded-2xl shadow-xl border-2 border-granite-200 p-6 mb-6 ${className}`}>
       {title && (
-        <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
+        <h3 className="text-lg font-medium text-slate-900 mb-4">{title}</h3>
       )}
-      
-      <div className={`grid gap-3 ${
+      <div className={`grid gap-5 ${
         isMobile 
           ? 'grid-cols-2' 
           : statusData.length <= 4 
@@ -28,12 +27,13 @@ export default function StatusBlockGrid({
           <button
             key={status.id}
             className={`
-              rounded-lg p-3 text-left transition-all duration-200 
+              rounded-xl p-4 text-left transition-all duration-200 
               focus:outline-none focus:ring-2 focus:ring-purple-400
-              ${status.color || 'bg-gradient-to-r from-slate-400 to-slate-500'}
+              border-2 border-slate-200 shadow-md
+              ${status.color || 'bg-gradient-to-r from-slate-100 to-slate-200'}
               ${selectedStatus === status.id ? 'ring-2 ring-purple-400 scale-105' : ''}
-              ${onStatusClick ? 'cursor-pointer hover:scale-[1.02] active:scale-95' : 'cursor-default'}
-              ${isMobile ? 'min-h-[70px]' : 'min-h-[80px]'}
+              ${onStatusClick ? 'cursor-pointer hover:scale-[1.03] hover:shadow-xl active:scale-95' : 'cursor-default'}
+              ${isMobile ? 'min-h-[70px]' : 'min-h-[90px]'} mb-2
             `}
             onClick={() => onStatusClick?.(selectedStatus === status.id ? null : status.id)}
             disabled={!onStatusClick}
