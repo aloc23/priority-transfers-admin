@@ -296,10 +296,10 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
           <button
             key={status.id}
             onClick={() => setSelectedStatus(selectedStatus === status.id ? null : status.id)}
-            className={`px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 focus:outline-none whitespace-nowrap text-left
+            className={`px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 whitespace-nowrap text-left
               ${selectedStatus === status.id
-                ? `${status.color} md:border-l-4 border-slate-700 shadow`
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                ? `${status.color} md:border-l-4 border-slate-700 shadow-[0_0_16px_var(--tw-ring-color)] ring-2 ring-accent ring-offset-2 ring-offset-slate-900`
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900'}`}
           >
             <span className="font-semibold mr-2">{status.count}</span>
             <span className="text-xs">{status.label}</span>

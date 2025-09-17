@@ -77,11 +77,11 @@ export default function PageHeader({
                 <button
                   key={tab.id}
                   onClick={() => onTabChange?.(tab.id)}
-                  className={`py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-200 min-h-[44px] flex items-center justify-center ${
-                    activeTab === tab.id
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                  }`}
+                  className={`py-2 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-300 ease-in-out min-h-[44px] flex items-center justify-center outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900
+                    ${activeTab === tab.id
+                      ? 'border-purple-500 text-purple-600 shadow-[0_0_16px_var(--tw-ring-color)] ring-2 ring-accent ring-offset-2 ring-offset-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-purple-700 hover:border-purple-300 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900'}
+                  `}
                   aria-selected={activeTab === tab.id}
                   role="tab"
                 >

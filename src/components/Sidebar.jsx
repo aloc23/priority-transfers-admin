@@ -111,10 +111,14 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     };
   }, [isMobile, sidebarOpen]);
   const getNavLinkClasses = (isActive) =>
-    `block px-4 py-3 rounded-xl transition-all duration-200 text-base font-medium outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
-    ${isActive ? "bg-sidebar-active text-white shadow-lg transform scale-105 border-l-4 border-accent" : "text-granite-200 hover:bg-sidebar-active-alt hover:text-white hover:shadow-md"}
-    ${isMobile ? 'min-h-[48px] flex items-center' : ''}
-    ${!sidebarOpen && !isMobile ? 'justify-center p-3' : ''}`;
+    `block px-4 py-3 rounded-xl transition-all duration-300 ease-in-out text-base font-medium outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
+    ${
+      isActive
+        ? "bg-sidebar-active text-white shadow-[0_0_16px_var(--tw-ring-color)] transform scale-105 border-l-4 border-accent ring-2 ring-accent ring-offset-2 ring-offset-slate-900"
+        : "text-granite-200 hover:bg-sidebar-active-alt hover:text-white hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900"
+    }
+    ${isMobile ? "min-h-[48px] flex items-center" : ""}
+    ${!sidebarOpen && !isMobile ? "justify-center p-3" : ""}`;
 
   return (
     <>

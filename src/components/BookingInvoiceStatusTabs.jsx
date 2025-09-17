@@ -20,11 +20,11 @@ export default function BookingInvoiceStatusTabs({ compact = false }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === tab.id
-                  ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-all duration-300 ease-in-out outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900
+                ${activeTab === tab.id
+                  ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500 shadow-[0_0_16px_var(--tw-ring-color)] ring-2 ring-accent ring-offset-2 ring-offset-slate-900'
+                  : 'text-slate-500 hover:text-blue-700 hover:bg-blue-50 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900'}
+              `}
             >
               <span className="w-4 h-4">
                 <tab.icon className="w-4 h-4" />

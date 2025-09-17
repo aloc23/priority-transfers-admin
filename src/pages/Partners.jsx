@@ -108,7 +108,7 @@ export default function Partners() {
         </div>
         <button
           onClick={() => setShowPartnerModal(true)}
-          className="btn btn-primary flex items-center gap-2"
+          className="btn btn-primary flex items-center gap-2 transition-all duration-300 ease-in-out outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900"
         >
           <PlusIcon className="w-4 h-4" />
           Add Partner
@@ -405,7 +405,7 @@ export default function Partners() {
                     setEditingPartner(null);
                     resetPartnerForm();
                   }}
-                  className="btn btn-outline"
+                  className="btn btn-outline transition-all duration-300 ease-in-out outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900"
                 >
                   Cancel
                 </button>

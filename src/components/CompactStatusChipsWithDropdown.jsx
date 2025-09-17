@@ -14,8 +14,8 @@ const CompactStatusChipsWithDropdown = ({
   const [expandedStatus, setExpandedStatus] = useState(null);
 
   const getStatusColor = (status) => {
-    // Inactive states - all use lighter granite background
-    return 'bg-granite-200 text-slate-700 border-granite-300 hover:bg-granite-300';
+  // Inactive states - all use lighter granite background, but use darker text for readability
+  return 'bg-granite-200 text-gray-900 border-granite-300 hover:bg-granite-300';
   };
 
   const getSelectedColor = (status) => {
