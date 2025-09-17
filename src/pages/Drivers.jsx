@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import { validateEmail } from "../utils/validation";
 
 export default function Drivers() {
   const { drivers, addDriver, updateDriver, deleteDriver } = useAppStore();
@@ -9,11 +10,23 @@ export default function Drivers() {
     name: "",
     license: "",
     phone: "",
+    email: "",
     status: "available"
   });
+  const [emailError, setEmailError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Clear previous error
+    setEmailError("");
+    
+    // Validate email if provided
+    if (formData.email && !validateEmail(formData.email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    
     if (editingDriver) {
       updateDriver(editingDriver.id, formData);
     } else {
@@ -21,7 +34,8 @@ export default function Drivers() {
     }
     setShowModal(false);
     setEditingDriver(null);
-    setFormData({ name: "", license: "", phone: "", status: "available" });
+    setFormData({ name: "", license: "", phone: "", email: "", status: "available" });
+    setEmailError("");
   };
 
   const handleEdit = (driver) => {
@@ -56,6 +70,7 @@ export default function Drivers() {
                 <th>Name</th>
                 <th>License</th>
                 <th>Phone</th>
+                <th>Email</th>
                 <th>Status</th>
                 <th>Rating</th>
                 <th>Actions</th>
@@ -67,6 +82,7 @@ export default function Drivers() {
                   <td className="font-medium">{driver.name}</td>
                   <td>{driver.license}</td>
                   <td>{driver.phone}</td>
+                  <td>{driver.email || "-"}</td>
                   <td>
                     <span className={`badge ${
                       driver.status === 'available' ? 'badge-green' :
@@ -141,6 +157,18 @@ export default function Drivers() {
                 />
               </div>
               <div>
+                <label className="block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="driver@example.com"
+                />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
+              </div>
+              <div>
                 <label className="block mb-1">Status</label>
                 <select
                   value={formData.status}
@@ -160,7 +188,8 @@ export default function Drivers() {
                   onClick={() => {
                     setShowModal(false);
                     setEditingDriver(null);
-                    setFormData({ name: "", license: "", phone: "", status: "available" });
+                    setFormData({ name: "", license: "", phone: "", email: "", status: "available" });
+                    setEmailError("");
                   }}
                   className="btn btn-outline"
                 >
