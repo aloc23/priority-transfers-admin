@@ -261,7 +261,8 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
   }, [invoices, selectedStatus, showInvoiceList]);
 
   return (
-  <div className="space-y-4 bg-slate-50 rounded-2xl shadow-2xl border-2 border-slate-300 p-8 mb-8">
+  <>
+    <div className="space-y-4 bg-slate-50 rounded-2xl shadow-2xl border-2 border-slate-300 p-8 mb-8">
     {/* Header with title and optional add buttons */}
     <div className="flex items-center justify-between mb-4">
       <h3 className={`font-semibold text-slate-800 ${compact ? 'text-base' : 'text-lg'}`}> 
@@ -288,9 +289,9 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
     </div>
 
     {/* Vertical Tabs and Invoice List Layout */}
-    <div className="flex flex-col md:flex-row gap-4">
-      {/* Vertical Tabs */}
-      <div className="flex md:flex-col gap-2 md:gap-1 md:w-40 w-full overflow-x-auto md:overflow-x-visible border-b md:border-b-0 md:border-r border-slate-200 pb-2 md:pb-0 md:pr-2">
+  <div className="flex flex-col md:flex-row gap-4">
+  {/* Vertical Tabs */}
+  <div className="flex md:flex-col gap-2 md:gap-1 md:w-40 w-full overflow-x-auto md:overflow-x-visible border-b md:border-b-0 md:border-r border-slate-200 pb-2 md:pb-0 md:pr-2">
         {statusConfig.map((status) => (
           <button
             key={status.id}
@@ -320,7 +321,6 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
               {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''}
             </div>
           </div>
-
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {filteredInvoices.length === 0 ? (
               <div className="text-center py-6 text-slate-500">
@@ -328,132 +328,129 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
                 <p className="text-sm">No invoices found</p>
               </div>
             ) : (
-              filteredInvoices.map((invoice) => {
-                return (
-                  <div key={invoice.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h5 className="text-sm font-medium text-slate-900 truncate">
-                            {invoice.customer}
-                          </h5>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                            invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                            invoice.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                            invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                            'bg-slate-100 text-slate-800'
-                          }`}>
-                            {invoice.status === 'pending' ? 'Draft' : 
-                             invoice.status === 'sent' ? 'Invoiced' :
-                             invoice.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-400">
-                          <span>#{invoice.id}</span>
-                          <span>€{invoice.amount}</span>
-                          <span>{invoice.date}</span>
-                        </div>
+              filteredInvoices.map((invoice) => (
+                <div key={invoice.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h5 className="text-sm font-medium text-slate-900 truncate">
+                          {invoice.customer}
+                        </h5>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                          invoice.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                          invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                          'bg-slate-100 text-slate-800'
+                        }`}>
+                          {invoice.status === 'pending' ? 'Draft' : 
+                            invoice.status === 'sent' ? 'Invoiced' :
+                            invoice.status}
+                        </span>
                       </div>
-                      
-                      {/* Action Buttons based on new workflow */}
-                      <div className="flex items-center gap-1 ml-2">
-                        {invoice.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleEditInvoice(invoice.id)}
-                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                              title="Edit Draft"
-                            >
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleSendInvoice(invoice.id, invoice)}
-                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                              title="Send Invoice"
-                            >
-                              <SendIcon className="w-3 h-3" />
-                            </button>
-                          </>
-                        )}
-                        {invoice.status === 'sent' && (
-                          <>
-                            <button
-                              onClick={() => handleViewInvoice(invoice.id)}
-                              className="px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-700 transition-colors"
-                              title="View Invoice"
-                            >
-                              View
-                            </button>
-                            <button
-                              onClick={() => handleEditInvoice(invoice.id)}
-                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                              title="Edit Invoice"
-                            >
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleMarkAsPaid(invoice.id)}
-                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                              title="Mark as Paid"
-                            >
-                              Paid
-                            </button>
-                          </>
-                        )}
-                        {invoice.status === 'paid' && (
-                          <span className="text-xs text-slate-500 px-2 py-1">
-                            View Only
-                          </span>
-                        )}
+                      <div className="flex items-center gap-4 text-xs text-slate-400">
+                        <span>#{invoice.id}</span>
+                        <span>€{invoice.amount}</span>
+                        <span>{invoice.date}</span>
                       </div>
                     </div>
+                    {/* Action Buttons based on new workflow */}
+                    <div className="flex items-center gap-1 ml-2">
+                      {invoice.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleEditInvoice(invoice.id)}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                            title="Edit Draft"
+                          >
+                            <EditIcon className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleSendInvoice(invoice.id, invoice)}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                            title="Send Invoice"
+                          >
+                            <SendIcon className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                      {invoice.status === 'sent' && (
+                        <>
+                          <button
+                            onClick={() => handleViewInvoice(invoice.id)}
+                            className="px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-700 transition-colors"
+                            title="View Invoice"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleEditInvoice(invoice.id)}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                            title="Edit Invoice"
+                          >
+                            <EditIcon className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleMarkAsPaid(invoice.id)}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                            title="Mark as Paid"
+                          >
+                            Paid
+                          </button>
+                        </>
+                      )}
+                      {invoice.status === 'paid' && (
+                        <span className="text-xs text-slate-500 px-2 py-1">
+                          View Only
+                        </span>
+                      )}
+                    </div>
                   </div>
-                );
-              })
+                </div>
+              ))
             )}
           </div>
         </div>
       )}
+    </div> {/* Close flex layout */}
+    </div> {/* Close main container */}
+    <InvoiceEditModal
+      show={showEditModal}
+      onClose={() => {
+        setShowEditModal(false);
+        setEditingInvoice(null);
+      }}
+      editingInvoice={editingInvoice}
+      onSave={handleSaveInvoice}
+    />
 
-      {/* Invoice Edit Modal */}
-      <InvoiceEditModal
-        show={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingInvoice(null);
-        }}
-        editingInvoice={editingInvoice}
-        onSave={handleSaveInvoice}
-      />
-
-      {/* Simple Invoice Modal (basic version) */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Create New Invoice</h2>
-              <p className="text-slate-600 mb-4">
-                This feature opens the full invoice creation form.
-              </p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Open Invoice Form
-                </button>
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+    {/* Simple Invoice Modal (basic version) */}
+    {showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Create New Invoice</h2>
+            <p className="text-slate-600 mb-4">
+              This feature opens the full invoice creation form.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
+              >
+                Open Invoice Form
+              </button>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+  </>
   );
 }
