@@ -14,37 +14,13 @@ const CompactStatusChipsWithDropdown = ({
   const [expandedStatus, setExpandedStatus] = useState(null);
 
   const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
-      case 'confirmed':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200';
-      case 'cancelled':
-        return 'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200';
-      case 'upcoming':
-        return 'bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200';
-    }
+    // Inactive states - all use lighter granite background
+    return 'bg-granite-200 text-slate-700 border-granite-300 hover:bg-granite-300';
   };
 
   const getSelectedColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-amber-500 text-white border-amber-600 shadow-lg';
-      case 'confirmed':
-        return 'bg-emerald-500 text-white border-emerald-600 shadow-lg';
-      case 'completed':
-        return 'bg-blue-500 text-white border-blue-600 shadow-lg';
-      case 'cancelled':
-        return 'bg-slate-500 text-white border-slate-600 shadow-lg';
-      case 'upcoming':
-        return 'bg-cyan-500 text-white border-cyan-600 shadow-lg';
-      default:
-        return 'bg-gray-500 text-white border-gray-600 shadow-lg';
-    }
+    // Active states - use accent color for active status
+    return 'bg-accent text-white border-accent shadow-glow';
   };
 
   // Filter bookings by status

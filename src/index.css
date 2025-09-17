@@ -15,6 +15,13 @@
   --slate-800: #1e293b;
   --slate-900: #0f172a;
   
+  /* Theme-specific colors */
+  --sidebar-bg: #2e3440;
+  --sidebar-active: #444444;
+  --sidebar-active-alt: #616161;
+  --surface-light: #ffffff;
+  --surface-grey: #f9fafb;
+  
   /* Granite Base */
   --granite-50: #f9fafb;
   --granite-100: #f3f4f6;
@@ -35,6 +42,10 @@
   --neon-pink: #ec4899;
   --neon-cyan: #06b6d4;
   
+  /* Primary accent color for active states */
+  --accent-primary: var(--neon-blue);
+  --accent-glow: rgba(0, 212, 255, 0.3);
+  
   /* Status Colors */
   --success-500: var(--neon-green);
   --warning-500: var(--neon-orange);
@@ -47,39 +58,66 @@ body { @apply bg-slate-50 text-slate-900; }
 /* Custom z-index utilities for proper layering */
 .z-60 { z-index: 60; }
 
+/* Global hover effects for interactive elements */
+.hover-glow {
+  @apply transition-all duration-200;
+}
+
+.hover-glow:hover {
+  box-shadow: var(--accent-glow) 0px 0px 20px, rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  transform: translateY(-1px);
+}
+
+/* Card styles with surface colors */
 .card { 
-  @apply bg-white rounded-2xl p-6 transition-all duration-200 hover:-translate-y-0.5 border border-slate-200;
+  @apply bg-surface-light rounded-2xl p-6 transition-all duration-200 border border-slate-200;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 .card:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 20px var(--accent-glow), 0 8px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
+/* Updated button styles */
 .btn { 
-  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2; 
-  min-height: 2.75rem; /* Better touch targets */
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2; 
+  min-height: 2.75rem;
 }
 
+/* Primary buttons with accent color */
 .btn-primary { 
   @apply text-white border-0;
-  background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  background: var(--accent-primary);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%);
-  box-shadow: 0 0 25px rgba(139, 92, 246, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: #00b8e6;
+  box-shadow: 0 0 25px var(--accent-glow), 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px) scale(1.02);
 }
 
+/* Secondary buttons with granite background */
 .btn-secondary {
-  @apply text-white border-0;
-  background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  @apply text-slate-700 border-0;
+  background: var(--granite-500);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 .btn-secondary:hover {
-  background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(0, 0, 0, 0.12);
+  background: var(--granite-600);
+  box-shadow: 0 0 15px rgba(107, 114, 128, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px) scale(1.02);
+}
+
+/* Disabled buttons */
+.btn-disabled, .btn:disabled {
+  @apply text-granite-400 cursor-not-allowed;
+  background: var(--granite-200);
+  box-shadow: none;
+}
+.btn-disabled:hover, .btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-outline { 
@@ -87,7 +125,7 @@ body { @apply bg-slate-50 text-slate-900; }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 .btn-outline:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 15px var(--accent-glow), 0 4px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
@@ -178,6 +216,38 @@ body { @apply bg-slate-50 text-slate-900; }
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Table Styling */
+.table {
+  @apply w-full border-collapse;
+}
+
+.table thead th {
+  @apply text-white font-semibold text-sm text-left px-6 py-4 border-b border-slate-600;
+  background: var(--granite-700);
+}
+
+.table tbody tr {
+  @apply border-b border-slate-200 transition-all duration-200;
+}
+
+.table tbody tr:nth-child(even) {
+  background: var(--granite-100);
+}
+
+.table tbody tr:nth-child(odd) {
+  background: white;
+}
+
+.table tbody tr:hover {
+  background: var(--granite-200);
+  box-shadow: 0 0 15px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.table tbody td {
+  @apply px-6 py-4 text-sm text-slate-700;
+}
+
 /* Table Row Hover Animation */
 .table-row-animated {
   @apply transition-all duration-200 ease-out;
@@ -185,8 +255,8 @@ body { @apply bg-slate-50 text-slate-900; }
 
 .table-row-animated:hover {
   transform: translateX(2px);
-  background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
-  box-shadow: -4px 0 0 rgba(139, 92, 246, 0.3);
+  background: linear-gradient(90deg, var(--accent-glow) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: -4px 0 0 var(--accent-primary);
 }
 
 /* Form Input Focus Animation */
@@ -293,6 +363,48 @@ body { @apply bg-slate-50 text-slate-900; }
     left: 0%;
   }
 }
+
+/* Global Hover Effects for Interactive Elements */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  @apply transition-all duration-200;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):hover,
+select:hover,
+textarea:hover {
+  box-shadow: 0 0 15px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 20px var(--accent-glow), 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  border-color: var(--accent-primary);
+}
+
+/* Dropdown hover effects */
+.dropdown,
+.select-wrapper {
+  @apply transition-all duration-200;
+}
+
+.dropdown:hover,
+.select-wrapper:hover {
+  box-shadow: 0 0 15px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+/* Icon hover effects */
+svg:hover,
+.icon:hover {
+  @apply transition-all duration-200;
+  filter: drop-shadow(0 0 8px var(--accent-primary));
+  transform: scale(1.1);
+}
 .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold; }
 .badge-green { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
 .badge-red { @apply bg-red-100 text-red-800 border border-red-200; }
@@ -312,11 +424,20 @@ body { @apply bg-slate-50 text-slate-900; }
 }
 
 .tab-button.active {
-  @apply border-purple-500 text-purple-600 bg-purple-50;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(0, 212, 255, 0.1);
 }
 
 .tab-button.inactive {
-  @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+  @apply border-transparent hover:border-slate-300;
+  color: var(--slate-500);
+  background: var(--granite-300);
+}
+
+.tab-button.inactive:hover {
+  color: var(--slate-700);
+  background: var(--granite-400);
 }
 
 /* Mobile-specific tab improvements */
@@ -387,45 +508,66 @@ label {
 .status-draft { @apply bg-slate-100 text-slate-700 border border-slate-200; }
 .modal-backdrop { @apply fixed inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50; }
 
-/* New Modal Container with Sticky Header/Footer */
+/* New Modal Container with Light Granite Theme */
 .modal-container { 
-  @apply bg-white rounded-2xl w-full max-w-2xl border border-slate-200 max-h-[90vh] overflow-hidden flex flex-col;
+  @apply w-full max-w-2xl border max-h-[90vh] overflow-hidden flex flex-col rounded-2xl;
+  background: var(--granite-100);
+  border-color: var(--slate-700);
   box-shadow: 0 20px 32px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Sticky Modal Header */
 .modal-header {
-  @apply bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl;
+  @apply px-6 py-4 flex items-center justify-between rounded-t-2xl border-b;
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: var(--granite-100);
+  border-color: var(--slate-700);
+}
+
+.modal-header h2, .modal-header h3 {
+  color: var(--slate-700);
 }
 
 /* Scrollable Modal Body */
 .modal-body {
   @apply px-6 py-4 overflow-y-auto flex-1;
-  max-height: calc(90vh - 140px); /* Subtract header and footer height */
+  max-height: calc(90vh - 140px);
+  background: var(--granite-100);
+  color: var(--slate-700);
 }
 
 /* Sticky Modal Footer */
 .modal-footer {
-  @apply bg-white border-t border-slate-200 px-6 py-4 flex gap-4 justify-end rounded-b-2xl;
+  @apply px-6 py-4 flex gap-4 justify-end rounded-b-2xl border-t;
   position: sticky;
   bottom: 0;
   z-index: 10;
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  background: var(--granite-100);
+  border-color: var(--slate-700);
 }
 
 /* Close Button Styling */
 .btn-close {
-  @apply w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200 text-xl font-bold;
+  @apply w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 text-xl font-bold;
+  color: var(--slate-700);
+  background: transparent;
+}
+
+.btn-close:hover {
+  color: var(--accent-primary);
+  background: var(--granite-200);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* Legacy Modal (keeping for backward compatibility) */
 .modal { 
-  @apply bg-white rounded-2xl w-full max-w-2xl p-6 border border-slate-200 max-h-[90vh] overflow-y-auto;
+  @apply w-full max-w-2xl p-6 border max-h-[90vh] overflow-y-auto rounded-2xl;
+  background: var(--granite-100);
+  border-color: var(--slate-700);
   box-shadow: 0 20px 32px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+  color: var(--slate-700);
 }
 
 /* Mobile Responsiveness for Modal */
@@ -1246,39 +1388,66 @@ label {
   transform: translateY(-1px);
 }
 
-/* Financial KPI Card Improvements */
+/* Top Cards/KPIs with Surface Theme */
 .financial-kpi-card {
-  @apply bg-gradient-to-br rounded-xl p-4 shadow-sm border transition-all duration-200;
+  @apply rounded-xl p-4 shadow-sm border transition-all duration-200;
+  background: var(--surface-light);
+  border-color: var(--slate-200);
 }
 
 .financial-kpi-card:hover {
-  @apply shadow-md;
-  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--accent-glow), 0 8px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
-.financial-kpi-positive {
-  @apply from-green-50 to-emerald-50 border-green-200 text-green-700;
+.financial-kpi-card h3,
+.financial-kpi-card .kpi-title {
+  color: var(--slate-700);
 }
 
-.financial-kpi-neutral {
-  @apply from-blue-50 to-indigo-50 border-blue-200 text-blue-700;
+.financial-kpi-card .kpi-amount,
+.financial-kpi-card .amount {
+  color: var(--accent-primary);
 }
 
-.financial-kpi-negative {
-  @apply from-red-50 to-pink-50 border-red-200 text-red-700;
+.financial-kpi-positive .kpi-amount,
+.financial-kpi-positive .amount {
+  color: var(--granite-700);
 }
 
-/* Dashboard Tab Navigation */
+.financial-kpi-neutral .kpi-amount,
+.financial-kpi-neutral .amount {
+  color: var(--granite-700);
+}
+
+.financial-kpi-negative .kpi-amount,
+.financial-kpi-negative .amount {
+  color: var(--granite-700);
+}
+
+/* Dashboard Tab Navigation with New Theme */
 .dashboard-tab {
   @apply py-3 px-6 border-b-2 font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center rounded-t-lg;
+  background: var(--granite-300);
 }
 
 .dashboard-tab.active {
-  @apply border-blue-500 text-blue-600 bg-blue-50/50;
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .dashboard-tab.inactive {
-  @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50/50;
+  @apply border-transparent hover:border-slate-300;
+  color: var(--slate-700);
+  background: var(--granite-300);
+}
+
+.dashboard-tab.inactive:hover {
+  background: var(--granite-400);
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Improved Visual Hierarchy */
