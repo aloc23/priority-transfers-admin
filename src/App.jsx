@@ -17,6 +17,7 @@ import { AppStoreProvider, useAppStore } from "./context/AppStore";
 import { FleetProvider } from "./context/FleetContext";
 import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
+import MobileTopbar from "./components/MobileTopbar";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -45,9 +46,12 @@ function AuthenticatedShell() {
   
   return (
     <div className="flex h-screen bg-slate-50">
+      {/* Mobile Topbar */}
+      <MobileTopbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full pt-0' : ''}`}>
         <div className={`${isMobile ? 'p-2' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />

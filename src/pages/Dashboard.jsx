@@ -301,7 +301,7 @@ export default function Dashboard() {
 
       {/* Dashboard Tabs - moved below header, KPI cards removed (now handled by SmartDashboardWidget) */}
       <div className="border-b border-slate-200">
-        <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Dashboard Tabs">
+        <nav className="tab-navigation flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Dashboard Tabs">
           {dashboardTabs.map((tab) => (
             <button 
               key={tab.id}
@@ -358,7 +358,7 @@ export default function Dashboard() {
         <section className="space-y-8">
           {/* Inner Accounting Tabs */}
           <div className="border-b border-slate-200 mb-4">
-            <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Accounting Subtabs">
+            <nav className="tab-navigation flex flex-wrap gap-1 md:gap-0 md:space-x-8 px-2 md:px-0" aria-label="Accounting Subtabs">
               <button 
                 onClick={() => setAccountingSubTab('overview')} 
                 className={`py-3 px-4 md:py-2 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[44px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
