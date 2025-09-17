@@ -134,14 +134,14 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           `bg-white transition-all duration-300 ease-in-out ` +
           `${isMobile ? 'shadow-2xl' : 'shadow-lg'} ` +
           `border-r border-slate-200 ` +
-          `${isSmallMobile && sidebarOpen ? 'w-full' : ''} ` +
-          `${isMobile ? 'mt-16' : ''}` // Add top margin for mobile topbar
+          `${isSmallMobile && sidebarOpen ? 'w-full' : ''}`
+          // Removed mobile top margin since topbar is now hidden when sidebar is closed
         }
         aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200">
+          {/* Header - add top padding on mobile when sidebar is open to avoid overlap with floating hamburger */}
+          <div className={`flex items-center justify-between p-4 border-b border-slate-200 ${isMobile && sidebarOpen ? 'pt-6' : ''}`}>
             <div className="flex items-center gap-2">
               <img src="./logo.svg" alt="logo" className="w-9 h-9 rounded shadow-sm border border-slate-200 bg-white" />
               {sidebarOpen && <span className="font-bold text-xl text-slate-800 tracking-tight">Priority</span>}
