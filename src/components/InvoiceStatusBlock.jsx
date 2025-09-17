@@ -262,43 +262,45 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
 
   return (
   <div className="space-y-4 bg-slate-50 rounded-2xl shadow-2xl border-2 border-slate-300 p-8 mb-8">
-      {/* Header with title and optional add buttons */}
-      <div className="flex items-center justify-between">
-        <h3 className={`font-semibold text-slate-800 ${compact ? 'text-base' : 'text-lg'}`}>
-          Invoice Status
-        </h3>
-        {showAddButtons && (
-          <div className="flex gap-2">
-            <button 
-              onClick={handleGenerateFromBooking}
-              className="btn btn-outline btn-sm flex items-center gap-2"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Generate from Booking
-            </button>
-            <button 
-              onClick={handleNewInvoice}
-              className="btn btn-primary btn-sm flex items-center gap-2"
-            >
-              <PlusIcon className="w-4 h-4" />
-              New Invoice
-            </button>
-          </div>
-        )}
-      </div>
+    {/* Header with title and optional add buttons */}
+    <div className="flex items-center justify-between mb-4">
+      <h3 className={`font-semibold text-slate-800 ${compact ? 'text-base' : 'text-lg'}`}> 
+        Invoice Status
+      </h3>
+      {showAddButtons && (
+        <div className="flex gap-2">
+          <button 
+            onClick={handleGenerateFromBooking}
+            className="btn btn-outline btn-sm flex items-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Generate from Booking
+          </button>
+          <button 
+            onClick={handleNewInvoice}
+            className="btn btn-primary btn-sm flex items-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            New Invoice
+          </button>
+        </div>
+      )}
+    </div>
 
-      {/* Status Pills - Now Expandable KPIs */}
-      <div className="flex gap-2 border-b border-slate-200 mb-4">
+    {/* Vertical Tabs and Invoice List Layout */}
+    <div className="flex flex-col md:flex-row gap-4">
+      {/* Vertical Tabs */}
+      <div className="flex md:flex-col gap-2 md:gap-1 md:w-40 w-full overflow-x-auto md:overflow-x-visible border-b md:border-b-0 md:border-r border-slate-200 pb-2 md:pb-0 md:pr-2">
         {statusConfig.map((status) => (
           <button
             key={status.id}
             onClick={() => setSelectedStatus(selectedStatus === status.id ? null : status.id)}
-            className={`px-3 py-1 rounded-t-lg text-[12px] font-semibold transition-all duration-200 focus:outline-none min-w-[80px] max-w-[110px]
+            className={`px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 focus:outline-none whitespace-nowrap text-left
               ${selectedStatus === status.id
-                ? `${status.color} border-b-2 border-slate-700 shadow`
+                ? `${status.color} md:border-l-4 border-slate-700 shadow`
                 : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
           >
-            <span className="font-semibold text-[13px] mr-1">{status.count}</span>
+            <span className="font-semibold mr-2">{status.count}</span>
             <span className="text-xs">{status.label}</span>
           </button>
         ))}
@@ -306,7 +308,7 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
 
       {/* Invoice List (if enabled) */}
       {showInvoiceList && (
-        <div className="bg-slate-50 rounded-xl p-4">
+        <div className="bg-slate-50 rounded-xl p-4 flex-1">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-slate-700">
               {selectedStatus ? 
