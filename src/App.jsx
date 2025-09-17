@@ -24,22 +24,19 @@ import ErrorBoundary from "./components/ErrorBoundary";
 function AuthenticatedShell() {
   const { currentUser } = useAppStore();
   const { isMobile, isDesktop } = useResponsive();
-  const [sidebarOpen, setSidebarOpen] = useState(isDesktop);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
   
   // Handle responsive behavior for sidebar
-  // Only auto-open on desktop initially, allow manual collapse
   useEffect(() => {
-    // Only auto-open the first time when switching to desktop
-    // This allows users to manually collapse on desktop
-    if (isDesktop && sidebarOpen === false) {
-      // Check if this is the first load or switching from mobile
+    if (isDesktop) {
+      // On desktop, check if user manually collapsed it before
       const hasManuallyCollapsed = localStorage.getItem('sidebarManuallyCollapsed') === 'true';
       if (!hasManuallyCollapsed) {
-        setSidebarOpen(true);
+        setSidebarOpen(true); // Auto-open on desktop unless manually collapsed
       }
-    }
-    if (isMobile) {
-      // Clear the manually collapsed flag when on mobile
+    } else if (isMobile) {
+      // On mobile, always start closed and clear any manual collapse flags
+      setSidebarOpen(false);
       localStorage.removeItem('sidebarManuallyCollapsed');
     }
   }, [isDesktop, isMobile]);
