@@ -1,13 +1,14 @@
 import { sendDriverEmailNotification } from '../utils/email';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
-// import { sendDriverEmailNotification } from '../utils/email';
+import supabase from '../utils/supabaseClient';
 // Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
 import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
+import supabase from '../utils/supabaseClient';
 
 export default function BookingModal({ 
   // Demo: Send email notification to driver
@@ -463,12 +464,51 @@ export default function BookingModal({
       const driverObj = drivers.find(d => d.name === formData.driver);
       if (driverObj && driverObj.email) {
         const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
-        const message = `Dear ${driverObj.name},\n\nYou have a new booking:\nPickup: ${formData.pickup}\nDestination: ${formData.destination}\nDate: ${formData.date} ${formData.time}\n\nPlease confirm availability.`;
-        fetch('/api/notify-driver', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ driverEmail: driverObj.email, subject, message })
-        });
+        const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
+        (async () => {
+          // Get the latest session and JWT from Supabase Auth
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          console.log('Supabase sessionData:', sessionData);
+          if (sessionError) {
+            alert('Error retrieving Supabase session: ' + sessionError.message);
+            console.error('Supabase session error:', sessionError);
+            return;
+          }
+          const supabaseJwt = sessionData?.session?.access_token;
+          console.log('Supabase JWT before fetch:', supabaseJwt);
+          if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
+            alert('No valid JWT found. Please log out and log in again with a Supabase account.');
+            console.error('No valid Supabase JWT found. Session:', sessionData);
+            return;
+          }
+          fetch('https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseJwt}`
+            },
+            body: JSON.stringify({ to: driverObj.email, subject, html })
+          })
+          .then(async res => {
+            if (res.status === 401) {
+              alert('401 Unauthorized: Your login token is missing or invalid. Please log out and log in again with a Supabase account.');
+              console.error('401 Unauthorized: JWT missing or invalid.');
+              return;
+            }
+            const data = await res.json();
+            if (data.error) {
+              console.error('Error from Edge Function:', data.error);
+              alert('Error sending confirmation email: ' + data.error);
+            } else {
+              console.log('Driver confirmation email sent:', data);
+              alert('Driver confirmation email sent successfully!');
+            }
+          })
+          .catch(err => {
+            console.error('Fetch error:', err);
+            alert('Network error sending confirmation email: ' + err.message);
+          });
+        })();
       }
     }
 

@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import supabase from '../utils/supabaseClient';
 import { Navigate } from "react-router-dom";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export default function Login() {
-  const { currentUser, login } = useAppStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [useDemoLogin, setUseDemoLogin] = useState(true);
+  const { currentUser, login } = useAppStore();
 
   if (currentUser) {
     return <Navigate to="/" replace />;
@@ -17,25 +22,47 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
-    // Simple demo authentication - in real app this would call an API
-    const demoUsers = [
-      { id: 1, name: "Admin User", email: "admin@priority.com", role: "Admin" },
-      { id: 2, name: "Dispatcher", email: "dispatcher@priority.com", role: "Dispatcher" },
-      { id: 3, name: "Viewer", email: "viewer@priority.com", role: "Viewer" }
-    ];
-
-    // Simulate API call delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const user = demoUsers.find(u => u.email === email);
-    if (user && password === "demo123") {
-      login(user);
+    if (useDemoLogin) {
+      // Demo login logic
+      const demoUsers = [
+        { id: 1, name: "Admin User", email: "admin@priority.com", role: "Admin" },
+        { id: 2, name: "Dispatcher", email: "dispatcher@priority.com", role: "Dispatcher" },
+        { id: 3, name: "Viewer", email: "viewer@priority.com", role: "Viewer" }
+      ];
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const user = demoUsers.find(u => u.email === email);
+      if (user && password === "demo123") {
+        login(user); // update global app state
+      } else {
+        setError("Invalid demo email or password. Please check your credentials and try again.");
+      }
+      setIsLoading(false);
+      return;
     } else {
-      setError("Invalid email or password. Please check your credentials and try again.");
+      // Supabase Auth login logic
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (loginError) {
+        setError("Supabase login error: " + loginError.message);
+        setIsLoading(false);
+        return;
+      }
+      // Use Supabase user data for app state, get role from user_metadata
+  // Debug log: Show Supabase session and access_token after login
+  const sessionResult = await supabase.auth.getSession();
+  console.log('Supabase session after login:', sessionResult);
+  console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
+      const userMeta = data.user.user_metadata || {};
+      login({
+        id: data.user.id,
+        name: data.user.email,
+        email: data.user.email,
+        role: userMeta.role || "User"
+      });
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -133,29 +160,39 @@ export default function Login() {
                 'Sign In'
               )}
             </button>
-          </form>
-        </div>
 
-        {/* Demo Account Information */}
-        <div className="mt-8 bg-gray-50 rounded-xl p-6 border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Demo Accounts</h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span className="font-medium">Admin:</span>
-              <span className="font-mono">admin@priority.com</span>
+            {/* Demo Account Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="demoLogin"
+                  checked={useDemoLogin}
+                  onChange={(e) => setUseDemoLogin(e.target.checked)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label 
+                  htmlFor="demoLogin" 
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  Use Demo Login
+                </label>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Dispatcher:</span>
-              <span className="font-mono">dispatcher@priority.com</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Viewer:</span>
-              <span className="font-mono">viewer@priority.com</span>
-            </div>
-            <div className="flex justify-between pt-2 mt-3 border-t border-gray-200">
-              <span className="font-medium">Password:</span>
-              <span className="font-mono font-semibold">demo123</span>
-            </div>
+
+            {useDemoLogin && (
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                <strong>Demo Accounts:</strong><br />
+                Admin: admin@priority.com<br />
+                Dispatcher: dispatcher@priority.com<br />
+                Viewer: viewer@priority.com<br />
+                Password for all: demo123
+              </div>
+            )}
+          </form>
+          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+            <span>Don't have an account? </span>
+            <a href="#/signup" style={{ color: '#6366f1', textDecoration: 'underline', cursor: 'pointer' }}>Sign up</a>
           </div>
         </div>
 

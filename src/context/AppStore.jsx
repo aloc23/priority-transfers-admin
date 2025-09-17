@@ -1,3 +1,4 @@
+import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
@@ -815,19 +816,22 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Demo JWT token - in a real app, this would come from the authenticated user
-          const demoSupabaseJwt = 'demo-jwt-token-would-be-from-authenticated-user';
-          
+          // Get JWT from Supabase session
+          let supabaseJwt = null;
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            supabaseJwt = session?.access_token;
+          } catch (err) {
+            console.error('Could not get Supabase JWT:', err);
+          }
           const subject = 'Booking Confirmation - Priority Transfers';
           const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-          
           emailResult = await sendDriverConfirmationEmail({
             to: driver.email,
             subject,
             html,
-            supabaseJwt: demoSupabaseJwt
+            supabaseJwt
           });
-          
           if (emailResult.success) {
             console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
             

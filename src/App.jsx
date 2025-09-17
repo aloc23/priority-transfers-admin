@@ -9,6 +9,7 @@ import Partners from "./pages/Partners";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import FinanceTracker from "./pages/FinanceTracker";
 import Estimations from "./pages/Estimations";
 import Billing from "./pages/Billing";
@@ -83,11 +84,12 @@ function AuthenticatedShell() {
 function AppShell() {
   const { currentUser } = useAppStore();
   
-  // If not authenticated, show only login page
+  // If not authenticated, show only login and signup pages
   if (!currentUser) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
