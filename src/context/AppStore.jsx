@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
 
 const AppStoreContext = createContext();
 
@@ -791,7 +792,7 @@ export function AppStoreProvider({ children }) {
   };
 
   // New workflow-specific functions
-  const confirmBooking = (bookingId) => {
+  const confirmBooking = async (bookingId) => {
     try {
       const booking = bookings.find(b => b.id === bookingId);
       if (!booking) return { success: false, error: 'Booking not found' };
@@ -809,13 +810,57 @@ export function AppStoreProvider({ children }) {
         generateInvoiceFromBooking(updatedBooking);
       }
       
+      // Send confirmation email to driver if driver is assigned
+      let emailResult = null;
+      if (updatedBooking.driver) {
+        const driver = drivers.find(d => d.name === updatedBooking.driver);
+        if (driver && driver.email) {
+          // Demo JWT token - in a real app, this would come from the authenticated user
+          const demoSupabaseJwt = 'demo-jwt-token-would-be-from-authenticated-user';
+          
+          const subject = 'Booking Confirmation - Priority Transfers';
+          const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+          
+          emailResult = await sendDriverConfirmationEmail({
+            to: driver.email,
+            subject,
+            html,
+            supabaseJwt: demoSupabaseJwt
+          });
+          
+          if (emailResult.success) {
+            console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
+            
+            addActivityLog({
+              type: 'email_sent',
+              description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
+              relatedId: bookingId
+            });
+          } else {
+            console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+            
+            addActivityLog({
+              type: 'email_failed',
+              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+              relatedId: bookingId
+            });
+          }
+        } else {
+          console.warn(`⚠️  Driver ${updatedBooking.driver} not found or has no email address`);
+        }
+      }
+      
       addActivityLog({
         type: 'booking_confirmed',
-        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created`,
+        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : ''}`,
         relatedId: bookingId
       });
       
-      return { success: true };
+      return { 
+        success: true, 
+        emailSent: emailResult?.success || false,
+        emailError: emailResult?.success ? null : emailResult?.error
+      };
     } catch (error) {
       console.error('Failed to confirm booking:', error);
       return { success: false, error: 'Failed to confirm booking' };
