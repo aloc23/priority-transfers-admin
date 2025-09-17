@@ -7,7 +7,8 @@ export const formatCurrency = (amount, currency = 'EUR') => {
   };
   
   const symbol = currencySymbols[currency] || '€';
-  return `${symbol}${amount}`;
+  const numAmount = Number(amount) || 0;
+  return `${symbol}${numAmount.toFixed(2)}`;
 };
 
 export const EURO_PRICE_PER_BOOKING = 45;
