@@ -354,55 +354,61 @@ ${invoice.bookingId ? `Booking ID: ${invoice.bookingId}` : ''}
                         <span>{invoice.date}</span>
                       </div>
                     </div>
-                    {/* Action Buttons based on new workflow */}
-                    <div className="flex items-center gap-1 ml-2">
-                      {invoice.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleEditInvoice(invoice.id)}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                            title="Edit Draft"
-                          >
-                            <EditIcon className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleSendInvoice(invoice.id, invoice)}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                            title="Send Invoice"
-                          >
-                            <SendIcon className="w-3 h-3" />
-                          </button>
-                        </>
-                      )}
-                      {invoice.status === 'sent' && (
-                        <>
-                          <button
-                            onClick={() => handleViewInvoice(invoice.id)}
-                            className="px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-700 transition-colors"
-                            title="View Invoice"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleEditInvoice(invoice.id)}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                            title="Edit Invoice"
-                          >
-                            <EditIcon className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleMarkAsPaid(invoice.id)}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                            title="Mark as Paid"
-                          >
-                            Paid
-                          </button>
-                        </>
-                      )}
-                      {invoice.status === 'paid' && (
-                        <span className="text-xs text-slate-500 px-2 py-1">
-                          View Only
-                        </span>
+                    {/* Dropdown Action Menu (3 dots) */}
+                    <div className="relative ml-2">
+                      <button
+                        className="p-2 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        title="Actions"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedKPI(invoice.id === expandedKPI ? null : invoice.id);
+                        }}
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="#64748b"/><circle cx="12" cy="12" r="2" fill="#64748b"/><circle cx="19" cy="12" r="2" fill="#64748b"/></svg>
+                      </button>
+                      {expandedKPI === invoice.id && (
+                        <div ref={dropdownRef} className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                          <ul className="py-1 text-sm">
+                            {invoice.status === 'pending' && (
+                              <>
+                                <li>
+                                  <button className="w-full text-left px-4 py-2 hover:bg-blue-50" onClick={() => { handleEditInvoice(invoice.id); setExpandedKPI(null); }}>
+                                    <EditIcon className="w-4 h-4 inline mr-2" /> Edit Draft
+                                  </button>
+                                </li>
+                                <li>
+                                  <button className="w-full text-left px-4 py-2 hover:bg-green-50" onClick={() => { handleSendInvoice(invoice.id, invoice); setExpandedKPI(null); }}>
+                                    <SendIcon className="w-4 h-4 inline mr-2" /> Send Invoice
+                                  </button>
+                                </li>
+                              </>
+                            )}
+                            {invoice.status === 'sent' && (
+                              <>
+                                <li>
+                                  <button className="w-full text-left px-4 py-2 hover:bg-slate-50" onClick={() => { handleViewInvoice(invoice.id); setExpandedKPI(null); }}>
+                                    <InvoiceIcon className="w-4 h-4 inline mr-2" /> View Invoice
+                                  </button>
+                                </li>
+                                <li>
+                                  <button className="w-full text-left px-4 py-2 hover:bg-blue-50" onClick={() => { handleEditInvoice(invoice.id); setExpandedKPI(null); }}>
+                                    <EditIcon className="w-4 h-4 inline mr-2" /> Edit Invoice
+                                  </button>
+                                </li>
+                                <li>
+                                  <button className="w-full text-left px-4 py-2 hover:bg-green-50" onClick={() => { handleMarkAsPaid(invoice.id); setExpandedKPI(null); }}>
+                                    <SendIcon className="w-4 h-4 inline mr-2" /> Mark as Paid
+                                  </button>
+                                </li>
+                              </>
+                            )}
+                            {invoice.status === 'paid' && (
+                              <li>
+                                <span className="block px-4 py-2 text-slate-400">View Only</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
                       )}
                     </div>
                   </div>
