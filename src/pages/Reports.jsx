@@ -115,8 +115,8 @@ export default function Reports() {
     }
     
     if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase();
-      bVal = bVal.toLowerCase();
+      aVal = (aVal ?? '').toLowerCase();
+      bVal = (bVal ?? '').toLowerCase();
     }
     
     if (filters.sortOrder === 'asc') {

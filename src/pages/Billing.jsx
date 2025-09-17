@@ -16,21 +16,10 @@ import {
 import ToggleSwitch from "../components/ToggleSwitch";
 import PageHeader from "../components/PageHeader";
 import StatsCard from "../components/StatsCard";
-import StatusBlockGrid from "../components/StatusBlockGrid";
+import InvoiceStatusPills from "../components/InvoiceStatusPills";
+import InvoiceTable from "../components/InvoiceTable";
 
 export default function Billing() {
-  const [expandedRows, setExpandedRows] = useState(new Set());
-  const toggleExpandRow = (invoiceId) => {
-    setExpandedRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(invoiceId)) {
-        newSet.delete(invoiceId);
-      } else {
-        newSet.add(invoiceId);
-      }
-      return newSet;
-    });
-  };
   const { 
     bookings, 
     customers,
@@ -59,15 +48,11 @@ export default function Billing() {
     bookingId: null, // For manual booking association
     type: 'priority' // Default type
   });
-  // For compact filter tabs
-  const statusTabs = [
-    { id: 'all', label: 'All' },
-    { id: 'pending', label: 'Pending' },
-    { id: 'paid', label: 'Paid' },
-    { id: 'overdue', label: 'Overdue' },
-    { id: 'cancelled', label: 'Cancelled' },
-  ];
-
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const completedBookings = bookings.filter(booking => booking.status === "completed");
   const totalRevenue = calculateRevenue(bookings, "completed", invoices);
   const pendingPayments = invoices.filter(inv => inv.status === 'pending' || inv.status === 'sent').reduce((sum, inv) => sum + inv.amount, 0);
@@ -83,6 +68,7 @@ export default function Billing() {
   const filteredInvoices = invoices.filter(invoice => {
     const statusMatch = filterStatus === 'all' || invoice.status === filterStatus;
     const typeMatch = filterType === 'all' || invoice.type === filterType;
+    const customerMatch = !filterCustomer || invoice.customer.toLowerCase().includes(filterCustomer.toLowerCase());
     
     // Source filter logic
     let sourceMatch = true;
@@ -102,8 +88,10 @@ export default function Billing() {
       bookingMatch = invoice.bookingId === null;
     }
     
-    return statusMatch && typeMatch && sourceMatch && bookingMatch;
+    return statusMatch && typeMatch && sourceMatch && bookingMatch && customerMatch;
   });
+
+
 
   const handleEdit = (invoice) => {
     setEditingInvoice(invoice);
@@ -390,347 +378,163 @@ export default function Billing() {
     </>
   );
 
-  // Prepare invoice status data for StatusBlockGrid
-  const invoiceStatusData = [
-    {
-      id: 'all',
-      label: 'All Statuses',
-      count: invoices.length,
-      color: 'bg-gradient-to-r from-slate-600 to-slate-500'
-    },
-    {
-      id: 'pending',
-      label: 'Pending',
-      count: invoices.filter(inv => inv.status === 'pending').length,
-      color: 'bg-gradient-to-r from-amber-600 to-yellow-500'
-    },
-    {
-      id: 'sent',
-      label: 'Sent',
-      count: invoices.filter(inv => inv.status === 'sent').length,
-      color: 'bg-gradient-to-r from-blue-600 to-blue-500'
-    },
-    {
-      id: 'paid',
-      label: 'Paid',
-      count: invoices.filter(inv => inv.status === 'paid').length,
-      color: 'bg-gradient-to-r from-green-600 to-emerald-500'
-    },
-    {
-      id: 'cancelled',
-      label: 'Cancelled',
-      count: invoices.filter(inv => inv.status === 'cancelled').length,
-      color: 'bg-gradient-to-r from-red-600 to-pink-500'
-    }
-  ];
-
-  // Optionally, you can add more filters (e.g., filterCustomer, filterDate) if needed
-  // For simplicity, we'll keep their variables but not implement their logic in this snippet
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [filterCustomer, setFilterCustomer] = useState('');
-  const [filterDate, setFilterDate] = useState('');
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader title="Invoices" actions={billingActions} />
-      {/* KPIs and Status block grouped together */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* KPIs block */}
-        <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-green-200 p-6 mb-2 md:mb-0 flex flex-col gap-3 hover:shadow-2xl transition-all duration-200 group min-h-[170px]">
-          <div className="flex items-center gap-4 mb-2">
-            <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-green-400 to-emerald-500 shadow">
-              <RevenueIcon className="w-8 h-8 text-white" />
-            </span>
+      
+      {/* KPI Cards with consistent spacing */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Total Revenue Card */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg border border-green-200 p-6 text-white">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs font-bold text-green-700 uppercase tracking-wider">Total Revenue</div>
-              <div className="text-3xl font-extrabold text-green-800 drop-shadow-sm">{formatCurrency(totalRevenue)}</div>
+              <div className="text-sm font-medium text-green-100">Total Revenue</div>
+              <div className="text-3xl font-bold">{formatCurrency(totalRevenue)}</div>
             </div>
-          </div>
-          <div className="flex gap-4 mt-2">
-            <div className="flex-1 bg-white/90 rounded-xl p-4 flex flex-col items-center shadow-sm border border-yellow-100">
-              <div className="text-xs text-gray-500 font-semibold mb-1">Pending</div>
-              <div className="text-lg font-bold text-yellow-600">{formatCurrency(pendingPayments)}</div>
-            </div>
-            <div className="flex-1 bg-white/90 rounded-xl p-4 flex flex-col items-center shadow-sm border border-green-100">
-              <div className="text-xs text-gray-500 font-semibold mb-1">Paid</div>
-              <div className="text-lg font-bold text-green-600">{formatCurrency(paidInvoices)}</div>
+            <div className="p-3 bg-white/20 rounded-lg">
+              <RevenueIcon className="w-8 h-8" />
             </div>
           </div>
         </div>
-        {/* Status block as cards */}
-        <StatusBlockGrid
-          title="Invoice Status"
-          statusData={invoiceStatusData}
+
+        {/* Pending Payments Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-gray-500">Pending</div>
+              <div className="text-3xl font-bold text-yellow-600">{formatCurrency(pendingPayments)}</div>
+            </div>
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <InvoiceIcon className="w-8 h-8 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Paid Invoices Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium text-gray-500">Paid</div>
+              <div className="text-3xl font-bold text-green-600">{formatCurrency(paidInvoices)}</div>
+            </div>
+            <div className="p-3 bg-green-100 rounded-lg">
+              <RevenueIcon className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Unified Status Pills */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Status</h3>
+        <InvoiceStatusPills
+          invoices={invoices}
           selectedStatus={filterStatus}
-          onStatusClick={setFilterStatus}
-          className="bg-white rounded-lg shadow p-4"
+          onStatusChange={setFilterStatus}
         />
       </div>
-      {/* Filters + Invoice List block */}
-      <div className="card p-4 mt-2">
-        {/* Compact Filter Tabs and Filters in one row */}
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <nav className="flex flex-wrap gap-1 md:gap-0 md:space-x-6 px-2 md:px-0" aria-label="Invoice Status Tabs">
-            {statusTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterStatus(tab.id)}
-                className={`py-2 px-3 md:py-1 md:px-1 border-b-2 font-medium text-sm rounded-t-lg transition-all duration-200 min-h-[36px] flex items-center justify-center md:min-h-auto flex-1 md:flex-none ${
-                  filterStatus === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50 md:bg-transparent shadow-sm md:shadow-none'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 md:hover:bg-transparent'
-                }`}
-                aria-selected={filterStatus === tab.id}
-                role="tab"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-          {/* Compact filter controls */}
-          <div className="flex gap-2 items-center ml-auto">
-            <input
-              type="text"
-              placeholder="Customer name"
-              value={filterCustomer}
-              onChange={e => setFilterCustomer(e.target.value)}
-              className="input input-xs"
-            />
-            <input
-              type="date"
-              value={filterDate}
-              onChange={e => setFilterDate(e.target.value)}
-              className="input input-xs"
-            />
-            <button
-              className={`btn btn-outline btn-xs ${showAdvancedFilters ? 'bg-blue-50' : ''}`}
-              onClick={() => setShowAdvancedFilters((v) => !v)}
-              type="button"
-            >
-              <FilterIcon className="w-4 h-4 mr-1" />
-              Filters
-            </button>
-          </div>
+
+      {/* Simplified Filter Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <input
+            type="text"
+            placeholder="Search customer name..."
+            value={filterCustomer}
+            onChange={e => setFilterCustomer(e.target.value)}
+            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+          <input
+            type="date"
+            value={filterDate}
+            onChange={e => setFilterDate(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+          <button
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          >
+            <FilterIcon className="w-4 h-4 mr-2" />
+            {showAdvancedFilters ? 'Hide' : 'Show'} Filters
+          </button>
         </div>
+        
         {/* Advanced filters dropdown */}
         {showAdvancedFilters && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {/* Add more advanced filters here if needed */}
-          </div>
-        )}
-        {/* Invoice List Table Header with Dropdowns */}
-        <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-          <div className="flex gap-2 items-center">
-            <span className="font-semibold text-lg">Invoices</span>
-            <span className="text-slate-500 text-sm">({filteredInvoices.length})</span>
-          </div>
-          <div className="flex gap-2 items-center">
-            <button
-              className="btn btn-outline btn-xs"
-              onClick={() => setShowAdvancedFilters((v) => !v)}
-            >
-              Filters
-            </button>
-          </div>
-        </div>
-        {/* Dropdowns for extra filters, shown inline in header or as dropdown */}
-        {showAdvancedFilters && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            <input
-              type="text"
-              placeholder="Customer name"
-              value={filterCustomer}
-              onChange={e => setFilterCustomer(e.target.value)}
-              className="input input-xs"
-            />
-            <input
-              type="date"
-              value={filterDate}
-              onChange={e => setFilterDate(e.target.value)}
-              className="input input-xs"
-            />
-            {/* Add more advanced filters here if needed */}
-          </div>
-        )}
-        {/* Invoice List Table */}
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead className="sticky top-0 bg-white z-10">
-              <tr>
-                {payableInvoices.length > 0 && (
-                  <th className="w-12">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                      checked={payableInvoices.length > 0 && selectedInvoices.size === payableInvoices.length}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      title="Select all payable invoices"
-                    />
-                  </th>
-                )}
-                <th>Invoice ID</th>
-                <th>Customer</th>
-                <th>Booking Reference</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th>Actions</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInvoices.map((invoice) => {
-                const isSelected = selectedInvoices.has(invoice.id);
-                const booking = getBookingForInvoice(invoice);
-                const isPayable = invoice.status === 'sent' || invoice.status === 'pending';
-                const expanded = expandedRows.has(invoice.id);
-                return (
-                  <>
-                    <tr key={invoice.id} className={isSelected ? 'bg-green-50' : ''}>
-                      {payableInvoices.length > 0 && (
-                        <td>
-                          {isPayable && (
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                              checked={isSelected}
-                              onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                              title="Select for bulk payment"
-                            />
-                          )}
-                        </td>
-                      )}
-                      <td className="font-mono text-sm font-medium">{invoice.id}</td>
-                      <td className="font-medium">{invoice.customer}</td>
-                      <td>
-                        {booking ? (
-                          <NavLink 
-                            to="/schedule" 
-                            className="text-blue-600 hover:text-blue-800 font-medium underline decoration-dotted hover:decoration-solid transition-all"
-                            title={`View booking: ${booking.pickup} → ${booking.destination}`}
-                          >
-                            Booking #{booking.id}
-                          </NavLink>
-                        ) : (
-                          <span className="text-gray-400 italic text-sm">Ad hoc invoice</span>
-                        )}
-                      </td>
-                      <td className="text-sm">{invoice.date}</td>
-                      <td className="font-bold">{formatCurrency(invoice.amount)}</td>
-                      <td>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          invoice.bookingId === null ? 'bg-gray-100 text-gray-800' :
-                          invoice.type === 'priority' ? 'bg-blue-100 text-blue-800' : 
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {invoice.bookingId === null ? 'Ad Hoc' :
-                           invoice.type === 'priority' ? 'Internal' : 'Outsourced'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                          invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                          invoice.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1">
-                          <button 
-                            onClick={() => handleViewInvoice(invoice)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                            title="View Invoice"
-                          >
-                            <ViewIcon className="w-3 h-3" />
-                          </button>
-                          {invoice.editable && (
-                            <button 
-                              onClick={() => handleEdit(invoice)}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                              title="Edit Invoice"
-                            >
-                              <EditIcon className="w-3 h-3" />
-                            </button>
-                          )}
-                          {(invoice.status === 'pending' || invoice.status === 'sent') && (
-                            <button 
-                              onClick={() => handleSendInvoice(invoice)}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                              title="Send Invoice"
-                            >
-                              <SendIcon className="w-3 h-3" />
-                            </button>
-                          )}
-                          {(invoice.status === 'sent' || invoice.status === 'pending') && (
-                            <button 
-                              onClick={() => handleSinglePayment(invoice.id)}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
-                              title="Mark as Paid"
-                            >
-                              <span className="font-bold">€</span>
-                            </button>
-                          )}
-                          <button 
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-                            title="Download Invoice"
-                          >
-                            <DownloadIcon className="w-3 h-3" />
-                          </button>
-                          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                            <button 
-                              onClick={() => cancelInvoice(invoice.id)}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all"
-                              title="Cancel Invoice"
-                            >
-                              <XIcon className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <button
-                          className="text-xs text-blue-600 hover:underline"
-                          onClick={() => toggleExpandRow(invoice.id)}
-                          title={expanded ? 'Hide details' : 'Show details'}
-                        >
-                          {expanded ? '▲' : '▼'}
-                        </button>
-                      </td>
-                    </tr>
-                    {expanded && (
-                      <tr className="bg-blue-50">
-                        <td colSpan={payableInvoices.length > 0 ? 10 : 9} className="p-4">
-                          {/* Expanded invoice details: items, audit, etc. */}
-                          <div>
-                            <div className="font-semibold mb-2">Invoice Items</div>
-                            <ul className="list-disc ml-6">
-                              {invoice.items && invoice.items.length > 0 ? invoice.items.map((item, idx) => (
-                                <li key={idx}>
-                                  {item.description} — Qty: {item.quantity}, Rate: {formatCurrency(item.rate)}, Amount: {formatCurrency(item.amount)}
-                                </li>
-                              )) : <li>No items</li>}
-                            </ul>
-                            {/* Add more details as needed, e.g. audit log */}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })}
-            </tbody>
-          </table>
-          {filteredInvoices.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No invoices found matching the current filters.
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Type</label>
+                <select
+                  value={filterType}
+                  onChange={e => setFilterType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Types</option>
+                  <option value="priority">Priority</option>
+                  <option value="outsourced">Outsourced</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                <select
+                  value={filterSource}
+                  onChange={e => setFilterSource(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Sources</option>
+                  <option value="internal">Internal</option>
+                  <option value="outsourced">Outsourced</option>
+                  <option value="adhoc">Ad Hoc</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Booking Association</label>
+                <select
+                  value={filterBookingAssociation}
+                  onChange={e => setFilterBookingAssociation(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Associations</option>
+                  <option value="linked">Linked to Booking</option>
+                  <option value="unlinked">Unlinked</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setFilterType('all');
+                    setFilterSource('all');
+                    setFilterBookingAssociation('all');
+                    setFilterCustomer('');
+                    setFilterDate('');
+                  }}
+                  className="w-full px-3 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Enhanced Invoice Table */}
+      <InvoiceTable
+        invoices={filteredInvoices}
+        bookings={bookings}
+        customers={customers}
+        selectedInvoices={selectedInvoices}
+        onSelectInvoice={handleSelectInvoice}
+        onSelectAll={handleSelectAll}
+        onViewInvoice={handleViewInvoice}
+        onEditInvoice={handleEdit}
+        onSendInvoice={handleSendInvoice}
+        onMarkAsPaid={handleSinglePayment}
+        onCancelInvoice={cancelInvoice}
+        loading={isLoading}
+      />
 
       {/* Edit Invoice Modal */}
       {showModal && (
