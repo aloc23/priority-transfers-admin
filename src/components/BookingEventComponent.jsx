@@ -64,9 +64,9 @@ export default function BookingEventComponent({ event, compact = false, isMobile
 
   // Full version for Dashboard (badges + text)
   return (
-    <div className="group relative h-full flex items-center gap-2 hover:scale-105 transition-transform duration-200">
+  <div className="group relative h-full flex items-center gap-2 hover:scale-105 hover:shadow-[0_0_12px_var(--tw-ring-color)] transition-transform duration-200">
       <span 
-        className={getBadgeClass()} 
+  className={`${getBadgeClass()} transition-all duration-200 group-hover:shadow-[0_0_8px_var(--tw-ring-color)] group-hover:-translate-y-0.5`}
         style={{
           fontWeight: 600, 
           fontSize: isMobile ? '9px' : '10px'
@@ -87,6 +87,8 @@ export default function BookingEventComponent({ event, compact = false, isMobile
         )}
       </div>
       <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl pointer-events-none" />
+  {/* Glow overlay for block */}
+  <div className="absolute inset-0 pointer-events-none rounded-xl group-hover:bg-accent/10 transition-all duration-200" />
     </div>
   );
 }

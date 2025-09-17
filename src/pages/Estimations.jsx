@@ -349,7 +349,7 @@ export default function Estimations() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-8">
       {/* Header Section */}
-      <div className="bg-white rounded-2xl shadow-lg mb-8 p-6">
+  <div className="bg-white rounded-2xl shadow-lg mb-8 p-6 transition-shadow duration-300 hover:shadow-2xl hover:-translate-y-1">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Estimates & Quotes</h1>
@@ -370,7 +370,7 @@ export default function Estimations() {
         </div>
       </div>
       {/* Job Details Card - Now at the top */}
-      <div className="bg-white rounded-2xl shadow-lg mb-8">
+  <div className="bg-white rounded-2xl shadow-lg mb-8 transition-shadow duration-300 hover:shadow-2xl hover:-translate-y-1">
         <div className="px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-100">
           <div className="flex items-center">
             <div className="bg-purple-100 p-3 rounded-full mr-4">

@@ -116,7 +116,7 @@ const ModernDatePicker = ({
                           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg'
                           : isToday
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 font-semibold'
-                            : 'text-slate-700 hover:bg-slate-100'
+                            : 'text-slate-700 hover:bg-accent/10'
                         : 'text-slate-400'
                       }
                     `}
