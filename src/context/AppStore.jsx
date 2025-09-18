@@ -2,6 +2,7 @@ import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
+import { getValidSupabaseJWT } from "../utils/jwtUtils";
 
 const AppStoreContext = createContext();
 
@@ -816,22 +817,26 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Get JWT from Supabase session
-          let supabaseJwt = null;
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
-          } catch (err) {
-            console.error('Could not get Supabase JWT:', err);
+          // Get JWT from Supabase session with proper validation
+          const jwtResult = await getValidSupabaseJWT();
+          
+          if (!jwtResult.success) {
+            console.error('Could not get valid Supabase JWT:', jwtResult.error);
+            emailResult = { 
+              success: false, 
+              error: jwtResult.error,
+              status: 'auth_error'
+            };
+          } else {
+            const subject = 'Booking Confirmation - Priority Transfers';
+            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+            emailResult = await sendDriverConfirmationEmail({
+              to: driver.email,
+              subject,
+              html,
+              supabaseJwt: jwtResult.jwt
+            });
           }
-          const subject = 'Booking Confirmation - Priority Transfers';
-          const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-          emailResult = await sendDriverConfirmationEmail({
-            to: driver.email,
-            subject,
-            html,
-            supabaseJwt
-          });
           if (emailResult.success) {
             console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
             
@@ -863,7 +868,8 @@ export function AppStoreProvider({ children }) {
       return { 
         success: true, 
         emailSent: emailResult?.success || false,
-        emailError: emailResult?.success ? null : emailResult?.error
+        emailError: emailResult?.success ? null : emailResult?.error,
+        authError: emailResult?.status === 'auth_error' ? emailResult.error : null
       };
     } catch (error) {
       console.error('Failed to confirm booking:', error);

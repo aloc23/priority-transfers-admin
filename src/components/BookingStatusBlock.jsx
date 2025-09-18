@@ -13,6 +13,31 @@ export default function BookingStatusBlock({
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
 
+  // Handle booking confirmation with proper error handling
+  const handleConfirmBooking = async (bookingId) => {
+    try {
+      const result = await confirmBooking(bookingId);
+      
+      if (result.success) {
+        if (!result.emailSent && result.emailError) {
+          // Show warning for email failure but booking was confirmed
+          if (result.authError) {
+            alert(`Booking confirmed successfully, but could not send driver notification: ${result.authError}`);
+          } else {
+            alert(`Booking confirmed successfully, but could not send driver notification: ${result.emailError}`);
+          }
+        }
+        // Success case - booking confirmed (and possibly email sent)
+      } else {
+        // Booking confirmation failed entirely
+        alert(`Failed to confirm booking: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      alert('An unexpected error occurred while confirming the booking. Please try again.');
+    }
+  };
+
   // Calculate booking status counts
   const bookingStatusCounts = useMemo(() => {
     const counts = {
@@ -313,7 +338,7 @@ export default function BookingStatusBlock({
                       {booking.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => confirmBooking(booking.id)}
+                            onClick={() => handleConfirmBooking(booking.id)}
                             className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                             title="Confirm Booking"
                           >

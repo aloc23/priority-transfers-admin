@@ -1,4 +1,5 @@
 // Email notification utility using Supabase Edge Function
+import { isValidJWT } from './jwtUtils';
 
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
@@ -104,6 +105,13 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
   try {
     console.log('Sending driver confirmation email...', { to, subject });
     
+    // Validate JWT before making the request
+    if (!isValidJWT(supabaseJwt)) {
+      const error = 'No valid authentication token provided. Please ensure you are logged in with a Supabase account.';
+      console.error('JWT validation failed:', { hasJwt: !!supabaseJwt, jwt: supabaseJwt });
+      return { success: false, error };
+    }
+    
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -123,6 +131,13 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
     } else {
+      // Handle specific 401 Unauthorized errors
+      if (response.status === 401) {
+        const error = '401 Unauthorized: Your login token is invalid or expired. Please log out and log in again with a Supabase account.';
+        console.error('401 Unauthorized error:', result);
+        return { success: false, error, status: 401 };
+      }
+      
       console.error('Failed to send driver confirmation email:', result);
       return { success: false, error: result.error || 'Failed to send email' };
     }
