@@ -2,6 +2,7 @@ import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
+import { getSupabaseJWT } from "../utils/auth";
 
 const AppStoreContext = createContext();
 
@@ -37,6 +38,12 @@ export function AppStoreProvider({ children }) {
     selectedStatus: null,
     selectedDriver: '',
     currentView: 'month'
+  });
+
+  // Authentication error modal state
+  const [authErrorModal, setAuthErrorModal] = useState({
+    isOpen: false,
+    error: null
   });
 
   // Safe localStorage utility functions
@@ -816,38 +823,59 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Get JWT from Supabase session
-          let supabaseJwt = null;
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
-          } catch (err) {
-            console.error('Could not get Supabase JWT:', err);
-          }
-          const subject = 'Booking Confirmation - Priority Transfers';
-          const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-          emailResult = await sendDriverConfirmationEmail({
-            to: driver.email,
-            subject,
-            html,
-            supabaseJwt
-          });
-          if (emailResult.success) {
-            console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
-            
-            addActivityLog({
-              type: 'email_sent',
-              description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
-              relatedId: bookingId
+          // Get JWT from Supabase session using the new auth utility
+          const authResult = await getSupabaseJWT();
+          
+          if (!authResult.success) {
+            // Show authentication error modal
+            setAuthErrorModal({
+              isOpen: true,
+              error: authResult.error
             });
-          } else {
-            console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
             
+            // Still log the booking confirmation but mark email as failed
             addActivityLog({
               type: 'email_failed',
-              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${authResult.error}`,
               relatedId: bookingId
             });
+            
+            emailResult = { success: false, error: authResult.error, isAuthError: true };
+          } else {
+            const subject = 'Booking Confirmation - Priority Transfers';
+            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+            emailResult = await sendDriverConfirmationEmail({
+              to: driver.email,
+              subject,
+              html,
+              supabaseJwt: authResult.jwt
+            });
+            
+            if (emailResult.success) {
+              console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
+              
+              addActivityLog({
+                type: 'email_sent',
+                description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
+                relatedId: bookingId
+              });
+            } else {
+              console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+              
+              // Handle authentication errors
+              if (emailResult.isAuthError) {
+                setAuthErrorModal({
+                  isOpen: true,
+                  error: emailResult.error
+                });
+              }
+              
+              addActivityLog({
+                type: 'email_failed',
+                description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+                relatedId: bookingId
+              });
+            }
           }
         } else {
           console.warn(`⚠️  Driver ${updatedBooking.driver} not found or has no email address`);
@@ -1798,6 +1826,29 @@ export function AppStoreProvider({ children }) {
     }
   };
 
+  // Authentication error modal functions
+  const showAuthErrorModal = (error = null) => {
+    setAuthErrorModal({
+      isOpen: true,
+      error
+    });
+  };
+
+  const hideAuthErrorModal = () => {
+    setAuthErrorModal({
+      isOpen: false,
+      error: null
+    });
+  };
+
+  const handleReLogin = () => {
+    // Clear current user and redirect to login
+    logout();
+    hideAuthErrorModal();
+    // In a real app, this would navigate to login page
+    window.location.href = '/login';
+  };
+
   const value = {
     currentUser,
     bookings,
@@ -1812,6 +1863,7 @@ export function AppStoreProvider({ children }) {
     income,
     estimations,
     globalCalendarState,
+    authErrorModal,
     login,
     logout,
     addBooking,
@@ -1860,7 +1912,11 @@ export function AppStoreProvider({ children }) {
     deleteEstimation,
     convertEstimationToBooking,
     updateGlobalCalendarState,
-    resetGlobalCalendarFilters
+    resetGlobalCalendarFilters,
+    // Authentication modal functions
+    showAuthErrorModal,
+    hideAuthErrorModal,
+    handleReLogin
   };
 
   return (
