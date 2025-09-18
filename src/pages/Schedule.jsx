@@ -9,8 +9,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from "../utils/currency";
 import { CalendarIcon, PlusIcon, InvoiceIcon, CheckIcon, TableIcon, SendIcon, DriverIcon } from "../components/Icons";
 import PageHeader from "../components/PageHeader";
+import StatusBlockGrid from "../components/StatusBlockGrid";
 import CompactStatusChipsWithDropdown from "../components/CompactStatusChipsWithDropdown";
-import ScheduleAssistant from "../components/ScheduleAssistant";
 import CompactCalendarNav from "../components/CompactCalendarNav";
 import ToggleSwitch from "../components/ToggleSwitch";
 import ThreeWayToggle from "../components/ThreeWayToggle";
@@ -65,7 +65,7 @@ export default function Schedule() {
   const [highlightedBooking, setHighlightedBooking] = useState(null);
 
   // Use global calendar state instead of local state  
-  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
+  const { selectedDate, selectedStatus, selectedDriver } = globalCalendarState;
   const filterStatus = selectedStatus === null ? 'all' : selectedStatus;
 
   // Booking status counts for tabs
@@ -306,20 +306,6 @@ export default function Schedule() {
     setInitialTime(time);
     setEditingBooking(null);
     setShowModal(true);
-  };
-
-  // Handler for Schedule Assistant booking creation
-  const handleAssistantCreateBooking = (date, time) => {
-    const formattedDate = moment(date).format('YYYY-MM-DD');
-    setInitialDate(formattedDate);
-    setInitialTime(time);
-    setEditingBooking(null);
-    setShowModal(true);
-  };
-
-  // Handler for Schedule Assistant booking clicks
-  const handleAssistantBookingClick = (booking) => {
-    setSelectedCalendarBooking(booking);
   };
 
   // Render mobile card for schedule items
@@ -950,70 +936,49 @@ export default function Schedule() {
               </div>
             </div>
           </div>
-          
-          {/* Calendar and Schedule Assistant Layout */}
-          <div className={`flex gap-4 ${isMobile ? 'flex-col' : 'flex-row'}`} style={{ height: isMobile ? 'auto' : '700px' }}>
-            {/* Main Calendar */}
-            <div className={`${isMobile ? 'w-full' : 'flex-1'} calendar-container rounded-xl overflow-hidden bg-white shadow-inner`} style={{ height: isMobile ? '500px' : '100%' }}>
-              {/* Compact Calendar Navigation */}
-              <div className="mb-4 p-4">
-                <CompactCalendarNav
-                  currentDate={selectedDate || new Date()}
-                  onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
-                  onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
-                  currentView={currentView || 'month'}
-                  onViewChange={(view) => updateGlobalCalendarState({ currentView: view })}
-                  views={['month', 'week', 'day']}
-                  isMobile={isMobile}
-                />
-              </div>
-              
-              <Calendar
-                localizer={localizer}
-                events={calendarEvents}
-                startAccessor="start"
-                endAccessor="end"
-                date={selectedDate || new Date()}
-                view={currentView || 'month'}
-                onNavigate={(date) => updateGlobalCalendarState({ selectedDate: date })}
-                onView={(view) => updateGlobalCalendarState({ currentView: view })}
-                onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
-                onSelectSlot={handleSelectSlot}
-                selectable
+          <div style={{ height: isMobile ? '500px' : '700px' }} className="calendar-container rounded-xl overflow-hidden bg-white shadow-inner">
+            {/* Compact Calendar Navigation */}
+            <div className="mb-4 p-4">
+              <CompactCalendarNav
+                currentDate={selectedDate || new Date()}
+                onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
+                onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
+                currentView="month"
                 views={['month', 'week', 'day']}
-                defaultView="month"
-                eventPropGetter={(event) => ({
-                  style: event.style
-                })}
-                popup
-                toolbar={false}
-                style={{
-                  height: isMobile ? '400px' : 'calc(100% - 100px)',
-                  fontFamily: 'Inter, system-ui, sans-serif'
-                }}
-                components={{
-                  event: ({ event }) => (
-                    <BookingEventWithInvoices 
-                      event={event} 
-                      invoices={invoices} 
-                      compact={false} 
-                      isMobile={isMobile} 
-                    />
-                  )
-                }}
+                isMobile={isMobile}
               />
             </div>
-
-            {/* Schedule Assistant */}
-            <div className={`${isMobile ? 'w-full mt-4' : 'w-80'} ${isMobile ? 'h-96' : 'h-full'}`}>
-              <ScheduleAssistant
-                selectedDate={selectedDate}
-                selectedDriver={selectedDriver}
-                onCreateBooking={handleAssistantCreateBooking}
-                onBookingClick={handleAssistantBookingClick}
-              />
-            </div>
-          </div>
+            
+            <Calendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
+              onSelectSlot={handleSelectSlot}
+              selectable
+              views={['month', 'week', 'day']}
+              defaultView="month"
+              eventPropGetter={(event) => ({
+                style: event.style
+              })}
+              popup
+              toolbar={false}
+              style={{
+                height: '100%',
+                fontFamily: 'Inter, system-ui, sans-serif'
+              }}
+              components={{
+                event: ({ event }) => (
+                  <BookingEventWithInvoices 
+                    event={event} 
+                    invoices={invoices} 
+                    compact={false} 
+                    isMobile={isMobile} 
+                  />
+                )
+              }}
+            />
             {/* Booking Card Popup */}
             {selectedCalendarBooking && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" onClick={() => setSelectedCalendarBooking(null)}>
