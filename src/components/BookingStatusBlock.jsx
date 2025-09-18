@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { BookingIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
 
@@ -12,6 +12,27 @@ export default function BookingStatusBlock({
   const { bookings, invoices, updateBooking, confirmBooking, markBookingCompleted, deleteBooking } = useAppStore();
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [expandedKPI, setExpandedKPI] = useState(null);
+  // For closing dropdown on outside click or Escape
+  const dropdownRef = useRef();
+
+  // Close dropdown on outside click or Escape
+  useEffect(() => {
+    if (expandedKPI === null) return;
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setExpandedKPI(null);
+      }
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setExpandedKPI(null);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [expandedKPI]);
 
   // Calculate booking status counts
   const bookingStatusCounts = useMemo(() => {
@@ -166,59 +187,24 @@ export default function BookingStatusBlock({
         </h3>
       </div>
 
-      {/* Basic Booking Status KPIs - Expandable */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        {statusConfig.map((status) => (
-          <div key={status.id} className="relative">
+      {/* Vertical Tabs and Booking List Layout */}
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* Vertical Tabs */}
+        <div className="flex md:flex-col gap-2 md:gap-1 md:w-40 w-full overflow-x-auto md:overflow-x-visible border-b md:border-b-0 md:border-r border-slate-200 pb-2 md:pb-0 md:pr-2">
+          {statusConfig.map((status) => (
             <button
-              onClick={() => handleKPIExpand(status.id)}
-              className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${status.color} hover:shadow-md`}
+              key={status.id}
+              onClick={() => handleStatusClick(status.id)}
+              className={`px-3 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 whitespace-nowrap text-left
+                ${selectedStatus === status.id
+                  ? `${status.color} md:border-l-4 border-slate-700 shadow-[0_0_16px_var(--tw-ring-color)] ring-2 ring-accent ring-offset-2 ring-offset-slate-900`
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900'}`}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-lg">{status.count}</div>
-                  <div className="text-xs">{status.label}</div>
-                </div>
-                {expandedKPI === status.id ? 
-                  <ChevronUpIcon className="w-4 h-4" /> : 
-                  <ChevronDownIcon className="w-4 h-4" />
-                }
-              </div>
+              <span className="font-semibold mr-2">{status.count}</span>
+              <span className="text-xs">{status.label}</span>
             </button>
-            
-            {/* Expandable Content */}
-            {expandedKPI === status.id && (
-              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-slate-200 rounded-lg shadow-lg p-3 mt-1">
-                <h4 className="font-semibold text-sm mb-2">{status.label} Bookings Details</h4>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p>Total Count: <span className="font-semibold">{status.count}</span></p>
-                  <p>Percentage: <span className="font-semibold">
-                    {bookingStatusCounts.all > 0 ? Math.round((status.count / bookingStatusCounts.all) * 100) : 0}%
-                  </span></p>
-                  {status.id === 'pending' && (
-                    <p className="text-amber-600">Awaiting confirmation</p>
-                  )}
-                  {status.id === 'confirmed' && (
-                    <p className="text-green-600">Ready for service</p>
-                  )}
-                  {status.id === 'completed' && (
-                    <p className="text-blue-600">Service completed</p>
-                  )}
-                  {status.id === 'cancelled' && (
-                    <p className="text-gray-600">Service cancelled</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleStatusClick(status.id)}
-                  className="mt-2 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200"
-                >
-                  View {status.label} Bookings
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
       {/* Combined Status KPIs - Shows booking+invoice combined status */}
       {!hideCombinedStatus && (
@@ -259,128 +245,149 @@ export default function BookingStatusBlock({
         </div>
       )}
 
-      {/* Booking List (if enabled) */}
-      {showBookingList && (
-        <div className="bg-slate-50 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-slate-700">
-              {selectedStatus ? 
-                `${statusConfig.find(s => s.id === selectedStatus)?.label || 'Filtered'} Bookings` :
-                'All Bookings'
-              }
-            </h4>
-            <div className="text-xs text-slate-500">
-              {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {filteredBookings.length === 0 ? (
-              <div className="text-center py-6 text-slate-500">
-                <BookingIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No bookings found</p>
+        {/* Booking List (if enabled) */}
+        {showBookingList && (
+          <div className="bg-slate-50 rounded-xl p-4 flex-1">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-slate-700">
+                {selectedStatus ? 
+                  `${statusConfig.find(s => s.id === selectedStatus)?.label || 'Filtered'} Bookings` :
+                  'All Bookings'
+                }
+              </h4>
+              <div className="text-xs text-slate-500">
+                {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
               </div>
-            ) : (
-              filteredBookings.map((booking) => (
-                <div key={booking.id} className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h5 className="text-sm font-medium text-slate-900 truncate">
-                          {booking.customer}
-                        </h5>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                          booking.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                          booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-slate-100 text-slate-800'
-                        }`}>
-                          {getCombinedStatus(booking)}
-                        </span>
+            </div>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-6 text-slate-500">
+                  <BookingIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No bookings found</p>
+                </div>
+              ) : (
+                filteredBookings.map((booking) => (
+                  <div key={booking.id} className="bg-gradient-to-br from-slate-100 via-slate-50 to-gray-200 border border-slate-300 rounded-xl p-3 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h5 className="text-sm font-medium text-slate-900 truncate">
+                            {booking.customer}
+                          </h5>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                            booking.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                            booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-slate-100 text-slate-800'
+                          }`}>
+                            {getCombinedStatus(booking)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-400 mb-1">
+                          <span>{booking.pickup} → {booking.destination}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-400">
+                          <span>{booking.date} at {booking.time}</span>
+                          <span>€{booking.price || booking.amount || 0}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-400 mb-1">
-                        <span>{booking.pickup} → {booking.destination}</span>
+                      
+                      {/* Dropdown Action Menu (3 dots) */}
+                      <div className="relative ml-2">
+                        <button
+                          className="p-2 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          title="Actions"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedKPI(booking.id === expandedKPI ? null : booking.id);
+                          }}
+                        >
+                          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="#64748b"/><circle cx="12" cy="12" r="2" fill="#64748b"/><circle cx="19" cy="12" r="2" fill="#64748b"/></svg>
+                        </button>
+                        {expandedKPI === booking.id && (
+                          <div ref={dropdownRef} className="absolute right-0 mt-2 w-40 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-200 border border-slate-300 rounded-xl shadow-xl z-20">
+                            <ul className="py-1 text-sm">
+                              {booking.status === 'pending' && (
+                                <>
+                                  <li>
+                                    <button 
+                                      className="w-full text-left px-4 py-2 hover:bg-green-50" 
+                                      onClick={() => { confirmBooking(booking.id); setExpandedKPI(null); }}
+                                    >
+                                      Confirm Booking
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button 
+                                      className="w-full text-left px-4 py-2 hover:bg-red-50" 
+                                      onClick={() => { deleteBooking(booking.id); setExpandedKPI(null); }}
+                                    >
+                                      Remove Booking
+                                    </button>
+                                  </li>
+                                </>
+                              )}
+                              {booking.status === 'confirmed' && (
+                                <>
+                                  {booking.hasReturn ? (
+                                    !booking.pickupCompleted ? (
+                                      <li>
+                                        <button 
+                                          className="w-full text-left px-4 py-2 hover:bg-blue-50" 
+                                          onClick={() => { updateBooking(booking.id, { ...booking, pickupCompleted: true }); setExpandedKPI(null); }}
+                                        >
+                                          Complete Pickup
+                                        </button>
+                                      </li>
+                                    ) : !booking.returnCompleted ? (
+                                      <li>
+                                        <button 
+                                          className="w-full text-left px-4 py-2 hover:bg-green-50" 
+                                          onClick={() => { updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' }); setExpandedKPI(null); }}
+                                        >
+                                          Complete Return
+                                        </button>
+                                      </li>
+                                    ) : null
+                                  ) : (
+                                    <li>
+                                      <button 
+                                        className="w-full text-left px-4 py-2 hover:bg-blue-50" 
+                                        onClick={() => { updateBooking(booking.id, { ...booking, status: 'completed' }); setExpandedKPI(null); }}
+                                      >
+                                        Mark as Completed
+                                      </button>
+                                    </li>
+                                  )}
+                                  <li>
+                                    <button 
+                                      className="w-full text-left px-4 py-2 hover:bg-red-50" 
+                                      onClick={() => { deleteBooking(booking.id); setExpandedKPI(null); }}
+                                    >
+                                      Remove Booking
+                                    </button>
+                                  </li>
+                                </>
+                              )}
+                              {booking.status === 'completed' && (
+                                <li>
+                                  <span className="block px-4 py-2 text-slate-400">View Only</span>
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-400">
-                        <span>{booking.date} at {booking.time}</span>
-                        <span>€{booking.price || booking.amount || 0}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Action Buttons based on new workflow */}
-                    <div className="flex gap-1 ml-2">
-                      {booking.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => confirmBooking(booking.id)}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                            title="Confirm Booking"
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => deleteBooking(booking.id)}
-                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                            title="Remove Booking"
-                          >
-                            Remove
-                          </button>
-                        </>
-                      )}
-                      {booking.status === 'confirmed' && (
-                        <>
-                          {/* Handle return transfer bookings with proper pickup/return completion */}
-                          {booking.hasReturn ? (
-                            !booking.pickupCompleted ? (
-                              <button
-                                onClick={() => updateBooking(booking.id, { ...booking, pickupCompleted: true })}
-                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                                title="Complete Pickup"
-                              >
-                                Complete Pickup
-                              </button>
-                            ) : !booking.returnCompleted ? (
-                              <button
-                                onClick={() => updateBooking(booking.id, { ...booking, returnCompleted: true, status: 'completed' })}
-                                className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                                title="Complete Return"
-                              >
-                                Complete Return
-                              </button>
-                            ) : null
-                          ) : (
-                            // Single trip - complete the entire booking
-                            <button
-                              onClick={() => updateBooking(booking.id, { ...booking, status: 'completed' })}
-                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                              title="Mark as Completed"
-                            >
-                              Complete
-                            </button>
-                          )}
-                          <button
-                            onClick={() => deleteBooking(booking.id)}
-                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                            title="Remove Booking"
-                          >
-                            Remove
-                          </button>
-                        </>
-                      )}
-                      {booking.status === 'completed' && (
-                        <span className="text-xs text-slate-500 px-2 py-1">
-                          View Only
-                        </span>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div> {/* Close flex layout */}
     </div>
   );
 }
