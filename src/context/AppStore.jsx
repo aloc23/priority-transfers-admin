@@ -1,7 +1,7 @@
 import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
-import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
+import { sendDriverConfirmationEmail, generateBookingConfirmationHTML, getSupabaseJWT } from "../utils/email";
 
 const AppStoreContext = createContext();
 
@@ -816,38 +816,47 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Get JWT from Supabase session
-          let supabaseJwt = null;
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
-          } catch (err) {
-            console.error('Could not get Supabase JWT:', err);
-          }
-          const subject = 'Booking Confirmation - Priority Transfers';
-          const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-          emailResult = await sendDriverConfirmationEmail({
-            to: driver.email,
-            subject,
-            html,
-            supabaseJwt
-          });
-          if (emailResult.success) {
-            console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
-            
-            addActivityLog({
-              type: 'email_sent',
-              description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
-              relatedId: bookingId
+          // Get JWT with improved error handling
+          const jwtResult = await getSupabaseJWT();
+          
+          if (jwtResult.success) {
+            const subject = 'Booking Confirmation - Priority Transfers';
+            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+            emailResult = await sendDriverConfirmationEmail({
+              to: driver.email,
+              subject,
+              html,
+              supabaseJwt: jwtResult.jwt
             });
+            
+            if (emailResult.success) {
+              console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
+              
+              addActivityLog({
+                type: 'email_sent',
+                description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
+                relatedId: bookingId
+              });
+            } else {
+              console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+              
+              addActivityLog({
+                type: 'email_failed',
+                description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+                relatedId: bookingId
+              });
+            }
           } else {
-            console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+            // JWT authentication failed - log the issue but don't fail the booking confirmation
+            console.warn(`⚠️  Unable to send driver confirmation email due to authentication: ${jwtResult.error}`);
             
             addActivityLog({
-              type: 'email_failed',
-              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+              type: 'email_skipped',
+              description: `Driver confirmation email skipped for ${driver.name} (${driver.email}) - Authentication required: ${jwtResult.error}`,
               relatedId: bookingId
             });
+            
+            emailResult = { success: false, error: jwtResult.error, requiresAuth: true };
           }
         } else {
           console.warn(`⚠️  Driver ${updatedBooking.driver} not found or has no email address`);
@@ -856,7 +865,13 @@ export function AppStoreProvider({ children }) {
       
       addActivityLog({
         type: 'booking_confirmed',
-        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : ''}`,
+        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${
+          emailResult?.success 
+            ? ' - Driver notification sent' 
+            : emailResult?.requiresAuth 
+              ? ' - Driver notification requires authentication'
+              : ''
+        }`,
         relatedId: bookingId
       });
       

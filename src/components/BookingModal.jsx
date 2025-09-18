@@ -1,4 +1,4 @@
-import { sendDriverEmailNotification } from '../utils/email';
+import { sendDriverEmailNotification, getSupabaseJWT, sendDriverConfirmationEmail, generateBookingConfirmationHTML } from '../utils/email';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
 // Add fetch for Google Maps Directions API
@@ -463,50 +463,51 @@ export default function BookingModal({
       const driverObj = drivers.find(d => d.name === formData.driver);
       if (driverObj && driverObj.email) {
         const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
-        const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
+        const html = generateBookingConfirmationHTML(
+          {
+            ...formData,
+            customer: formData.customer,
+            pickup: formData.pickup, 
+            destination: formData.destination,
+            date: formData.date,
+            time: formData.time,
+            type: formData.type || 'transfer'
+          }, 
+          driverObj.name
+        );
+        
         (async () => {
-          // Get the latest session and JWT from Supabase Auth
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          console.log('Supabase sessionData:', sessionData);
-          if (sessionError) {
-            alert('Error retrieving Supabase session: ' + sessionError.message);
-            console.error('Supabase session error:', sessionError);
+          // Get JWT with improved error handling
+          const jwtResult = await getSupabaseJWT();
+          
+          if (!jwtResult.success) {
+            // Show user-friendly error message for authentication issues
+            alert(`Unable to send driver confirmation email: ${jwtResult.error}\n\nThe booking has been created successfully. You can manually notify the driver or try again after logging in with a Supabase account.`);
+            console.error('JWT authentication failed for driver email:', jwtResult.error);
             return;
           }
-          const supabaseJwt = sessionData?.session?.access_token;
-          console.log('Supabase JWT before fetch:', supabaseJwt);
-          if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
-            alert('No valid JWT found. Please log out and log in again with a Supabase account.');
-            console.error('No valid Supabase JWT found. Session:', sessionData);
-            return;
-          }
-          fetch('https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseJwt}`
-            },
-            body: JSON.stringify({ to: driverObj.email, subject, html })
-          })
-          .then(async res => {
-            if (res.status === 401) {
-              alert('401 Unauthorized: Your login token is missing or invalid. Please log out and log in again with a Supabase account.');
-              console.error('401 Unauthorized: JWT missing or invalid.');
-              return;
-            }
-            const data = await res.json();
-            if (data.error) {
-              console.error('Error from Edge Function:', data.error);
-              alert('Error sending confirmation email: ' + data.error);
-            } else {
-              console.log('Driver confirmation email sent:', data);
-              alert('Driver confirmation email sent successfully!');
-            }
-          })
-          .catch(err => {
-            console.error('Fetch error:', err);
-            alert('Network error sending confirmation email: ' + err.message);
+
+          // Use the centralized email function
+          const emailResult = await sendDriverConfirmationEmail({
+            to: driverObj.email,
+            subject,
+            html,
+            supabaseJwt: jwtResult.jwt
           });
+
+          if (emailResult.success) {
+            console.log('Driver confirmation email sent successfully:', emailResult.data);
+            alert(`Booking created and driver confirmation email sent to ${driverObj.name} successfully!`);
+          } else {
+            console.error('Failed to send driver confirmation email:', emailResult.error);
+            
+            // Check for specific 401 error
+            if (emailResult.error && emailResult.error.includes('401')) {
+              alert('Authentication failed while sending confirmation email. Your login session may have expired. Please log out and log in again with a Supabase account.\n\nThe booking has been created successfully.');
+            } else {
+              alert(`Booking created successfully, but failed to send confirmation email to ${driverObj.name}: ${emailResult.error}\n\nPlease manually notify the driver or try again later.`);
+            }
+          }
         })();
       }
     }

@@ -1,4 +1,41 @@
 // Email notification utility using Supabase Edge Function
+import supabase from './supabaseClient';
+
+/**
+ * Safely retrieves the Supabase JWT token with proper error handling
+ * @returns {Object} {success: boolean, jwt?: string, error?: string}
+ */
+export async function getSupabaseJWT() {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Supabase session error:', sessionError);
+      return {
+        success: false,
+        error: `Failed to retrieve authentication session: ${sessionError.message}`
+      };
+    }
+
+    const jwt = sessionData?.session?.access_token;
+    
+    if (!jwt || typeof jwt !== 'string' || jwt.length < 20) {
+      console.warn('No valid Supabase JWT found. Session:', sessionData);
+      return {
+        success: false,
+        error: 'No valid authentication token found. Please log in again with a Supabase account to send driver confirmation emails.'
+      };
+    }
+
+    return { success: true, jwt };
+  } catch (error) {
+    console.error('Error retrieving Supabase JWT:', error);
+    return {
+      success: false,
+      error: `Authentication error: ${error.message || 'Unable to retrieve login token'}`
+    };
+  }
+}
 
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
@@ -124,10 +161,27 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       return { success: true, data: result };
     } else {
       console.error('Failed to send driver confirmation email:', result);
-      return { success: false, error: result.error || 'Failed to send email' };
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        return { 
+          success: false, 
+          error: '401 Unauthorized: Authentication token is invalid or expired. Please log in again with a Supabase account.',
+          statusCode: 401
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: result.error || `HTTP ${response.status}: Failed to send email`,
+        statusCode: response.status
+      };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
-    return { success: false, error: error.message || 'Network error occurred' };
+    return { 
+      success: false, 
+      error: error.message || 'Network error occurred while sending email'
+    };
   }
 }
