@@ -1,4 +1,5 @@
 import { sendDriverEmailNotification } from '../utils/email';
+import { getSupabaseJWT } from '../utils/auth';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
 // Add fetch for Google Maps Directions API
@@ -18,7 +19,7 @@ export default function BookingModal({
   initialTime = '',
   title = null 
 }) {
-  const { addBooking, updateBooking, customers, drivers, partners, bookings } = useAppStore();
+  const { addBooking, updateBooking, customers, drivers, partners, bookings, showAuthErrorModal } = useAppStore();
   const { fleet } = useFleet();
 
   // State for journey info
@@ -458,39 +459,35 @@ export default function BookingModal({
       addBooking(submissionData);
     }
 
-    // After booking is confirmed, send driver notification (demo integration)
+    // After booking is confirmed, send driver notification with improved error handling
     if (formData.source === 'internal' && formData.driver) {
       const driverObj = drivers.find(d => d.name === formData.driver);
       if (driverObj && driverObj.email) {
         const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
         const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
         (async () => {
-          // Get the latest session and JWT from Supabase Auth
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          console.log('Supabase sessionData:', sessionData);
-          if (sessionError) {
-            alert('Error retrieving Supabase session: ' + sessionError.message);
-            console.error('Supabase session error:', sessionError);
+          // Get JWT using the new authentication utility
+          const authResult = await getSupabaseJWT();
+          
+          if (!authResult.success) {
+            // Show authentication error modal instead of alert
+            showAuthErrorModal(authResult.error);
+            console.error('Authentication error:', authResult.error);
             return;
           }
-          const supabaseJwt = sessionData?.session?.access_token;
-          console.log('Supabase JWT before fetch:', supabaseJwt);
-          if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
-            alert('No valid JWT found. Please log out and log in again with a Supabase account.');
-            console.error('No valid Supabase JWT found. Session:', sessionData);
-            return;
-          }
+
           fetch('https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseJwt}`
+              'Authorization': `Bearer ${authResult.jwt}`
             },
             body: JSON.stringify({ to: driverObj.email, subject, html })
           })
           .then(async res => {
             if (res.status === 401) {
-              alert('401 Unauthorized: Your login token is missing or invalid. Please log out and log in again with a Supabase account.');
+              // Show authentication error modal instead of alert
+              showAuthErrorModal('Your login token is missing or invalid. Please log out and log in again with a Supabase account.');
               console.error('401 Unauthorized: JWT missing or invalid.');
               return;
             }

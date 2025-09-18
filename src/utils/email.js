@@ -123,11 +123,29 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
     } else {
+      // Handle specific error cases
+      if (response.status === 401) {
+        console.error('401 Unauthorized: JWT missing or invalid');
+        return { 
+          success: false, 
+          error: 'Authentication failed. Please log in again.',
+          isAuthError: true
+        };
+      }
+      
       console.error('Failed to send driver confirmation email:', result);
-      return { success: false, error: result.error || 'Failed to send email' };
+      return { 
+        success: false, 
+        error: result.error || 'Failed to send email',
+        statusCode: response.status
+      };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
-    return { success: false, error: error.message || 'Network error occurred' };
+    return { 
+      success: false, 
+      error: error.message || 'Network error occurred',
+      isNetworkError: true
+    };
   }
 }

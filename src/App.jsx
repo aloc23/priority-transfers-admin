@@ -20,11 +20,12 @@ import Sidebar from "./components/Sidebar";
 import MobileFAB from "./components/MobileFAB";
 import MobileTopbar from "./components/MobileTopbar";
 import FloatingHamburger from "./components/FloatingHamburger";
+import AuthErrorModal from "./components/AuthErrorModal";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function AuthenticatedShell() {
-  const { currentUser } = useAppStore();
+  const { currentUser, authErrorModal, hideAuthErrorModal, handleReLogin } = useAppStore();
   const { isMobile, isDesktop } = useResponsive();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
   
@@ -77,6 +78,14 @@ function AuthenticatedShell() {
       
       {/* Mobile FAB for quick actions */}
       <MobileFAB />
+      
+      {/* Global Authentication Error Modal */}
+      <AuthErrorModal 
+        isOpen={authErrorModal.isOpen}
+        onClose={hideAuthErrorModal}
+        onReLogin={handleReLogin}
+        error={authErrorModal.error}
+      />
     </div>
   );
 }
