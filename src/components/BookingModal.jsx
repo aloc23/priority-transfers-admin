@@ -8,6 +8,7 @@ import { useFleet } from '../context/FleetContext';
 import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
 import supabase from '../utils/supabaseClient';
+import { getValidJWTWithUserFeedback } from '../utils/auth';
 
 export default function BookingModal({ 
   // Demo: Send email notification to driver
@@ -465,21 +466,15 @@ export default function BookingModal({
         const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
         const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
         (async () => {
-          // Get the latest session and JWT from Supabase Auth
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          console.log('Supabase sessionData:', sessionData);
-          if (sessionError) {
-            alert('Error retrieving Supabase session: ' + sessionError.message);
-            console.error('Supabase session error:', sessionError);
+          // Get the latest session and JWT from Supabase Auth with robust handling
+          const supabaseJwt = await getValidJWTWithUserFeedback(true);
+          
+          // If JWT is invalid or missing, getValidJWTWithUserFeedback already showed an alert
+          if (!supabaseJwt) {
+            console.error('No valid JWT available for email sending');
             return;
           }
-          const supabaseJwt = sessionData?.session?.access_token;
-          console.log('Supabase JWT before fetch:', supabaseJwt);
-          if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
-            alert('No valid JWT found. Please log out and log in again with a Supabase account.');
-            console.error('No valid Supabase JWT found. Session:', sessionData);
-            return;
-          }
+          
           fetch('https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts', {
             method: 'POST',
             headers: {

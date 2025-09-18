@@ -1,5 +1,7 @@
 // Email notification utility using Supabase Edge Function
 
+import { isValidJWT } from './auth';
+
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
   return new Promise((resolve) => {
@@ -101,8 +103,21 @@ export function generateBookingConfirmationHTML(booking, driverName) {
 export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJwt }) {
   const SUPABASE_EDGE_FUNCTION_URL = 'https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts';
   
+  // Validate JWT before making the request
+  if (!isValidJWT(supabaseJwt)) {
+    const errorMsg = !supabaseJwt 
+      ? 'No JWT provided for authentication' 
+      : 'Invalid or malformed JWT provided';
+    console.error('JWT validation failed:', errorMsg);
+    return { 
+      success: false, 
+      error: `Authentication error: ${errorMsg}. Please ensure you are logged in with a valid Supabase account.` 
+    };
+  }
+  
   try {
     console.log('Sending driver confirmation email...', { to, subject });
+    console.log('Using JWT for authentication (length):', supabaseJwt.length);
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -123,11 +138,20 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
     } else {
-      console.error('Failed to send driver confirmation email:', result);
-      return { success: false, error: result.error || 'Failed to send email' };
+      // Handle specific HTTP error statuses
+      if (response.status === 401) {
+        const authError = 'Authentication failed: Your login session is invalid or expired. Please log out and log in again.';
+        console.error('401 Unauthorized:', authError);
+        return { success: false, error: authError };
+      }
+      
+      const errorMsg = result.error || `HTTP ${response.status}: Failed to send email`;
+      console.error('Failed to send driver confirmation email:', errorMsg);
+      return { success: false, error: errorMsg };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
-    return { success: false, error: error.message || 'Network error occurred' };
+    const networkErrorMsg = `Network error: ${error.message}. Please check your internet connection and try again.`;
+    return { success: false, error: networkErrorMsg };
   }
 }
