@@ -85,3 +85,7 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+# Environment files
+.env
+.env.local
+.env.*.local
