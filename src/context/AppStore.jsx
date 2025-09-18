@@ -818,34 +818,65 @@ export function AppStoreProvider({ children }) {
         if (driver && driver.email) {
           // Get JWT from Supabase session
           let supabaseJwt = null;
+          let sessionError = null;
           try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+              sessionError = error;
+              console.error('Error retrieving Supabase session:', error);
+            } else {
+              supabaseJwt = session?.access_token;
+            }
           } catch (err) {
+            sessionError = err;
             console.error('Could not get Supabase JWT:', err);
           }
-          const subject = 'Booking Confirmation - Priority Transfers';
-          const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-          emailResult = await sendDriverConfirmationEmail({
-            to: driver.email,
-            subject,
-            html,
-            supabaseJwt
-          });
-          if (emailResult.success) {
-            console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
-            
-            addActivityLog({
-              type: 'email_sent',
-              description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
-              relatedId: bookingId
+
+          // Only attempt to send email if we have a valid JWT
+          if (supabaseJwt && !sessionError) {
+            const subject = 'Booking Confirmation - Priority Transfers';
+            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+            emailResult = await sendDriverConfirmationEmail({
+              to: driver.email,
+              subject,
+              html,
+              supabaseJwt
             });
+            
+            if (emailResult.success) {
+              console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
+              
+              addActivityLog({
+                type: 'email_sent',
+                description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
+                relatedId: bookingId
+              });
+            } else {
+              console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+              
+              addActivityLog({
+                type: 'email_failed',
+                description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+                relatedId: bookingId
+              });
+            }
           } else {
-            console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+            // Authentication failed - log and skip email sending
+            const authErrorMsg = sessionError 
+              ? `Authentication error: ${sessionError.message}` 
+              : 'No valid authentication token found';
+            
+            console.warn(`⚠️  Skipping email send due to authentication issue: ${authErrorMsg}`);
+            
+            emailResult = {
+              success: false,
+              error: 'Authentication required. Please log out and log in again to send driver notifications.',
+              authError: true
+            };
             
             addActivityLog({
-              type: 'email_failed',
-              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+              type: 'email_skipped',
+              description: `Driver confirmation email skipped - authentication required for ${driver.name} (${driver.email})`,
               relatedId: bookingId
             });
           }
@@ -856,14 +887,15 @@ export function AppStoreProvider({ children }) {
       
       addActivityLog({
         type: 'booking_confirmed',
-        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : ''}`,
+        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : emailResult?.authError ? ' - Driver notification requires login' : ''}`,
         relatedId: bookingId
       });
       
       return { 
         success: true, 
         emailSent: emailResult?.success || false,
-        emailError: emailResult?.success ? null : emailResult?.error
+        emailError: emailResult?.success ? null : emailResult?.error,
+        authError: emailResult?.authError || false
       };
     } catch (error) {
       console.error('Failed to confirm booking:', error);

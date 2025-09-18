@@ -313,7 +313,24 @@ export default function BookingStatusBlock({
                       {booking.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => confirmBooking(booking.id)}
+                            onClick={async () => {
+                              try {
+                                const result = await confirmBooking(booking.id);
+                                if (result.success) {
+                                  if (result.authError) {
+                                    alert(`Booking confirmed successfully, but driver notification requires authentication: ${result.emailError}\n\nPlease log out and log in again with your Supabase account to enable driver notifications.`);
+                                  } else if (!result.emailSent && result.emailError) {
+                                    alert(`Booking confirmed successfully, but failed to send driver notification: ${result.emailError}`);
+                                  }
+                                  // Success case is handled silently - the UI will update automatically
+                                } else {
+                                  alert(`Failed to confirm booking: ${result.error}`);
+                                }
+                              } catch (error) {
+                                console.error('Error confirming booking:', error);
+                                alert('An unexpected error occurred while confirming the booking.');
+                              }
+                            }}
                             className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                             title="Confirm Booking"
                           >

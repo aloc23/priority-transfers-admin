@@ -102,6 +102,16 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
   const SUPABASE_EDGE_FUNCTION_URL = 'https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts';
   
   try {
+    // Validate JWT before making the request
+    if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
+      console.error('Invalid or missing Supabase JWT:', supabaseJwt);
+      return { 
+        success: false, 
+        error: 'Authentication required. Please log out and log in again with your Supabase account.',
+        authError: true 
+      };
+    }
+
     console.log('Sending driver confirmation email...', { to, subject });
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
@@ -117,14 +127,27 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       })
     });
 
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse response JSON:', parseError);
+      result = { error: 'Invalid response from server' };
+    }
     
     if (response.ok) {
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
+    } else if (response.status === 401) {
+      console.error('401 Unauthorized: JWT missing or invalid');
+      return { 
+        success: false, 
+        error: 'Authentication expired. Please log out and log in again with your Supabase account.',
+        authError: true 
+      };
     } else {
       console.error('Failed to send driver confirmation email:', result);
-      return { success: false, error: result.error || 'Failed to send email' };
+      return { success: false, error: result.error || `Server error (${response.status})` };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
