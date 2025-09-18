@@ -15,8 +15,6 @@ import PageHeader from "../components/PageHeader";
 import UpcomingBookingsWidget from "../components/UpcomingBookingsWidget";
 import StatusBlockGrid from "../components/StatusBlockGrid";
 import BookingsCalendarWidget from "../components/BookingsCalendarWidget";
-import InvoiceStatusBlock from "../components/InvoiceStatusBlock";
-import BookingStatusBlock from "../components/BookingStatusBlock";
 import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
@@ -328,14 +326,11 @@ export default function Dashboard() {
             <BookingsCalendarWidget fullWidth={true} />
           </div>
 
-          {/* Invoice Status Block moved directly under the calendar */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <InvoiceStatusBlock 
-              compact={false}
-              showAddButtons={currentUser?.role === 'Admin'}
-              showInvoiceList={true}
-            />
-          </div>
+          {/* Combined Booking and Invoice Status Tabs - moved directly under the calendar */}
+          <BookingInvoiceStatusTabs 
+            compact={false}
+            showAddButtons={currentUser?.role === 'Admin'}
+          />
 
           {/* Booking List (mobile or desktop) - removed placeholder for no bookings */}
           <div>

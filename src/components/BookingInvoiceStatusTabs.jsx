@@ -3,7 +3,7 @@ import BookingStatusBlock from './BookingStatusBlock';
 import InvoiceStatusBlock from './InvoiceStatusBlock';
 import { BookingIcon, InvoiceIcon } from './Icons';
 
-export default function BookingInvoiceStatusTabs({ compact = false }) {
+export default function BookingInvoiceStatusTabs({ compact = false, showAddButtons = false }) {
   const [activeTab, setActiveTab] = useState('booking');
 
   const tabs = [
@@ -48,7 +48,7 @@ export default function BookingInvoiceStatusTabs({ compact = false }) {
           <InvoiceStatusBlock 
             compact={compact} 
             showInvoiceList={true} 
-            showAddButtons={true}
+            showAddButtons={showAddButtons}
           />
         )}
       </div>
