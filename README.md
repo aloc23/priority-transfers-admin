@@ -20,13 +20,23 @@ A modern React-based admin panel for ride bookings, drivers, fleet, invoices, an
 npm install
 ```
 
-### 2. Run the app locally
+### 2. Configure environment variables
+```bash
+cp .env.local.example .env.local
+```
+Edit `.env.local` with your Supabase credentials:
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
+Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api
+
+### 3. Run the app locally
 ```bash
 npm run dev
 ```
 Then open [http://localhost:5173/priority-transfers-admin/](http://localhost:5173/priority-transfers-admin/) in your browser.
 
-### 3. Build for production
+### 4. Build for production
 ```bash
 npm run build
 ```
