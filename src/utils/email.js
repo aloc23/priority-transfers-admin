@@ -1,4 +1,48 @@
 // Email notification utility using Supabase Edge Function
+import supabase from './supabaseClient';
+
+// Helper function to get a valid JWT from Supabase
+export async function getValidSupabaseJWT() {
+  try {
+    // Check if Supabase is properly configured
+    if (!supabase || !supabase.auth) {
+      console.warn('Supabase client not configured');
+      return { success: false, error: 'Supabase authentication is not configured. Email functionality is limited to demo mode.' };
+    }
+    
+    // First try to get session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Error getting Supabase session:', sessionError);
+      return { success: false, error: `Session error: ${sessionError.message}` };
+    }
+    
+    if (!session || !session.access_token) {
+      console.warn('No active Supabase session found');
+      return { success: false, error: 'No active session. Please log in with a Supabase account.' };
+    }
+    
+    // Additional validation to ensure the token is valid
+    const jwt = session.access_token;
+    if (typeof jwt !== 'string' || jwt.length < 20) {
+      console.error('Invalid JWT format:', jwt);
+      return { success: false, error: 'Invalid authentication token format.' };
+    }
+    
+    // Optional: Try to get user to verify token is still valid
+    const { error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error('JWT validation failed:', userError);
+      return { success: false, error: 'Authentication token is expired or invalid. Please log in again.' };
+    }
+    
+    return { success: true, jwt };
+  } catch (error) {
+    console.error('Unexpected error getting JWT:', error);
+    return { success: false, error: `Authentication error: ${error.message}` };
+  }
+}
 
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
@@ -101,6 +145,21 @@ export function generateBookingConfirmationHTML(booking, driverName) {
 export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJwt }) {
   const SUPABASE_EDGE_FUNCTION_URL = 'https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts';
   
+  // If JWT is not provided, try to get a valid one
+  if (!supabaseJwt) {
+    console.log('No JWT provided, attempting to get valid JWT...');
+    const jwtResult = await getValidSupabaseJWT();
+    if (!jwtResult.success) {
+      return { success: false, error: jwtResult.error };
+    }
+    supabaseJwt = jwtResult.jwt;
+  }
+  
+  // Validate JWT before making request
+  if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
+    return { success: false, error: 'Invalid or missing JWT token. Please log in again.' };
+  }
+  
   try {
     console.log('Sending driver confirmation email...', { to, subject });
     
@@ -124,10 +183,16 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       return { success: true, data: result };
     } else {
       console.error('Failed to send driver confirmation email:', result);
-      return { success: false, error: result.error || 'Failed to send email' };
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        return { success: false, error: 'Authentication failed. Your login token is expired or invalid. Please log in again.' };
+      }
+      
+      return { success: false, error: result.error || `HTTP ${response.status}: Failed to send email` };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
-    return { success: false, error: error.message || 'Network error occurred' };
+    return { success: false, error: error.message || 'Network error occurred while sending email' };
   }
 }

@@ -816,22 +816,19 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Get JWT from Supabase session
-          let supabaseJwt = null;
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
-          } catch (err) {
-            console.error('Could not get Supabase JWT:', err);
-          }
+          console.log(`Attempting to send confirmation email to ${driver.name} (${driver.email})`);
+          
           const subject = 'Booking Confirmation - Priority Transfers';
           const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+          
+          // Use the updated email function which handles JWT internally
           emailResult = await sendDriverConfirmationEmail({
             to: driver.email,
             subject,
-            html,
-            supabaseJwt
+            html
+            // No need to pass supabaseJwt - function will get it internally
           });
+          
           if (emailResult.success) {
             console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
             
