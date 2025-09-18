@@ -97,6 +97,9 @@ export function generateBookingConfirmationHTML(booking, driverName) {
   `;
 }
 
+// Import authentication helper
+import { getSupabaseAuthToken } from './authHelpers';
+
 // New function for sending booking confirmation emails to drivers via Supabase
 export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJwt }) {
   const SUPABASE_EDGE_FUNCTION_URL = 'https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts';
@@ -104,11 +107,21 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
   try {
     console.log('Sending driver confirmation email...', { to, subject });
     
+    // Use provided JWT or get fresh one
+    let jwt = supabaseJwt;
+    if (!jwt) {
+      const authResult = await getSupabaseAuthToken();
+      if (!authResult.success) {
+        return { success: false, error: authResult.error, authRequired: true };
+      }
+      jwt = authResult.jwt;
+    }
+    
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseJwt}`,
+        'Authorization': `Bearer ${jwt}`,
       },
       body: JSON.stringify({
         to,
@@ -123,6 +136,15 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
     } else {
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        console.error('401 Unauthorized: JWT token invalid or expired');
+        return { 
+          success: false, 
+          error: 'Authentication token is invalid or expired. Please log out and log in again with your Supabase account.', 
+          authRequired: true 
+        };
+      }
       console.error('Failed to send driver confirmation email:', result);
       return { success: false, error: result.error || 'Failed to send email' };
     }

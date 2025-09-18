@@ -2,6 +2,7 @@ import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
+import { handleAuthenticationError } from "../utils/authHelpers";
 
 const AppStoreContext = createContext();
 
@@ -816,22 +817,17 @@ export function AppStoreProvider({ children }) {
       if (updatedBooking.driver) {
         const driver = drivers.find(d => d.name === updatedBooking.driver);
         if (driver && driver.email) {
-          // Get JWT from Supabase session
-          let supabaseJwt = null;
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            supabaseJwt = session?.access_token;
-          } catch (err) {
-            console.error('Could not get Supabase JWT:', err);
-          }
           const subject = 'Booking Confirmation - Priority Transfers';
           const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+          
+          // Use the updated email function that handles authentication automatically
           emailResult = await sendDriverConfirmationEmail({
             to: driver.email,
             subject,
-            html,
-            supabaseJwt
+            html
+            // No need to pass supabaseJwt - the function will get it automatically
           });
+          
           if (emailResult.success) {
             console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
             
@@ -842,6 +838,11 @@ export function AppStoreProvider({ children }) {
             });
           } else {
             console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+            
+            // Handle authentication errors with user-friendly messages
+            if (emailResult.authRequired) {
+              handleAuthenticationError('send driver confirmation emails', emailResult.error);
+            }
             
             addActivityLog({
               type: 'email_failed',
