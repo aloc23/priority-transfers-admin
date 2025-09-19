@@ -70,8 +70,8 @@ export default function Drivers() {
         setFormData({ name: "", license: "", phone: "", email: "", status: "available" });
         setErrors({});
         
-        // Show success feedback (you can add a notification system later)
-        console.log(`Driver ${editingDriver ? 'updated' : 'created'} successfully`);
+        // Show success feedback (temporary implementation - a proper notification system could be added later)
+        console.log(`✅ Driver ${editingDriver ? 'updated' : 'created'} successfully: ${formData.name}`);
       } else {
         // Handle API error
         setErrors({
