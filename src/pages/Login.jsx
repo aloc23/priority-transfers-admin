@@ -49,42 +49,18 @@ export default function Login() {
         setIsLoading(false);
         return;
       }
-      
-      // Debug log: Show Supabase session and access_token after login
-      const sessionResult = await supabase.auth.getSession();
-      console.log('Supabase session after login:', sessionResult);
-      console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
-      
-      // Fetch user profile from profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', data.user.id)
-        .single();
-      
-      let userProfile;
-      if (profileError || !profileData) {
-        console.warn('No profile found or error fetching profile:', profileError);
-        // Create a basic profile from user_metadata and auth user data
-        const userMeta = data.user.user_metadata || {};
-        userProfile = {
-          id: data.user.id,
-          name: userMeta.full_name || data.user.email,
-          email: data.user.email,
-          role: userMeta.role || "User"
-        };
-      } else {
-        // Use profile data from database
-        userProfile = {
-          id: profileData.user_id,
-          name: profileData.full_name || profileData.email,
-          email: profileData.email,
-          role: profileData.role || "User",
-          profileId: profileData.id
-        };
-      }
-      
-      login(userProfile);
+      // Use Supabase user data for app state, get role from user_metadata
+  // Debug log: Show Supabase session and access_token after login
+  const sessionResult = await supabase.auth.getSession();
+  console.log('Supabase session after login:', sessionResult);
+  console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
+      const userMeta = data.user.user_metadata || {};
+      login({
+        id: data.user.id,
+        name: data.user.email,
+        email: data.user.email,
+        role: userMeta.role || "User"
+      });
       setIsLoading(false);
     }
   };

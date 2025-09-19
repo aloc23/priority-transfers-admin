@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../context/AppStore";
+import { useFleet } from "../context/FleetContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
 import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon, UploadIcon } from "../components/Icons";
@@ -21,7 +22,8 @@ import FleetDriverChecker from "../components/FleetDriverChecker";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
-  const { currentUser, income, expenses, invoices, bookings, customers, drivers, vehicles, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
+  const { currentUser, income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
+  const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   const [activeTab, setActiveTab] = useState('bookings-calendar');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -69,7 +71,7 @@ export default function Dashboard() {
   const operationalStats = [
     { name: "Active Customers", value: customers.length, icon: CustomerIcon, color: "bg-gradient-to-r from-cyan-600 to-blue-500" },
     { name: "Available Drivers", value: drivers.filter(d => d.status === "available").length, icon: DriverIcon, color: "bg-gradient-to-r from-green-600 to-emerald-500" },
-    { name: "Active Vehicles", value: vehicles?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
+    { name: "Active Vehicles", value: fleet?.length || 0, icon: VehicleIcon, color: "bg-gradient-to-r from-slate-600 to-slate-700" }
   ];
 
   // Combined booking/invoice status logic

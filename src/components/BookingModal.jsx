@@ -5,6 +5,7 @@ import { calculateTotalPrice } from '../utils/priceCalculator';
 // Add fetch for Google Maps Directions API
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
+import { useFleet } from '../context/FleetContext';
 import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
 import supabase from '../utils/supabaseClient';
@@ -18,7 +19,8 @@ export default function BookingModal({
   initialTime = '',
   title = null 
 }) {
-  const { addBooking, updateBooking, customers, drivers, partners, bookings, vehicles, showAuthErrorModal } = useAppStore();
+  const { addBooking, updateBooking, customers, drivers, partners, bookings, showAuthErrorModal } = useAppStore();
+  const { fleet } = useFleet();
 
   // State for journey info
   const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
@@ -47,14 +49,12 @@ export default function BookingModal({
     let runningCost = 0, fuelRate = 0;
     let runningCostUnit = 'km', fuelRateUnit = 'km';
     if (formData.vehicle) {
-      // Convert vehicles array to fleet-like structure for compatibility
-      const fleetVehicle = vehicles.find(v => `${v.make} ${v.model}` === formData.vehicle);
-      if (fleetVehicle) {
-        // Default values since vehicles table doesn't have cost fields yet
-        runningCost = 0.25; // Default running cost per km
-        fuelRate = 0.45; // Default fuel rate per km
-        runningCostUnit = 'km';
-        fuelRateUnit = 'km';
+      const selectedVehicle = fleet.find(v => v.name === formData.vehicle);
+      if (selectedVehicle) {
+        runningCost = parseFloat(selectedVehicle.runningCost) || 0;
+        fuelRate = parseFloat(selectedVehicle.fuelRate) || 0;
+        if (selectedVehicle.runningCostUnit) runningCostUnit = selectedVehicle.runningCostUnit;
+        if (selectedVehicle.fuelRateUnit) fuelRateUnit = selectedVehicle.fuelRateUnit;
       }
     }
     // Convert per-mile rates to per-km if needed
@@ -135,14 +135,12 @@ export default function BookingModal({
               let runningCost = 0, fuelRate = 0;
               let runningCostUnit = 'km', fuelRateUnit = 'km';
               if (formData.vehicle) {
-                // Convert vehicles array to fleet-like structure for compatibility
-                const fleetVehicle = vehicles.find(v => `${v.make} ${v.model}` === formData.vehicle);
-                if (fleetVehicle) {
-                  // Default values since vehicles table doesn't have cost fields yet
-                  runningCost = 0.25; // Default running cost per km
-                  fuelRate = 0.45; // Default fuel rate per km
-                  runningCostUnit = 'km';
-                  fuelRateUnit = 'km';
+                const selectedVehicle = fleet.find(v => v.name === formData.vehicle);
+                if (selectedVehicle) {
+                  runningCost = parseFloat(selectedVehicle.runningCost) || 0;
+                  fuelRate = parseFloat(selectedVehicle.fuelRate) || 0;
+                  if (selectedVehicle.runningCostUnit) runningCostUnit = selectedVehicle.runningCostUnit;
+                  if (selectedVehicle.fuelRateUnit) fuelRateUnit = selectedVehicle.fuelRateUnit;
                 }
               }
               // Convert per-mile rates to per-km if needed
@@ -1082,10 +1080,8 @@ export default function BookingModal({
                       aria-describedby="vehicle-select-help vehicle-conflicts"
                     >
                       <option value="">Select Vehicle</option>
-                      {vehicles.map(vehicle => (
-                        <option key={vehicle.id} value={`${vehicle.make} ${vehicle.model}`}>
-                          {vehicle.make} {vehicle.model} ({vehicle.license})
-                        </option>
+                      {fleet.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.name}>{vehicle.name}</option>
                       ))}
                     </select>
                     <p id="vehicle-select-help" className="mt-1 text-xs text-gray-600">Choose a vehicle from your fleet</p>

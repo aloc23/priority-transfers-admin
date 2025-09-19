@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
+import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { calculateResourceUtilization, getResourceConflicts, getResourceGaps, formatUtilization } from '../utils/resourceUtilization';
 import { formatCurrency } from '../utils/currency';
@@ -46,7 +47,8 @@ const BOOKING_TYPE_COLORS = {
 };
 
 export default function ResourceScheduleView() {
-  const { bookings, drivers, vehicles, partners = [], updateBooking, addBooking, globalCalendarState, updateGlobalCalendarState } = useAppStore();
+  const { bookings, drivers, partners = [], updateBooking, addBooking, globalCalendarState, updateGlobalCalendarState } = useAppStore();
+  const { fleet } = useFleet();
   const { isMobile } = useResponsive();
   
   const [currentWeekStart, setCurrentWeekStart] = useState(moment().startOf('week'));
@@ -60,12 +62,12 @@ export default function ResourceScheduleView() {
 
   // Calculate resource utilization
   const resourceData = useMemo(() => {
-    return calculateResourceUtilization(bookings, drivers, vehicles, partners, {
+    return calculateResourceUtilization(bookings, drivers, fleet, partners, {
       dateRange: 7,
       includeConfirmed: true,
       includePending: true
     });
-  }, [bookings, drivers, vehicles, partners]);
+  }, [bookings, drivers, fleet, partners]);
 
   // Generate time slots for the week view
   const weekDays = useMemo(() => {
