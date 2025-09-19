@@ -293,6 +293,14 @@ export function AppStoreProvider({ children }) {
     try {
       const result = await updateBooking(id, updates);
       
+      // Handle demo mode - show a user-friendly message
+      if (!result.success && result.isDemoMode) {
+        // For demo mode, we could show a toast or alert instead of the auth modal
+        console.log('Demo mode: Booking completion disabled');
+        alert(result.error); // Simple alert for now, could be improved with a toast
+        return result;
+      }
+      
       // Handle authentication error
       if (!result.success && result.requiresAuth) {
         showAuthErrorModal(result.error);

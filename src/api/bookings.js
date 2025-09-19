@@ -9,6 +9,31 @@ async function isDemoMode() {
 }
 
 export async function fetchBookings() {
+  // Check if we're in demo mode first
+  const inDemoMode = await isDemoMode();
+  
+  if (inDemoMode) {
+    // In demo mode, try to get bookings from localStorage
+    try {
+      const bookingsJson = localStorage.getItem("bookings");
+      if (bookingsJson) {
+        const bookings = JSON.parse(bookingsJson);
+        console.log('Demo mode: Loading bookings from localStorage', bookings.length);
+        return bookings;
+      } else {
+        // Initialize demo data if none exists
+        console.log('Demo mode: No bookings found, initializing demo data');
+        const demoBookings = initializeDemoBookings();
+        localStorage.setItem("bookings", JSON.stringify(demoBookings));
+        return demoBookings;
+      }
+    } catch (error) {
+      console.error('Error loading bookings from localStorage:', error);
+      return [];
+    }
+  }
+
+  // Real Supabase mode
   const { data, error } = await supabase
     .from("bookings")
     .select(`
@@ -144,8 +169,12 @@ export async function updateBooking(id, bookingData) {
   const inDemoMode = await isDemoMode();
   
   if (inDemoMode) {
-    // In demo mode, use local storage instead of Supabase
-    return updateBookingLocalStorage(id, bookingData);
+    // In demo mode, booking completion should be disabled
+    return {
+      success: false,
+      error: 'Booking completion is disabled in demo mode. Please log in with a real account to complete bookings.',
+      isDemoMode: true
+    };
   }
 
   // Check authentication for real Supabase operations
@@ -254,33 +283,68 @@ export async function deleteBooking(id) {
   }
 }
 
-// Local storage fallback for demo mode
-function updateBookingLocalStorage(id, bookingData) {
-  try {
-    // Get bookings from localStorage
-    const bookingsJson = localStorage.getItem("bookings");
-    if (!bookingsJson) {
-      return { success: false, error: "No bookings found in local storage" };
+// Initialize demo bookings data
+function initializeDemoBookings() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  
+  return [
+    {
+      id: 1,
+      customer: "John Doe",
+      pickup: "123 Main St",
+      destination: "456 Oak Ave",
+      date: tomorrow.toISOString().split('T')[0],
+      time: "09:00",
+      status: "confirmed",
+      driver: "Mike Johnson",
+      vehicle: "Toyota Camry",
+      type: "single",
+      price: 45,
+      source: "internal",
+      pickupCompleted: false,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - airport pickup"
+    },
+    {
+      id: 2,
+      customer: "Jane Smith",
+      pickup: "789 Pine St",
+      destination: "321 Elm Ave",
+      date: nextWeek.toISOString().split('T')[0],
+      time: "14:30",
+      status: "pending",
+      driver: "Sarah Wilson",
+      vehicle: "Honda Accord",
+      type: "single",
+      price: 35,
+      source: "online",
+      pickupCompleted: false,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - city transfer"
+    },
+    {
+      id: 3,
+      customer: "Bob Johnson",
+      pickup: "Airport Terminal 1",
+      destination: "Downtown Hotel",
+      date: today.toISOString().split('T')[0],
+      time: "16:00",
+      status: "confirmed",
+      driver: "Tom Davis",
+      vehicle: "Mercedes E-Class",
+      type: "single",
+      price: 60,
+      source: "internal",
+      pickupCompleted: true,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - completed pickup, ready for completion"
     }
-
-    const bookings = JSON.parse(bookingsJson);
-    const bookingIndex = bookings.findIndex(booking => booking.id === id);
-    
-    if (bookingIndex === -1) {
-      return { success: false, error: "Booking not found" };
-    }
-
-    // Update the booking with new data
-    const updatedBooking = { ...bookings[bookingIndex], ...bookingData };
-    bookings[bookingIndex] = updatedBooking;
-
-    // Save back to localStorage
-    localStorage.setItem("bookings", JSON.stringify(bookings));
-
-    console.log('Demo mode: Updated booking in localStorage', updatedBooking);
-    return { success: true, booking: updatedBooking };
-  } catch (error) {
-    console.error('Error updating booking in localStorage:', error);
-    return { success: false, error: 'Failed to update booking in demo mode' };
-  }
+  ];
 }
