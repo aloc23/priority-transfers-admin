@@ -68,24 +68,21 @@ export function AppStoreProvider({ children }) {
     estimations: false
   });
 
-  // Load data from Supabase on mount and check authentication
-  useEffect(() => {
-    initializeAuth();
-    loadAllData();
-  }, []);
+// Load data from Supabase on mount and check authentication
+useEffect(() => {
+  initializeAuth();
+  loadAllData();
+}, []);
 
 const initializeAuth = async () => {
   try {
-    // Check if there's an existing session
     const { data: { session }, error } = await supabase.auth.getSession();
-
     if (error) {
       console.error("Error getting session:", error);
       return;
     }
 
     if (session?.user) {
-      // Fetch user profile from profiles table (match on id)
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("id, full_name, phone, role, created_at")
@@ -97,22 +94,20 @@ const initializeAuth = async () => {
       if (profileError || !profileData) {
         console.warn("No profile found or error fetching profile:", profileError);
 
-        // Fallback: use auth data + metadata
         const userMeta = session.user.user_metadata || {};
         userProfile = {
           id: session.user.id,
           name: userMeta.full_name || session.user.email,
           email: session.user.email,
-          role: (userMeta.role || "user").toLowerCase(), // normalize
+          role: (userMeta.role || "user").toLowerCase(), // fallback only here
         };
       } else {
-        // Merge profile with auth user email
         userProfile = {
           id: profileData.id,
           name: profileData.full_name || session.user.email,
           email: session.user.email,
           phone: profileData.phone,
-          role: (profileData.role || "user").toLowerCase(), // normalize
+          role: profileData.role?.toLowerCase(), // trust DB, no "|| user"
         };
       }
 
