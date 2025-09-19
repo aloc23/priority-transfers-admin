@@ -1,6 +1,39 @@
 import supabase from "../utils/supabaseClient";
+import { getSupabaseJWT, isAuthenticated } from "../utils/auth";
+
+// Helper function to check if we're in demo mode (no Supabase session)
+async function isDemoMode() {
+  // First check for Supabase session
+  const authResult = await getSupabaseJWT();
+  return !authResult.success;
+}
 
 export async function fetchBookings() {
+  // Check if we're in demo mode first
+  const inDemoMode = await isDemoMode();
+  
+  if (inDemoMode) {
+    // In demo mode, try to get bookings from localStorage
+    try {
+      const bookingsJson = localStorage.getItem("bookings");
+      if (bookingsJson) {
+        const bookings = JSON.parse(bookingsJson);
+        console.log('Demo mode: Loading bookings from localStorage', bookings.length);
+        return bookings;
+      } else {
+        // Initialize demo data if none exists
+        console.log('Demo mode: No bookings found, initializing demo data');
+        const demoBookings = initializeDemoBookings();
+        localStorage.setItem("bookings", JSON.stringify(demoBookings));
+        return demoBookings;
+      }
+    } catch (error) {
+      console.error('Error loading bookings from localStorage:', error);
+      return [];
+    }
+  }
+
+  // Real Supabase mode
   const { data, error } = await supabase
     .from("bookings")
     .select(`
@@ -132,12 +165,34 @@ export async function createBooking(bookingData) {
 }
 
 export async function updateBooking(id, bookingData) {
-  // Validate required fields
-  if (!bookingData.pickup?.trim()) {
+  // Check if we're in demo mode
+  const inDemoMode = await isDemoMode();
+  
+  if (inDemoMode) {
+    // In demo mode, booking completion should be disabled
+    return {
+      success: false,
+      error: 'Booking completion is disabled in demo mode. Please log in with a real account to complete bookings.',
+      isDemoMode: true
+    };
+  }
+
+  // Check authentication for real Supabase operations
+  const authResult = await getSupabaseJWT();
+  if (!authResult.success) {
+    return {
+      success: false,
+      error: 'Authentication required. Please log in again.',
+      requiresAuth: true
+    };
+  }
+
+  // Validate required fields only for complete bookings, not status-only updates
+  if (!bookingData.pickup?.trim() && bookingData.pickup !== undefined) {
     return { success: false, error: 'Pickup location is required' };
   }
   
-  if (!bookingData.destination && !bookingData.dropoff) {
+  if ((!bookingData.destination && !bookingData.dropoff) && (bookingData.destination !== undefined || bookingData.dropoff !== undefined)) {
     return { success: false, error: 'Destination/dropoff location is required' };
   }
 
@@ -226,4 +281,70 @@ export async function deleteBooking(id) {
       error: "Unable to connect to the server. Please check your connection and try again." 
     };
   }
+}
+
+// Initialize demo bookings data
+function initializeDemoBookings() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  
+  return [
+    {
+      id: 1,
+      customer: "John Doe",
+      pickup: "123 Main St",
+      destination: "456 Oak Ave",
+      date: tomorrow.toISOString().split('T')[0],
+      time: "09:00",
+      status: "confirmed",
+      driver: "Mike Johnson",
+      vehicle: "Toyota Camry",
+      type: "single",
+      price: 45,
+      source: "internal",
+      pickupCompleted: false,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - airport pickup"
+    },
+    {
+      id: 2,
+      customer: "Jane Smith",
+      pickup: "789 Pine St",
+      destination: "321 Elm Ave",
+      date: nextWeek.toISOString().split('T')[0],
+      time: "14:30",
+      status: "pending",
+      driver: "Sarah Wilson",
+      vehicle: "Honda Accord",
+      type: "single",
+      price: 35,
+      source: "online",
+      pickupCompleted: false,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - city transfer"
+    },
+    {
+      id: 3,
+      customer: "Bob Johnson",
+      pickup: "Airport Terminal 1",
+      destination: "Downtown Hotel",
+      date: today.toISOString().split('T')[0],
+      time: "16:00",
+      status: "confirmed",
+      driver: "Tom Davis",
+      vehicle: "Mercedes E-Class",
+      type: "single",
+      price: 60,
+      source: "internal",
+      pickupCompleted: true,
+      returnCompleted: false,
+      hasReturn: false,
+      notes: "Demo booking - completed pickup, ready for completion"
+    }
+  ];
 }
