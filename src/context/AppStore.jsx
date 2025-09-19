@@ -248,10 +248,31 @@ const initializeAuth = async () => {
     }
   };
 
-  // Authentication functions
-  const login = (user) => {
-    setCurrentUser(user);
+// Authentication functions
+const login = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return;
+
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("full_name, phone, role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    console.warn("Profile fetch failed:", profileError.message);
+  }
+
+  const userProfile = {
+    id: user.id,
+    email: user.email,
+    name: profileData?.full_name || user.email,
+    phone: profileData?.phone,
+    role: profileData?.role || "user"
   };
+
+  setCurrentUser(userProfile);
+};
 
   const logout = async () => {
     try {
