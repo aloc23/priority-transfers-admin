@@ -74,52 +74,52 @@ export function AppStoreProvider({ children }) {
     loadAllData();
   }, []);
 
-  const initializeAuth = async () => {
-    try {
-      // Check if there's an existing session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error getting session:', error);
-        return;
+const initializeAuth = async () => {
+  try {
+    // Check if there's an existing session
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Error getting session:', error);
+      return;
+    }
+
+    if (session?.user) {
+      // Fetch user profile from profiles table (match on id, not user_id!)
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone, role, created_at')
+        .eq('id', session.user.id)
+        .single();
+
+      let userProfile;
+      if (profileError || !profileData) {
+        console.warn('No profile found or error fetching profile:', profileError);
+        // Fallback: use auth data + metadata
+        const userMeta = session.user.user_metadata || {};
+        userProfile = {
+          id: session.user.id,
+          name: userMeta.full_name || session.user.email,
+          email: session.user.email,
+          role: userMeta.role || "user"
+        };
+      } else {
+        // Merge profile with auth user email
+        userProfile = {
+          id: profileData.id,
+          name: profileData.full_name || session.user.email,
+          email: session.user.email,
+          phone: profileData.phone,
+          role: profileData.role || "user"
+        };
       }
 
-      if (session?.user) {
-        // Fetch user profile from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        let userProfile;
-        if (profileError || !profileData) {
-          console.warn('No profile found or error fetching profile:', profileError);
-          // Create a basic profile from user_metadata and auth user data
-          const userMeta = session.user.user_metadata || {};
-          userProfile = {
-            id: session.user.id,
-            name: userMeta.full_name || session.user.email,
-            email: session.user.email,
-            role: userMeta.role || "User"
-          };
-        } else {
-          // Use profile data from database
-          userProfile = {
-            id: profileData.user_id,
-            name: profileData.full_name || profileData.email,
-            email: profileData.email,
-            role: profileData.role || "User",
-            profileId: profileData.id
-          };
-        }
-        
-        setCurrentUser(userProfile);
-      }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
+      setCurrentUser(userProfile);
     }
-  };
+  } catch (error) {
+    console.error('Error initializing auth:', error);
+  }
+};
 
   const loadAllData = async () => {
     try {
