@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef } from "react";
 import { useAppStore } from "../context/AppStore";
-import { useFleet } from "../context/FleetContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
@@ -55,8 +54,7 @@ const getBookingTypeColor = (type) => {
 export default function Schedule() {
   // State for selected booking (for calendar card popup)
   const [selectedCalendarBooking, setSelectedCalendarBooking] = useState(null);
-  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser, globalCalendarState, updateGlobalCalendarState } = useAppStore();
-  const { fleet } = useFleet();
+  const { bookings, addBooking, updateBooking, deleteBooking, customers, drivers, vehicles, invoices, generateInvoiceFromBooking, markInvoiceAsPaid, sendBookingReminder, currentUser, globalCalendarState, updateGlobalCalendarState } = useAppStore();
   const { isMobile } = useResponsive();
   const [showModal, setShowModal] = useState(false);
   const tableRef = useRef(null);
