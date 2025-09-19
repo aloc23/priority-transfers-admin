@@ -80,28 +80,30 @@ const initializeAuth = async () => {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.error('Error getting session:', error);
+      console.error("Error getting session:", error);
       return;
     }
 
     if (session?.user) {
-      // Fetch user profile from profiles table (match on id, not user_id!)
+      // Fetch user profile from profiles table (match on id)
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, role, created_at')
-        .eq('id', session.user.id)
+        .from("profiles")
+        .select("id, full_name, phone, role, created_at")
+        .eq("id", session.user.id)
         .single();
 
       let userProfile;
+
       if (profileError || !profileData) {
-        console.warn('No profile found or error fetching profile:', profileError);
+        console.warn("No profile found or error fetching profile:", profileError);
+
         // Fallback: use auth data + metadata
         const userMeta = session.user.user_metadata || {};
         userProfile = {
           id: session.user.id,
           name: userMeta.full_name || session.user.email,
           email: session.user.email,
-          role: userMeta.role || "user"
+          role: (userMeta.role || "user").toLowerCase(), // normalize
         };
       } else {
         // Merge profile with auth user email
@@ -110,17 +112,16 @@ const initializeAuth = async () => {
           name: profileData.full_name || session.user.email,
           email: session.user.email,
           phone: profileData.phone,
-          role: profileData.role || "user"
+          role: (profileData.role || "user").toLowerCase(), // normalize
         };
       }
 
       setCurrentUser(userProfile);
     }
   } catch (error) {
-    console.error('Error initializing auth:', error);
+    console.error("Error initializing auth:", error);
   }
 };
-
   const loadAllData = async () => {
     try {
       // Load all data in parallel
