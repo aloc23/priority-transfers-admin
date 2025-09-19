@@ -1,353 +1,214 @@
-import { useState } from "react";
-import { useAppStore } from "../context/AppStore";
-import { EditIcon, TrashIcon, PlusIcon } from "../components/Icons";
+import { useState, useEffect } from "react";
+import { fetchVehicles, createVehicle, updateVehicle, deleteVehicle } from "../api/vehicles";
 
 export default function Fleet() {
-  const { vehicles, drivers, addVehicle, updateVehicle, deleteVehicle, loading } = useAppStore();
+  const [fleet, setFleet] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formData, setFormData] = useState({
     make: "",
     model: "",
-    year: new Date().getFullYear(),
-    license: "",
-    status: "active",
-    driverId: ""
+    plate_number: "",
+    year: "",
+    capacity: 4,
+    fuel_type: "",
+    fuel_cost: 0,
+    insurance_cost: 0,
+    maintenance_cost: 0,
+    depreciation_cost: 0,
+    service_cost: 0,
+    tax_cost: 0,
+    lease_cost: 0,
+    other_costs: 0,
   });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRunningCostModal, setShowRunningCostModal] = useState(false);
+  const [runningCostForm, setRunningCostForm] = useState({
+    fuel_cost: 0,
+    insurance_cost: 0,
+    maintenance_cost: 0,
+    depreciation_cost: 0,
+    service_cost: 0,
+    tax_cost: 0,
+    lease_cost: 0,
+    other_costs: 0,
+  });
+  const [runningCostResult, setRunningCostResult] = useState(null);
 
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.make?.trim()) {
-      newErrors.make = "Make is required";
-    }
-    
-    if (!formData.model?.trim()) {
-      newErrors.model = "Model is required";
-    }
-    
-    if (!formData.license?.trim()) {
-      newErrors.license = "License plate is required";
-    }
-    
-    if (formData.year && (formData.year < 1900 || formData.year > new Date().getFullYear() + 2)) {
-      newErrors.year = "Please enter a valid year";
-    }
+  useEffect(() => {
+    loadFleet();
+  }, []);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    
+  async function loadFleet() {
+    setLoading(true);
     try {
-      const result = editingVehicle 
-        ? await updateVehicle(editingVehicle.id, formData)
-        : await addVehicle(formData);
-
-      if (result.success) {
-        setShowModal(false);
-        setEditingVehicle(null);
-        setFormData({
-          make: "",
-          model: "",
-          year: new Date().getFullYear(),
-          license: "",
-          status: "active",
-          driverId: ""
-        });
-        setErrors({});
-        console.log(`✅ Vehicle ${editingVehicle ? 'updated' : 'created'} successfully: ${formData.make} ${formData.model}`);
-      } else {
-        setErrors({
-          submit: result.error || `Failed to ${editingVehicle ? 'update' : 'create'} vehicle. Please try again.`
-        });
-      }
-    } catch (error) {
-      setErrors({
-        submit: `An unexpected error occurred. Please try again.`
-      });
-      console.error('Vehicle operation failed:', error);
-    } finally {
-      setIsSubmitting(false);
+      const data = await fetchVehicles();
+      setFleet(data);
+    } catch (err) {
+      console.error("Error loading vehicles", err);
     }
-  };
+    setLoading(false);
+  }
 
-  const handleEdit = (vehicle) => {
+  async function handleSubmit(e) {
+    e.preventDefault();
+    try {
+      if (editingVehicle) {
+        await updateVehicle(editingVehicle.id, formData);
+      } else {
+        await createVehicle(formData);
+      }
+      setShowModal(false);
+      setEditingVehicle(null);
+      await loadFleet();
+    } catch (err) {
+      console.error("Error saving vehicle", err);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (confirm("Are you sure you want to delete this vehicle?")) {
+      await deleteVehicle(id);
+      await loadFleet();
+    }
+  }
+
+  function handleEdit(vehicle) {
     setEditingVehicle(vehicle);
     setFormData(vehicle);
-    setErrors({});
     setShowModal(true);
-  };
+  }
 
-  const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this vehicle?")) {
-      try {
-        const result = await deleteVehicle(id);
-        if (!result.success) {
-          console.error('Failed to delete vehicle:', result.error);
-          alert(result.error || 'Failed to delete vehicle. Please try again.');
-        }
-      } catch (error) {
-        console.error('Delete operation failed:', error);
-        alert('An unexpected error occurred while deleting the vehicle.');
-      }
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingVehicle(null);
-    setFormData({
-      make: "",
-      model: "",
-      year: new Date().getFullYear(),
-      license: "",
-      status: "active",
-      driverId: ""
+  function openRunningCostModal(vehicle) {
+    setShowRunningCostModal(true);
+    setRunningCostForm({
+      fuel_cost: vehicle.fuel_cost || 0,
+      insurance_cost: vehicle.insurance_cost || 0,
+      maintenance_cost: vehicle.maintenance_cost || 0,
+      depreciation_cost: vehicle.depreciation_cost || 0,
+      service_cost: vehicle.service_cost || 0,
+      tax_cost: vehicle.tax_cost || 0,
+      lease_cost: vehicle.lease_cost || 0,
+      other_costs: vehicle.other_costs || 0,
     });
-    setErrors({});
-  };
+  }
+
+  function calculateRunningCosts() {
+    const total =
+      (Number(runningCostForm.fuel_cost) || 0) +
+      (Number(runningCostForm.insurance_cost) || 0) +
+      (Number(runningCostForm.maintenance_cost) || 0) +
+      (Number(runningCostForm.depreciation_cost) || 0) +
+      (Number(runningCostForm.service_cost) || 0) +
+      (Number(runningCostForm.tax_cost) || 0) +
+      (Number(runningCostForm.lease_cost) || 0) +
+      (Number(runningCostForm.other_costs) || 0);
+
+    setRunningCostResult(total);
+  }
+
+  if (loading) return <div className="p-4">Loading fleet...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Fleet Management</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <PlusIcon />
-          Add Vehicle
-        </button>
-      </div>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Fleet Management</h1>
 
-      {loading.vehicles ? (
-        <div className="card">
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading vehicles...</p>
-          </div>
-        </div>
-      ) : (
-        <div className="card">
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Make & Model</th>
-                  <th>Year</th>
-                  <th>License Plate</th>
-                  <th>Status</th>
-                  <th>Assigned Driver</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehicles.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center py-8 text-gray-500">
-                      No vehicles found. Add your first vehicle to get started.
-                    </td>
-                  </tr>
-                ) : (
-                  vehicles.map((vehicle) => (
-                    <tr key={vehicle.id}>
-                      <td>
-                        <div className="font-medium text-gray-900">
-                          {vehicle.make} {vehicle.model}
-                        </div>
-                      </td>
-                      <td>{vehicle.year}</td>
-                      <td>
-                        <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                          {vehicle.license}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ${vehicle.status === 'active' ? 'badge-success' : 
-                                      vehicle.status === 'maintenance' ? 'badge-warning' : 
-                                      'badge-error'}`}>
-                          {vehicle.status}
-                        </span>
-                      </td>
-                      <td>
-                        {vehicle.driver ? (
-                          <span className="text-gray-900">{vehicle.driver}</span>
-                        ) : (
-                          <span className="text-gray-500">Unassigned</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(vehicle)}
-                            className="text-blue-500 hover:text-blue-700"
-                            title="Edit Vehicle"
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(vehicle.id)}
-                            className="text-red-500 hover:text-red-700"
-                            title="Delete Vehicle"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      <button
+        className="mb-4 rounded bg-green-600 px-4 py-2 text-white"
+        onClick={() => setShowModal(true)}
+      >
+        Add Vehicle
+      </button>
+
+      <table className="w-full border">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-2 border">Make</th>
+            <th className="p-2 border">Model</th>
+            <th className="p-2 border">Plate</th>
+            <th className="p-2 border">Year</th>
+            <th className="p-2 border">Costs (€)</th>
+            <th className="p-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fleet.map((v) => (
+            <tr key={v.id}>
+              <td className="p-2 border">{v.make}</td>
+              <td className="p-2 border">{v.model}</td>
+              <td className="p-2 border">{v.plate_number}</td>
+              <td className="p-2 border">{v.year}</td>
+              <td className="p-2 border">{v.total_running_cost}</td>
+              <td className="p-2 border space-x-2">
+                <button
+                  className="rounded bg-blue-500 px-2 py-1 text-white"
+                  onClick={() => handleEdit(v)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="rounded bg-yellow-500 px-2 py-1 text-white"
+                  onClick={() => openRunningCostModal(v)}
+                >
+                  Configurator
+                </button>
+                <button
+                  className="rounded bg-red-500 px-2 py-1 text-white"
+                  onClick={() => handleDelete(v.id)}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-lg">
+            <h2 className="text-xl mb-4">{editingVehicle ? "Edit Vehicle" : "Add Vehicle"}</h2>
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <input className="w-full border p-2" placeholder="Make" value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} />
+              <input className="w-full border p-2" placeholder="Model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} />
+              <input className="w-full border p-2" placeholder="Plate Number" value={formData.plate_number} onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })} />
+              <input className="w-full border p-2" placeholder="Year" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
+              <button className="rounded bg-green-600 px-4 py-2 text-white" type="submit">Save</button>
+              <button className="ml-2 rounded bg-gray-400 px-4 py-2 text-white" onClick={() => setShowModal(false)}>Cancel</button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Vehicle Modal */}
-      {showModal && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">
-              {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
-            </h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {errors.submit && (
-                <div className="alert alert-error">
-                  {errors.submit}
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Make *</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`input input-bordered ${errors.make ? 'input-error' : ''}`}
-                    value={formData.make}
-                    onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-                    placeholder="e.g., BMW, Mercedes"
-                  />
-                  {errors.make && <span className="text-error text-sm">{errors.make}</span>}
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Model *</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`input input-bordered ${errors.model ? 'input-error' : ''}`}
-                    value={formData.model}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    placeholder="e.g., 7 Series, E-Class"
-                  />
-                  {errors.model && <span className="text-error text-sm">{errors.model}</span>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Year</span>
-                  </label>
+      {showRunningCostModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-lg">
+            <h2 className="text-xl mb-4">Vehicle Configurator</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                calculateRunningCosts();
+              }}
+              className="space-y-2"
+            >
+              {Object.keys(runningCostForm).map((field) => (
+                <div key={field}>
+                  <label className="block text-sm font-medium capitalize">{field.replace("_", " ")}</label>
                   <input
                     type="number"
-                    className={`input input-bordered ${errors.year ? 'input-error' : ''}`}
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) || '' })}
-                    min="1900"
-                    max={new Date().getFullYear() + 2}
+                    className="w-full border p-2"
+                    value={runningCostForm[field]}
+                    onChange={(e) => setRunningCostForm({ ...runningCostForm, [field]: e.target.value })}
                   />
-                  {errors.year && <span className="text-error text-sm">{errors.year}</span>}
                 </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">License Plate *</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`input input-bordered ${errors.license ? 'input-error' : ''}`}
-                    value={formData.license}
-                    onChange={(e) => setFormData({ ...formData, license: e.target.value.toUpperCase() })}
-                    placeholder="e.g., ABC-123"
-                    style={{ textTransform: 'uppercase' }}
-                  />
-                  {errors.license && <span className="text-error text-sm">{errors.license}</span>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Status</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  >
-                    <option value="active">Active</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Assigned Driver</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.driverId}
-                    onChange={(e) => setFormData({ ...formData, driverId: e.target.value })}
-                  >
-                    <option value="">No driver assigned</option>
-                    {drivers.map((driver) => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="modal-action">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="btn"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      {editingVehicle ? 'Updating...' : 'Adding...'}
-                    </>
-                  ) : (
-                    editingVehicle ? 'Update Vehicle' : 'Add Vehicle'
-                  )}
-                </button>
-              </div>
+              ))}
+              <button className="rounded bg-blue-600 px-4 py-2 text-white" type="submit">Calculate</button>
+              <button className="ml-2 rounded bg-gray-400 px-4 py-2 text-white" onClick={() => setShowRunningCostModal(false)}>Close</button>
             </form>
+
+            {runningCostResult !== null && (
+              <div className="mt-4 text-lg font-bold">Total Running Cost: €{runningCostResult}</div>
+            )}
           </div>
         </div>
       )}
