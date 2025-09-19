@@ -293,6 +293,12 @@ export function AppStoreProvider({ children }) {
     try {
       const result = await updateBooking(id, updates);
       
+      // Handle authentication error
+      if (!result.success && result.requiresAuth) {
+        showAuthErrorModal(result.error);
+        return result;
+      }
+      
       if (result.success) {
         await loadBookings(); // Refresh bookings
         addActivityLog({

@@ -1,4 +1,12 @@
 import supabase from "../utils/supabaseClient";
+import { getSupabaseJWT, isAuthenticated } from "../utils/auth";
+
+// Helper function to check if we're in demo mode (no Supabase session)
+async function isDemoMode() {
+  // First check for Supabase session
+  const authResult = await getSupabaseJWT();
+  return !authResult.success;
+}
 
 export async function fetchBookings() {
   const { data, error } = await supabase
@@ -132,12 +140,30 @@ export async function createBooking(bookingData) {
 }
 
 export async function updateBooking(id, bookingData) {
-  // Validate required fields
-  if (!bookingData.pickup?.trim()) {
+  // Check if we're in demo mode
+  const inDemoMode = await isDemoMode();
+  
+  if (inDemoMode) {
+    // In demo mode, use local storage instead of Supabase
+    return updateBookingLocalStorage(id, bookingData);
+  }
+
+  // Check authentication for real Supabase operations
+  const authResult = await getSupabaseJWT();
+  if (!authResult.success) {
+    return {
+      success: false,
+      error: 'Authentication required. Please log in again.',
+      requiresAuth: true
+    };
+  }
+
+  // Validate required fields only for complete bookings, not status-only updates
+  if (!bookingData.pickup?.trim() && bookingData.pickup !== undefined) {
     return { success: false, error: 'Pickup location is required' };
   }
   
-  if (!bookingData.destination && !bookingData.dropoff) {
+  if ((!bookingData.destination && !bookingData.dropoff) && (bookingData.destination !== undefined || bookingData.dropoff !== undefined)) {
     return { success: false, error: 'Destination/dropoff location is required' };
   }
 
@@ -225,5 +251,36 @@ export async function deleteBooking(id) {
       success: false, 
       error: "Unable to connect to the server. Please check your connection and try again." 
     };
+  }
+}
+
+// Local storage fallback for demo mode
+function updateBookingLocalStorage(id, bookingData) {
+  try {
+    // Get bookings from localStorage
+    const bookingsJson = localStorage.getItem("bookings");
+    if (!bookingsJson) {
+      return { success: false, error: "No bookings found in local storage" };
+    }
+
+    const bookings = JSON.parse(bookingsJson);
+    const bookingIndex = bookings.findIndex(booking => booking.id === id);
+    
+    if (bookingIndex === -1) {
+      return { success: false, error: "Booking not found" };
+    }
+
+    // Update the booking with new data
+    const updatedBooking = { ...bookings[bookingIndex], ...bookingData };
+    bookings[bookingIndex] = updatedBooking;
+
+    // Save back to localStorage
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+
+    console.log('Demo mode: Updated booking in localStorage', updatedBooking);
+    return { success: true, booking: updatedBooking };
+  } catch (error) {
+    console.error('Error updating booking in localStorage:', error);
+    return { success: false, error: 'Failed to update booking in demo mode' };
   }
 }
