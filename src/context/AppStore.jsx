@@ -409,7 +409,18 @@ export function AppStoreProvider({ children }) {
       return result;
     } catch (error) {
       console.error('Failed to add driver:', error);
-      return { success: false, error: 'Failed to create driver' };
+      
+      // Provide more specific error messages based on the error type
+      let errorMessage = 'Failed to create driver';
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+        errorMessage = 'A driver with this license number or email already exists.';
+      } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+        errorMessage = 'Please check your input and try again.';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -429,7 +440,18 @@ export function AppStoreProvider({ children }) {
       return result;
     } catch (error) {
       console.error('Failed to update driver:', error);
-      return { success: false, error: 'Failed to update driver' };
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to update driver';
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+        errorMessage = 'A driver with this license number or email already exists.';
+      } else if (error.message.includes('not found')) {
+        errorMessage = 'Driver not found. It may have been deleted by another user.';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -450,7 +472,18 @@ export function AppStoreProvider({ children }) {
       return result;
     } catch (error) {
       console.error('Failed to delete driver:', error);
-      return { success: false, error: 'Failed to delete driver' };
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to delete driver';
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (error.message.includes('not found')) {
+        errorMessage = 'Driver not found. It may have been deleted by another user.';
+      } else if (error.message.includes('constraint') || error.message.includes('foreign key')) {
+        errorMessage = 'Cannot delete driver. They may be assigned to active bookings.';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
