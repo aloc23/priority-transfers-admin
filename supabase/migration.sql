@@ -332,6 +332,36 @@ create table if not exists user_settings (
 alter table user_settings drop constraint if exists user_settings_user_id_key;
 alter table user_settings add constraint user_settings_user_id_key unique (user_id);
 
+-- ===== Notifications Table =====
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null,
+  title text,
+  message text,
+  related_id text,
+  priority text default 'normal',
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+-- Create index on user_id and created_at for faster queries
+create index if not exists notifications_user_id_created_at_idx on notifications (user_id, created_at desc);
+
+-- ===== Activity History Table =====
+create table if not exists activity_history (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null,
+  description text,
+  related_id text,
+  details jsonb,
+  created_at timestamptz default now()
+);
+
+-- Create index on user_id and created_at for faster queries
+create index if not exists activity_history_user_id_created_at_idx on activity_history (user_id, created_at desc);
+
 -- ===== Admin profile link helper (profile rows for existing auth users) =====
 -- If you've already created an auth user via dashboard, link it here (optional):
 -- insert into profiles (id, full_name, role) values
