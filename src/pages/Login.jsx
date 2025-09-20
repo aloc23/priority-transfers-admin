@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import supabase from "../utils/supabaseClient";
-import { Navigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,8 +10,9 @@ export default function Login() {
   const [useDemoLogin, setUseDemoLogin] = useState(true);
   const { currentUser, login } = useAppStore();
 
+  // ✅ Instead of <Navigate>, just don't render if user is logged in.
   if (currentUser) {
-    return <Navigate to="/" replace />;
+    return null;
   }
 
   const handleSubmit = async (e) => {
