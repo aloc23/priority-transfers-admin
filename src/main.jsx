@@ -1,9 +1,12 @@
 import { createRoot } from "react-dom/client";
-import { HashRouter } from "react-router-dom"; // ✅ use HashRouter for GitHub Pages
+import { HashRouter } from "react-router-dom";
 import App from "./App";
+import { AppStoreProvider } from "./context/AppStore"; // 👈 add this
 
 createRoot(document.getElementById("root")).render(
   <HashRouter>
-    <App />
+    <AppStoreProvider>
+      <App />
+    </AppStoreProvider>
   </HashRouter>
 );
