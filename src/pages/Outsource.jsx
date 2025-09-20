@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import { OutsourceIcon, SuccessIcon, BookingIcon, PlusIcon, EditIcon, TrashIcon, FilterIcon } from "../components/Icons";
+import DateTimePicker from "../components/DateTimePicker";
+import { useResponsive } from "../hooks/useResponsive";
+import moment from "moment";
 
 export default function Outsource() {
   const { 
@@ -13,6 +16,8 @@ export default function Outsource() {
     expenses,
     income
   } = useAppStore();
+
+  const { isMobile } = useResponsive();
 
   const [showPartnerModal, setShowPartnerModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -40,8 +45,7 @@ export default function Outsource() {
     partner: "",
     pickup: "",
     destination: "",
-    date: "",
-    time: "",
+    datetime: "", // Combined date and time
     amount: "",
     notes: ""
   });
@@ -80,11 +84,25 @@ export default function Outsource() {
   const handleBookingSubmit = (e) => {
     e.preventDefault();
     
+    // Convert datetime back to separate date and time for compatibility
+    let date = '';
+    let time = '';
+    if (bookingForm.datetime) {
+      const momentDateTime = moment(bookingForm.datetime);
+      date = momentDateTime.format('YYYY-MM-DD');
+      time = momentDateTime.format('HH:mm');
+    }
+    
     const bookingData = {
       ...bookingForm,
+      date,
+      time,
       type: "outsourced",
       status: "confirmed"
     };
+    
+    // Remove the combined datetime field as it's not needed in the final data
+    delete bookingData.datetime;
     
     const result = addBooking(bookingData);
     if (result.success) {
@@ -114,8 +132,7 @@ export default function Outsource() {
       partner: "",
       pickup: "",
       destination: "",
-      date: "",
-      time: "",
+      datetime: "",
       amount: "",
       notes: ""
     });
@@ -567,28 +584,17 @@ export default function Outsource() {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={bookingForm.date}
-                    onChange={(e) => setBookingForm({...bookingForm, date: e.target.value})}
-                    className="form-input"
+                <div className="md:col-span-2">
+                  <DateTimePicker
+                    id="booking-datetime"
+                    label="Date & Time"
+                    value={bookingForm.datetime}
+                    onChange={(datetime) => setBookingForm({...bookingForm, datetime})}
+                    placeholder="Select pickup date and time..."
                     required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Time *
-                  </label>
-                  <input
-                    type="time"
-                    value={bookingForm.time}
-                    onChange={(e) => setBookingForm({...bookingForm, time: e.target.value})}
-                    className="form-input"
-                    required
+                    minDate={new Date().toISOString().split('T')[0]}
+                    helpText="When to pick up the passenger"
+                    isMobile={isMobile}
                   />
                 </div>
                 <div>

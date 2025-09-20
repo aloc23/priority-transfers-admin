@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useAppStore } from "../context/AppStore";
+import DateTimePicker from "../components/DateTimePicker";
+import { useResponsive } from "../hooks/useResponsive";
+import moment from "moment";
 
 export default function Bookings() {
   const {
@@ -14,12 +17,13 @@ export default function Bookings() {
     markBookingCompleted,
   } = useAppStore();
 
+  const { isMobile } = useResponsive();
+
   const [form, setForm] = useState({
     customer: "",
     pickup: "",
     destination: "",
-    date: new Date().toISOString().split("T")[0],
-    time: "09:00",
+    datetime: "", // Combined date and time
     driver: "",
     vehicle: "",
     price: 45,
@@ -37,8 +41,31 @@ export default function Bookings() {
   const onCreate = async (e) => {
     e.preventDefault();
     if (!form.customer || !form.pickup || !form.destination) return;
-    await addBooking(form);
-    setForm((f) => ({ ...f, customer: "", pickup: "", destination: "" }));
+    
+    // Convert datetime back to separate date and time for compatibility
+    let date = '';
+    let time = '';
+    if (form.datetime) {
+      const momentDateTime = moment(form.datetime);
+      date = momentDateTime.format('YYYY-MM-DD');
+      time = momentDateTime.format('HH:mm');
+    } else {
+      // Default to today and 09:00 if no datetime selected
+      date = new Date().toISOString().split("T")[0];
+      time = "09:00";
+    }
+    
+    const bookingData = {
+      ...form,
+      date,
+      time
+    };
+    
+    // Remove the combined datetime field
+    delete bookingData.datetime;
+    
+    await addBooking(bookingData);
+    setForm((f) => ({ ...f, customer: "", pickup: "", destination: "", datetime: "" }));
   };
 
   const quickConfirm = async (b) => {
@@ -102,19 +129,15 @@ export default function Bookings() {
           />
         </div>
         <div>
-          <label>Date</label>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-          />
-        </div>
-        <div>
-          <label>Time</label>
-          <input
-            type="time"
-            value={form.time}
-            onChange={(e) => setForm({ ...form, time: e.target.value })}
+          <DateTimePicker
+            id="booking-datetime"
+            label="Date & Time"
+            value={form.datetime}
+            onChange={(datetime) => setForm({...form, datetime})}
+            placeholder="Select pickup date and time..."
+            minDate={new Date().toISOString().split('T')[0]}
+            helpText="When to pick up the passenger"
+            isMobile={isMobile}
           />
         </div>
         <div>

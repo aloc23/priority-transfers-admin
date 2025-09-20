@@ -113,7 +113,7 @@ const DateTimePicker = ({
     return (
       <div className={`
         bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
-        ${effectiveIsMobile ? 'p-3 min-w-[300px] max-w-[350px]' : 'p-4 min-w-[320px]'}
+        ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[320px]'}
       `}>
         {/* Calendar header */}
         <div className="flex items-center justify-between mb-4">
@@ -153,11 +153,12 @@ const DateTimePicker = ({
         {/* Calendar grid */}
         <div className={`space-y-1 ${effectiveIsMobile ? 'mb-3' : 'mb-4'}`}>
           {/* Week header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className={`grid grid-cols-7 gap-1 mb-2 ${effectiveIsMobile ? 'min-w-0' : ''}`}>
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
               <div key={day} className={`
                 text-xs font-medium text-slate-500 text-center 
-                ${effectiveIsMobile ? 'p-1.5' : 'p-2'}
+                ${effectiveIsMobile ? 'p-1.5 min-w-[32px] w-[32px]' : 'p-2'}
+                flex items-center justify-center
               `}>
                 {day}
               </div>
@@ -166,7 +167,7 @@ const DateTimePicker = ({
 
           {/* Calendar days */}
           {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className="grid grid-cols-7 gap-1">
+            <div key={weekIdx} className={`grid grid-cols-7 gap-1 ${effectiveIsMobile ? 'min-w-0' : ''}`}>
               {week.map((day) => {
                 const isCurrentMonth = day.month() === displayDate.month();
                 const isToday = day.isSame(moment(), 'day');
@@ -180,7 +181,7 @@ const DateTimePicker = ({
                     disabled={isDisabled}
                     onClick={() => !isDisabled && handleDateSelect(day.toDate())}
                     className={`
-                      ${effectiveIsMobile ? 'p-2.5 min-h-[44px] min-w-[44px] text-sm' : 'p-2 text-sm'} 
+                      ${effectiveIsMobile ? 'p-2.5 min-h-[32px] min-w-[32px] w-[32px] h-[32px] text-sm' : 'p-2 text-sm'} 
                       rounded-lg transition-all duration-200 hover:scale-105 
                       focus:outline-none focus:ring-2 focus:ring-blue-300
                       flex items-center justify-center
