@@ -1,9 +1,15 @@
 import supabase from "../utils/supabaseClient";
 import { getSupabaseJWT, isAuthenticated } from "../utils/auth";
+import { isDemoModeEnabled, demoStorage } from "../utils/demoMode";
 
-// Helper function to check if we're in demo mode (no Supabase session)
+// Helper function to check if we're in demo mode
 async function isDemoMode() {
-  // First check for Supabase session
+  // Check explicit environment flag first
+  if (isDemoModeEnabled()) {
+    return true;
+  }
+  
+  // Fallback: check for Supabase session (for backward compatibility)
   const authResult = await getSupabaseJWT();
   return !authResult.success;
 }
@@ -15,7 +21,7 @@ export async function fetchBookings() {
   if (inDemoMode) {
     // In demo mode, try to get bookings from localStorage
     try {
-      const bookingsJson = localStorage.getItem("bookings");
+      const bookingsJson = demoStorage.getItem("bookings");
       if (bookingsJson) {
         const bookings = JSON.parse(bookingsJson);
         console.log('Demo mode: Loading bookings from localStorage', bookings.length);
@@ -24,7 +30,7 @@ export async function fetchBookings() {
         // Initialize demo data if none exists
         console.log('Demo mode: No bookings found, initializing demo data');
         const demoBookings = initializeDemoBookings();
-        localStorage.setItem("bookings", JSON.stringify(demoBookings));
+        demoStorage.setItem("bookings", JSON.stringify(demoBookings));
         return demoBookings;
       }
     } catch (error) {

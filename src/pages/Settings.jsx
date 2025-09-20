@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
+import { fetchSettings, saveSettings } from "../api/settings";
 import { 
   CustomerIcon, 
   NotificationIcon, 
@@ -36,48 +37,61 @@ export default function Settings() {
     }
   });
 
-  // Load settings from localStorage on component mount
+  // Load settings from Supabase on component mount
   useEffect(() => {
-    const settingsKey = 'priority-transfers-settings';
-    const savedSettings = localStorage.getItem(settingsKey);
-    
-    if (savedSettings) {
+    async function loadSettings() {
       try {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings(prevSettings => ({
-          ...prevSettings,
-          ...parsedSettings,
-          // Ensure email is updated from current user
-          email: currentUser?.email || parsedSettings.email || ""
-        }));
+        const savedSettings = await fetchSettings();
+        
+        if (savedSettings) {
+          setSettings(prevSettings => ({
+            ...prevSettings,
+            ...savedSettings,
+            // Ensure email is updated from current user if available
+            email: currentUser?.email || savedSettings.email || ""
+          }));
+        } else {
+          // No settings found, use defaults with current user email if available
+          setSettings(prevSettings => ({
+            ...prevSettings,
+            email: currentUser?.email || ""
+          }));
+        }
       } catch (error) {
-        console.error('Failed to load settings from localStorage:', error);
+        console.error('Failed to load settings:', error);
+        setMessage({ 
+          type: 'error', 
+          text: 'Failed to load settings. Using defaults.' 
+        });
+        setTimeout(() => setMessage(""), 5000);
       }
     }
+    
+    loadSettings();
   }, [currentUser]);
 
-  const handleSave = (section) => {
+  const handleSave = async (section) => {
     try {
-      // Save settings to localStorage based on section
-      const settingsKey = 'priority-transfers-settings';
-      const existingSettings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+      setIsLoading(true);
+      setMessage("");
+
+      // Save settings using Supabase API
+      const result = await saveSettings(settings);
       
-      const updatedSettings = {
-        ...existingSettings,
-        ...settings,
-        lastUpdated: new Date().toISOString(),
-        updatedSection: section
-      };
+      if (result.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `${section} settings saved successfully!` 
+        });
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: result.error || `Failed to save ${section} settings. Please try again.` 
+        });
+      }
       
-      localStorage.setItem(settingsKey, JSON.stringify(updatedSettings));
-      
-      setMessage({ 
-        type: 'success', 
-        text: `${section} settings saved successfully!` 
-      });
-      
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(""), 3000);
+      // Clear message after 3-5 seconds
+      setTimeout(() => setMessage(""), result.success ? 3000 : 5000);
       
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -88,6 +102,8 @@ export default function Settings() {
       
       // Clear error message after 5 seconds
       setTimeout(() => setMessage(""), 5000);
+    } finally {
+      setIsLoading(false);
     }
   };
 

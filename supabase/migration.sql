@@ -301,6 +301,37 @@ insert into vehicle_configurator (vehicle_id, fuel_type, fuel_cost, insurance_co
 select id, 'Diesel', 100, 160, 85, 250, 65, 100, 0, 30 from vehicles where plate_number='VAN-003'
 on conflict do nothing;
 
+-- ===== User Settings Table =====
+create table if not exists user_settings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  company_name text,
+  email text,
+  phone text,
+  address text,
+  notification_preferences jsonb default '{
+    "email": true,
+    "sms": false,
+    "push": true
+  }'::jsonb,
+  booking_preferences jsonb default '{
+    "autoAssign": true,
+    "requireConfirmation": true,
+    "allowOnlineBooking": true
+  }'::jsonb,
+  billing_preferences jsonb default '{
+    "currency": "EUR",
+    "taxRate": "8.5",
+    "paymentTerms": "30"
+  }'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Create unique constraint on user_id
+alter table user_settings drop constraint if exists user_settings_user_id_key;
+alter table user_settings add constraint user_settings_user_id_key unique (user_id);
+
 -- ===== Admin profile link helper (profile rows for existing auth users) =====
 -- If you've already created an auth user via dashboard, link it here (optional):
 -- insert into profiles (id, full_name, role) values
