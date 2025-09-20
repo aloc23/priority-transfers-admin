@@ -4,7 +4,8 @@ import App from "./App";
 import { AppStoreProvider } from "./context/AppStore";
 
 // Entry point – wrap everything in store + router
-createRoot(document.getElementById("root")).render(
+const root = document.getElementById("root");
+createRoot(root).render(
   <HashRouter>
     <AppStoreProvider>
       <App />
