@@ -145,9 +145,10 @@ const DateTimePicker = ({
             type="button"
             onClick={() => handleQuickTimeSelect(time)}
             className={`
-              ${effectiveIsMobile ? 'px-3 py-2.5 min-h-[44px]' : 'px-3 py-2'} 
-              text-sm rounded-lg transition-colors duration-200 
+              ${effectiveIsMobile ? 'px-2 py-2.5 min-h-[44px] text-xs' : 'px-2 py-2 text-xs'} 
+              rounded-lg transition-colors duration-200 
               focus:outline-none focus:ring-2 focus:ring-blue-300
+              flex items-center justify-center
               ${selectedTime === time 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -318,7 +319,7 @@ const DateTimePicker = ({
         calendarContainer={({ children }) => (
           <div className={`
             bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
-            ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[320px]'}
+            ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[400px] max-w-[440px] w-[420px]'}
           `}>
             {children}
             {renderTimeSelector()}
