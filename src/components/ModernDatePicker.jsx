@@ -42,6 +42,14 @@ const ModernDatePicker = ({
     setShowDropdown(false);
   };
 
+  // Calculate dropdown position based on mobile context
+  const getDropdownPosition = () => {
+    if (isMobile) {
+      return 'absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50';
+    }
+    return 'absolute top-full left-0 mt-2 z-50';
+  };
+
   const renderCalendarGrid = () => {
     const startOfMonth = displayDate.clone().startOf('month');
     const endOfMonth = displayDate.clone().endOf('month');
@@ -62,27 +70,40 @@ const ModernDatePicker = ({
     }
 
     return (
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200/60 p-4 min-w-[280px] max-w-[320px] backdrop-blur-lg z-50">
+      <div className={`
+        bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
+        ${isMobile ? 'p-3 min-w-[280px] max-w-[300px]' : 'p-4 min-w-[280px] max-w-[320px]'}
+      `}>
         {/* Calendar header */}
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setDisplayDate(prev => prev.clone().subtract(1, 'month'))}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className={`
+              ${isMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+              rounded-lg hover:bg-slate-100 transition-colors duration-200 
+              focus:outline-none focus:ring-2 focus:ring-blue-300 
+              flex items-center justify-center
+            `}
             aria-label="Previous month"
           >
-            <ChevronLeftIcon className="w-4 h-4 text-slate-600" />
+            <ChevronLeftIcon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-600`} />
           </button>
           
-          <div className="font-semibold text-slate-800 text-lg">
-            {displayDate.format('MMMM YYYY')}
+          <div className={`font-semibold text-slate-800 ${isMobile ? 'text-base' : 'text-lg'}`}>
+            {displayDate.format(isMobile ? 'MMM YYYY' : 'MMMM YYYY')}
           </div>
           
           <button
             onClick={() => setDisplayDate(prev => prev.clone().add(1, 'month'))}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className={`
+              ${isMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+              rounded-lg hover:bg-slate-100 transition-colors duration-200 
+              focus:outline-none focus:ring-2 focus:ring-blue-300 
+              flex items-center justify-center
+            `}
             aria-label="Next month"
           >
-            <ChevronRightIcon className="w-4 h-4 text-slate-600" />
+            <ChevronRightIcon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-600`} />
           </button>
         </div>
 
@@ -91,7 +112,10 @@ const ModernDatePicker = ({
           {/* Week header */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-              <div key={day} className="text-xs font-medium text-slate-500 text-center p-2">
+              <div key={day} className={`
+                text-xs font-medium text-slate-500 text-center
+                ${isMobile ? 'p-1.5' : 'p-2'}
+              `}>
                 {day}
               </div>
             ))}
@@ -110,7 +134,10 @@ const ModernDatePicker = ({
                     key={day.format('YYYY-MM-DD')}
                     onClick={() => handleDateClick(day.toDate())}
                     className={`
-                      p-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300
+                      ${isMobile ? 'p-2.5 min-h-[44px] min-w-[44px] text-sm' : 'p-2 text-sm'} 
+                      rounded-lg transition-all duration-200 hover:scale-105 
+                      focus:outline-none focus:ring-2 focus:ring-blue-300
+                      flex items-center justify-center
                       ${isCurrentMonth 
                         ? isSelected
                           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg'
@@ -137,7 +164,12 @@ const ModernDatePicker = ({
               onToday && onToday();
               handleDateClick(today);
             }}
-            className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50"
+            className={`
+              w-full ${isMobile ? 'px-4 py-3 min-h-[44px]' : 'px-4 py-2'} 
+              bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
+              font-medium shadow-lg hover:shadow-xl transition-all duration-300 
+              transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
+            `}
           >
             Go to Today
           </button>
@@ -219,7 +251,7 @@ const ModernDatePicker = ({
 
       {/* Dropdown calendar */}
       {showDropdown && (
-        <div className="absolute top-full left-0 mt-2 z-50">
+        <div className={getDropdownPosition()}>
           {renderCalendarGrid()}
         </div>
       )}

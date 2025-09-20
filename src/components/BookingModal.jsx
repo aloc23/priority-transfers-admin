@@ -6,6 +6,7 @@ import { calculateTotalPrice } from '../utils/priceCalculator';
 import moment from 'moment';
 import { useAppStore } from '../context/AppStore';
 import { useFleet } from '../context/FleetContext';
+import { useResponsive } from '../hooks/useResponsive';
 import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
 import supabase from '../utils/supabaseClient';
@@ -21,6 +22,7 @@ export default function BookingModal({
 }) {
   const { addBooking, updateBooking, customers, drivers, partners, bookings, showAuthErrorModal } = useAppStore();
   const { fleet } = useFleet();
+  const { isMobile } = useResponsive();
 
   // State for journey info
   const [journeyInfo, setJourneyInfo] = useState({ distance: '', duration: '', error: '' });
@@ -919,6 +921,7 @@ export default function BookingModal({
                         minDate={new Date().toISOString().split('T')[0]}
                         helpText="When to pick up the passenger"
                         aria-describedby="pickup-datetime-help"
+                        isMobile={isMobile}
                       />
                     )}
                   </div>
@@ -1043,6 +1046,7 @@ export default function BookingModal({
                             minDate={formData.pickupDateTime ? moment(formData.pickupDateTime).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0]}
                             helpText="When to pick up for the return trip"
                             aria-describedby="return-datetime-help"
+                            isMobile={isMobile}
                           />
                         </div>
 
