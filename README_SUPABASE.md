@@ -74,3 +74,47 @@ npm run dev
 
 Login with the demo user you created in step 3.
 
+## 7) Data Storage Migration
+
+This app has been fully migrated from localStorage/sessionStorage to Supabase as the primary data store:
+
+### Production Mode (Default)
+- Set `VITE_DEMO_MODE=false` in `.env` (or omit the variable)
+- All data (bookings, customers, drivers, etc.) is stored in and loaded from Supabase
+- Settings, notifications, and activity history are persisted in Supabase tables
+- No localStorage usage except for UI state (sidebar collapse)
+
+### Demo Mode
+- Set `VITE_DEMO_MODE=true` in `.env` to enable demo mode
+- Uses localStorage/sessionStorage for data persistence
+- Suitable for testing, demos, or offline scenarios
+- No Supabase authentication required
+
+### API Integration
+The app uses dedicated API modules in `src/api/` that automatically handle:
+- Production mode: Direct Supabase queries
+- Demo mode: localStorage/sessionStorage fallback
+- Consistent data models between both modes
+
+### Migration Status
+- ✅ Settings persistence: Migrated to `user_settings` table
+- ✅ Notifications: Migrated to `notifications` table  
+- ✅ Activity history: Migrated to `activity_history` table
+- ✅ All entity CRUD operations: Use Supabase APIs
+- ✅ Demo mode: Explicit environment control
+- ✅ UI state: Sidebar collapse preserved in localStorage (acceptable UI state)
+- ⏳ AppStore context: Partially migrated (data loading logic needs completion)
+
+### Data Integration Helper
+Use `src/utils/dataIntegration.js` for unified data access across the app:
+
+```javascript
+import dataIntegration from '../utils/dataIntegration';
+
+// Works in both demo and production modes
+const bookings = await dataIntegration.getBookings();
+const result = await dataIntegration.addBooking(bookingData);
+```
+
+All APIs automatically detect the current mode and route to appropriate storage.
+
