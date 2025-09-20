@@ -1,6 +1,6 @@
 import { HamburgerIcon } from "./Icons";
 
-export default function MobileTopbar({ sidebarOpen, setSidebarOpen, title = "Priority Transfers" }) {
+export default function MobileTopbar({ sidebarOpen, setSidebarOpen, title = "Priority Transfers Ireland" }) {
   // Only show the topbar when sidebar is open on mobile
   if (!sidebarOpen) {
     return null;
@@ -18,7 +18,9 @@ export default function MobileTopbar({ sidebarOpen, setSidebarOpen, title = "Pri
         </button>
         <div className="flex items-center gap-2">
           <img src="./logo.svg" alt="logo" className="w-8 h-8 rounded shadow-sm border border-slate-200 bg-white" />
-          <span className="font-bold text-lg text-slate-800 tracking-tight">Priority</span>
+          <span className="brand-text text-slate-800 text-base">
+            Priority Transfers Ireland
+          </span>
         </div>
       </div>
     </header>

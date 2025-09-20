@@ -198,7 +198,7 @@ export default function Login() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          © 2024 Priority Transfers. All rights reserved.
+          © 2024 Priority Transfers Ireland. All rights reserved.
         </div>
       </div>
     </div>

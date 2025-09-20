@@ -200,10 +200,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               />
               {sidebarOpen && (
                 <span className={`
-                  font-bold text-white tracking-tight
-                  ${isMobile ? 'text-xl' : 'text-xl'}
+                  brand-text text-white
+                  ${isMobile ? 'text-lg' : 'text-base'}
                 `}>
-                  Priority
+                  Priority Transfers Ireland
                 </span>
               )}
             </div>
