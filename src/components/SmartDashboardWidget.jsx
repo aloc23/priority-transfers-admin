@@ -114,20 +114,20 @@ export default function SmartDashboardWidget({ onBookClick }) {
       <div className="flex flex-col items-stretch">
         {/* KPIs Row (global dashboard KPIs, euro) */}
         <div className="flex justify-between items-center px-6 pt-6 pb-2 gap-3">
-          <div className="flex-1 flex flex-col items-center bg-green-100 rounded-lg py-2 mx-1 shadow-sm border border-green-200">
-            <span className="text-xl font-bold text-green-700 leading-tight drop-shadow">€{totalIncomeNum.toLocaleString()}</span>
+          <div className="flex-1 flex flex-col items-center bg-green-100 rounded-lg py-2 mx-1 shadow-sm border border-green-200 hover:bg-green-200 transition-colors duration-200">
+            <span className="text-xl font-bold text-green-700 leading-tight drop-shadow">€{totalIncomeNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span className="text-xs text-green-900 tracking-wide">Total Income</span>
           </div>
-          <div className="flex-1 flex flex-col items-center bg-blue-100 rounded-lg py-2 mx-1 shadow-sm border border-blue-200">
-            <span className="text-xl font-bold text-blue-700 leading-tight drop-shadow">€{paidInvoicesNum.toLocaleString()}</span>
+          <div className="flex-1 flex flex-col items-center bg-blue-100 rounded-lg py-2 mx-1 shadow-sm border border-blue-200 hover:bg-blue-200 transition-colors duration-200">
+            <span className="text-xl font-bold text-blue-700 leading-tight drop-shadow">€{paidInvoicesNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span className="text-xs text-blue-900 tracking-wide">Paid Invoices</span>
           </div>
-          <div className="flex-1 flex flex-col items-center bg-red-100 rounded-lg py-2 mx-1 shadow-sm border border-red-200">
-            <span className="text-xl font-bold text-red-700 leading-tight drop-shadow">€{totalExpensesNum.toLocaleString()}</span>
+          <div className="flex-1 flex flex-col items-center bg-red-100 rounded-lg py-2 mx-1 shadow-sm border border-red-200 hover:bg-red-200 transition-colors duration-200">
+            <span className="text-xl font-bold text-red-700 leading-tight drop-shadow">€{totalExpensesNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span className="text-xs text-red-900 tracking-wide">Total Expenses</span>
           </div>
-          <div className="flex-1 flex flex-col items-center bg-slate-100 rounded-lg py-2 mx-1 shadow-sm border border-slate-200">
-            <span className="text-xl font-bold text-slate-700 leading-tight drop-shadow">€{netProfitNum.toLocaleString()}</span>
+          <div className="flex-1 flex flex-col items-center bg-slate-100 rounded-lg py-2 mx-1 shadow-sm border border-slate-200 hover:bg-slate-200 transition-colors duration-200">
+            <span className={`text-xl font-bold leading-tight drop-shadow ${netProfitNum >= 0 ? 'text-green-700' : 'text-red-700'}`}>€{netProfitNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span className="text-xs text-slate-900 tracking-wide">Net Profit</span>
           </div>
         </div>

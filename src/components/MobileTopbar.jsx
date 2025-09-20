@@ -17,7 +17,13 @@ export default function MobileTopbar({ sidebarOpen, setSidebarOpen, title = "Pri
           <HamburgerIcon className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-2">
-          <img src="./logo.svg" alt="logo" className="w-8 h-8 rounded shadow-sm border border-slate-200 bg-white" />
+          <div className="relative overflow-hidden rounded-lg w-8 h-8">
+            <img 
+              src="./logo.svg" 
+              alt="Priority Transfers Ireland Logo" 
+              className="w-full h-full object-contain" 
+            />
+          </div>
           <span className="brand-text text-slate-800 text-base">
             Priority Transfers Ireland
           </span>

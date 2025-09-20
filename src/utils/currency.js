@@ -1,5 +1,18 @@
 // Currency utility functions for consistent formatting across the app
-export const formatCurrency = (amount, currency = 'EUR') => {
+export const formatCurrency = (amount, currency = 'EUR', decimalPlaces = 2) => {
+  const numAmount = Number(amount) || 0;
+  
+  // Use Irish locale for proper Euro formatting
+  if (currency === 'EUR') {
+    return numAmount.toLocaleString('en-IE', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces
+    });
+  }
+  
+  // Fallback for other currencies
   const currencySymbols = {
     EUR: '€',
     USD: '$',
@@ -7,8 +20,7 @@ export const formatCurrency = (amount, currency = 'EUR') => {
   };
   
   const symbol = currencySymbols[currency] || '€';
-  const numAmount = Number(amount) || 0;
-  return `${symbol}${numAmount.toFixed(2)}`;
+  return `${symbol}${numAmount.toFixed(decimalPlaces)}`;
 };
 
 export const EURO_PRICE_PER_BOOKING = 45;

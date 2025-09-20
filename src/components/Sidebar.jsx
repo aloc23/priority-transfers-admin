@@ -190,14 +190,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
             ${isMobile ? 'min-h-[72px]' : ''}
           `}>
             <div className="flex items-center gap-3">
-              <img 
-                src="./logo.svg" 
-                alt="logo" 
-                className={`
-                  rounded shadow-sm border border-slate-200 bg-white
-                  ${isMobile ? 'w-10 h-10' : 'w-9 h-9'}
-                `} 
-              />
+              <div className={`
+                relative overflow-hidden rounded-lg
+                ${isMobile ? 'w-12 h-12' : 'w-10 h-10'}
+              `}>
+                <img 
+                  src="./logo.svg" 
+                  alt="Priority Transfers Ireland Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
               {sidebarOpen && (
                 <span className={`
                   brand-text text-white

@@ -4,6 +4,8 @@ import { useAppStore } from "../context/AppStore";
 import { formatCurrency, calculateRevenue, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { 
   RevenueIcon, 
+  IncomeIcon,
+  PaidInvoiceIcon,
   InvoiceIcon, 
   ViewIcon, 
   EditIcon, 
@@ -385,20 +387,20 @@ export default function Billing() {
       {/* KPI Cards with consistent spacing */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Total Revenue Card */}
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg border border-green-200 p-6 text-white">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg border border-green-200 p-6 text-white hover:shadow-xl transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-green-100">Total Revenue</div>
               <div className="text-3xl font-bold">{formatCurrency(totalRevenue)}</div>
             </div>
             <div className="p-3 bg-white/20 rounded-lg">
-              <RevenueIcon className="w-8 h-8" />
+              <IncomeIcon className="w-8 h-8" />
             </div>
           </div>
         </div>
 
         {/* Pending Payments Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-200 hover:scale-105">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-gray-500">Pending</div>
@@ -411,14 +413,14 @@ export default function Billing() {
         </div>
 
         {/* Paid Invoices Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-200 hover:scale-105">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-gray-500">Paid</div>
               <div className="text-3xl font-bold text-green-600">{formatCurrency(paidInvoices)}</div>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
-              <RevenueIcon className="w-8 h-8 text-green-600" />
+              <PaidInvoiceIcon className="w-8 h-8 text-green-600" />
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useAppStore } from "../context/AppStore";
 import { useFleet } from "../context/FleetContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { formatCurrency } from "../utils/currency";
-import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, RevenueIcon, EditIcon, TrashIcon, XIcon, UploadIcon } from "../components/Icons";
+import { BookingIcon, CustomerIcon, DriverIcon, VehicleIcon, EstimationIcon, OutsourceIcon, IncomeIcon, PaidInvoiceIcon, ExpenseIcon, ProfitIcon, EditIcon, TrashIcon, XIcon, UploadIcon } from "../components/Icons";
 import StatsCard from "../components/StatsCard";
 import DashboardCard from "../components/DashboardCard";
 import ActivityList from "../components/ActivityList";
@@ -63,10 +63,10 @@ export default function Dashboard() {
 
   // Financial KPIs for Accounting tab only
   const enhancedStats = [
-    { name: "Total Income", value: `€${totalIncomeNum.toFixed(2)}`, icon: RevenueIcon, color: "bg-gradient-to-r from-emerald-600 to-green-500" },
-    { name: "Paid Invoices", value: `€${paidInvoicesNum.toFixed(2)}`, icon: RevenueIcon, color: "bg-gradient-to-r from-blue-600 to-blue-500" },
-    { name: "Total Expenses", value: `€${totalExpensesNum.toFixed(2)}`, icon: EstimationIcon, color: "bg-gradient-to-r from-red-600 to-pink-500" },
-    { name: "Net Profit", value: `€${netProfitNum.toFixed(2)}`, icon: BookingIcon, color: "bg-gradient-to-r from-blue-600 to-blue-700" }
+    { name: "Total Income", value: formatCurrency(totalIncomeNum), icon: IncomeIcon, color: "bg-gradient-to-r from-emerald-600 to-green-500" },
+    { name: "Paid Invoices", value: formatCurrency(paidInvoicesNum), icon: PaidInvoiceIcon, color: "bg-gradient-to-r from-blue-600 to-blue-500" },
+    { name: "Total Expenses", value: formatCurrency(totalExpensesNum), icon: ExpenseIcon, color: "bg-gradient-to-r from-red-600 to-pink-500" },
+    { name: "Net Profit", value: formatCurrency(netProfitNum), icon: ProfitIcon, color: netProfitNum >= 0 ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-red-600 to-red-700" }
   ];
   const operationalStats = [
     { name: "Active Customers", value: customers.length, icon: CustomerIcon, color: "bg-gradient-to-r from-cyan-600 to-blue-500" },

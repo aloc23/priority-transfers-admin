@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { calculateKPIs } from '../utils/kpi';
-import { RevenueIcon, EstimationIcon, BookingIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
+import { IncomeIcon, PaidInvoiceIcon, ExpenseIcon, ProfitIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
 
 export default function FinancialKPIBlock({ 
   compact = false 
@@ -22,8 +22,8 @@ export default function FinancialKPIBlock({
       id: 'totalIncome',
       label: 'Total Income',
       value: totalIncomeNum,
-      icon: RevenueIcon,
-      color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      icon: IncomeIcon,
+      color: 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200',
       description: 'Total revenue from all income sources',
       details: `Generated from ${income.length} income entries`
     },
@@ -31,8 +31,8 @@ export default function FinancialKPIBlock({
       id: 'paidInvoices',
       label: 'Paid Invoices',
       value: paidInvoicesNum,
-      icon: RevenueIcon,
-      color: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: PaidInvoiceIcon,
+      color: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
       description: 'Revenue from invoices that have been paid',
       details: `${invoices.filter(inv => inv.status === 'paid').length} paid invoices`
     },
@@ -40,8 +40,8 @@ export default function FinancialKPIBlock({
       id: 'totalExpenses',
       label: 'Total Expenses',
       value: totalExpensesNum,
-      icon: EstimationIcon,
-      color: 'bg-red-100 text-red-800 border-red-200',
+      icon: ExpenseIcon,
+      color: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
       description: 'Total operational expenses',
       details: `Generated from ${expenses.length} expense entries`
     },
@@ -49,10 +49,10 @@ export default function FinancialKPIBlock({
       id: 'netProfit',
       label: 'Net Profit',
       value: netProfitNum,
-      icon: BookingIcon,
-      color: netProfitNum >= 0 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200',
+      icon: ProfitIcon,
+      color: netProfitNum >= 0 ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
       description: 'Total Income minus Total Expenses',
-      details: `€${totalIncomeNum.toFixed(2)} - €${totalExpensesNum.toFixed(2)}`
+      details: `€${totalIncomeNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - €${totalExpensesNum.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     }
   ];
 
@@ -76,7 +76,7 @@ export default function FinancialKPIBlock({
           <div key={kpi.id} className="relative">
             <button
               onClick={() => handleKPIExpand(kpi.id)}
-              className={`w-full p-4 rounded-xl border-2 font-medium transition-all duration-200 hover:shadow-lg ${kpi.color}`}
+              className={`w-full p-4 rounded-xl border-2 font-medium transition-all duration-200 hover:shadow-lg transform hover:scale-105 ${kpi.color}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <kpi.icon className="w-6 h-6" />
@@ -86,7 +86,9 @@ export default function FinancialKPIBlock({
                 }
               </div>
               <div className="text-left">
-                <div className="font-bold text-xl mb-1">€{kpi.value.toLocaleString()}</div>
+                <div className="font-bold text-xl mb-1">
+                  €{kpi.value.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
                 <div className="text-sm opacity-90">{kpi.label}</div>
               </div>
             </button>
@@ -101,7 +103,7 @@ export default function FinancialKPIBlock({
                 <div className="space-y-2 text-sm text-slate-600">
                   <div className="flex justify-between">
                     <span>Amount:</span>
-                    <span className="font-semibold">€{kpi.value.toLocaleString()}</span>
+                    <span className="font-semibold">€{kpi.value.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="text-xs text-slate-500">
                     <p className="mb-1">{kpi.description}</p>

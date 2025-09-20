@@ -51,6 +51,55 @@ export const VehicleIcon = TruckIcon;
 export const RevenueIcon = CurrencyDollarIcon;
 export const ReportsIcon = ChartBarIcon;
 
+// Euro-specific financial icons
+export const EuroIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14,2 14,8 20,8"/>
+    <path d="M9 15h6"/>
+    <path d="M9 11h6"/>
+    <circle cx="12" cy="13" r="1"/>
+    <path d="M16 13c-1.2 0-2-.8-2-2s.8-2 2-2"/>
+  </svg>
+);
+
+export const IncomeIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2v20m5-5l-5-5-5 5"/>
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M8 12h8"/>
+    <path d="M10 8h4"/>
+  </svg>
+);
+
+export const ExpenseIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 22V2m-5 5l5 5 5-5"/>
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M8 12h8"/>
+    <path d="M10 16h4"/>
+  </svg>
+);
+
+export const ProfitIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 3h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+    <path d="M12 8v8"/>
+    <path d="M8 12h8"/>
+    <path d="M9 9l6 6"/>
+    <path d="M15 9l-6 6"/>
+  </svg>
+);
+
+export const PaidInvoiceIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14,2 14,8 20,8"/>
+    <path d="M9 15l2 2 4-4"/>
+    <path d="M9 11h6"/>
+  </svg>
+);
+
 // Secondary navigation and utility icons
 export { StarIcon };
 export const SettingsIcon = CogIcon;
