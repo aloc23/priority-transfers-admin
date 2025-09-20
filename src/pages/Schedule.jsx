@@ -65,7 +65,7 @@ export default function Schedule() {
   const [highlightedBooking, setHighlightedBooking] = useState(null);
 
   // Use global calendar state instead of local state  
-  const { selectedDate, selectedStatus, selectedDriver } = globalCalendarState;
+  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
   const filterStatus = selectedStatus === null ? 'all' : selectedStatus;
 
   // Booking status counts for tabs
@@ -943,7 +943,8 @@ export default function Schedule() {
                 currentDate={selectedDate || new Date()}
                 onNavigate={(direction, newDate) => updateGlobalCalendarState({ selectedDate: newDate })}
                 onToday={() => updateGlobalCalendarState({ selectedDate: new Date() })}
-                currentView="month"
+                currentView={currentView}
+                onViewChange={(view) => updateGlobalCalendarState({ currentView: view })}
                 views={['month', 'week', 'day']}
                 isMobile={isMobile}
               />
@@ -954,11 +955,14 @@ export default function Schedule() {
               events={calendarEvents}
               startAccessor="start"
               endAccessor="end"
+              view={currentView}
+              date={selectedDate || new Date()}
+              onView={(view) => updateGlobalCalendarState({ currentView: view })}
+              onNavigate={(date) => updateGlobalCalendarState({ selectedDate: date })}
               onSelectEvent={(event) => setSelectedCalendarBooking(event.resource)}
               onSelectSlot={handleSelectSlot}
               selectable
               views={['month', 'week', 'day']}
-              defaultView="month"
               eventPropGetter={(event) => ({
                 style: event.style
               })}

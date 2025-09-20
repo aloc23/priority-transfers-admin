@@ -46,9 +46,14 @@ const CompactCalendarNav = ({
   };
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
+    <div className={`
+      ${isMobile 
+        ? 'flex flex-col gap-3' 
+        : 'flex items-center justify-between'
+      } ${className}
+    `}>
       {/* Navigation Controls */}
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${isMobile ? 'justify-center' : ''}`}>
         <button
           onClick={() => handleNavigate('PREV')}
           className="p-2 rounded-lg hover:bg-white/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 backdrop-blur-sm border border-white/30 shadow-sm hover:shadow-md transform hover:scale-105"
@@ -74,28 +79,61 @@ const CompactCalendarNav = ({
         </button>
       </div>
 
-      {/* Current Date/Period Display */}
-      <div className={`text-center ${isMobile ? 'text-sm' : 'text-base'} font-semibold text-slate-800`}>
-        {formatDateTitle(currentDate)}
-      </div>
-
-      {/* View Selector (if multiple views available) */}
-      {views.length > 1 && (
-        <div className="flex gap-1 bg-white/80 rounded-lg p-1 border border-slate-200">
-          {views.map((view) => (
-            <button
-              key={view}
-              onClick={() => onViewChange && onViewChange(view)}
-              className={`px-2 py-1 text-xs font-medium rounded transition-colors duration-200 ${
-                currentView === view
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
-              }`}
-            >
-              {view.charAt(0).toUpperCase() + view.slice(1)}
-            </button>
-          ))}
+      {/* Mobile: Date and View Selector Row */}
+      {isMobile ? (
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-semibold text-slate-800 flex-1 text-center">
+            {formatDateTitle(currentDate)}
+          </div>
+          {/* View Selector */}
+          {views.length > 1 && (
+            <div className="flex gap-0.5 bg-white/80 rounded-lg p-0.5 border border-slate-200 flex-shrink-0">
+              {views.map((view) => (
+                <button
+                  key={view}
+                  onClick={() => onViewChange && onViewChange(view)}
+                  className={`
+                    px-2 py-1 text-xs font-medium rounded transition-colors duration-200 min-w-[32px]
+                    ${currentView === view
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                    }
+                  `}
+                >
+                    {view.charAt(0).toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          {/* Desktop: Current Date/Period Display */}
+          <div className="text-base font-semibold text-slate-800">
+            {formatDateTitle(currentDate)}
+          </div>
+
+          {/* Desktop: View Selector */}
+          {views.length > 1 && (
+            <div className="flex gap-1 bg-white/80 rounded-lg p-1 border border-slate-200">
+              {views.map((view) => (
+                <button
+                  key={view}
+                  onClick={() => onViewChange && onViewChange(view)}
+                  className={`
+                    px-2 py-1 text-xs font-medium rounded transition-colors duration-200
+                    ${currentView === view
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                    }
+                  `}
+                >
+                  {view.charAt(0).toUpperCase() + view.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

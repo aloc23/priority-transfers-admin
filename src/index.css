@@ -1106,6 +1106,75 @@ label {
     animation: eventPulse 2s infinite;
   }
   
+  /* Week and Day View Styles */
+  .rbc-time-view {
+    border: none;
+    background: transparent;
+  }
+  
+  .rbc-time-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: none;
+  }
+  
+  .rbc-time-header-content {
+    border: none;
+  }
+  
+  .rbc-time-header-cell {
+    border: none;
+    background: rgba(255, 255, 255, 0.4);
+    color: rgb(51, 65, 85);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .rbc-time-gutter {
+    background: rgba(248, 250, 252, 0.8);
+    border: none;
+  }
+  
+  .rbc-time-slot {
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .rbc-day-slot {
+    border-left: 1px solid rgba(226, 232, 240, 0.6);
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .rbc-timeslot-group {
+    border: none;
+  }
+  
+  .rbc-time-content {
+    border: none;
+  }
+  
+  .rbc-current-time-indicator {
+    background-color: var(--neon-blue);
+    height: 2px;
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+  }
+  
+  /* Week view specific */
+  .rbc-week-view .rbc-time-header-cell {
+    text-transform: capitalize;
+  }
+  
+  /* Day view specific */
+  .rbc-day-view .rbc-time-header-cell {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  
+  .rbc-today {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+  }
+  
   /* Improved mobile calendar responsiveness */
   @media (max-width: 640px) {
     .rbc-header {
