@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import moment from 'moment';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { CalendarIcon, HistoryIcon as ClockIcon } from './Icons';
 
 const DateTimePicker = ({ 
@@ -87,201 +89,125 @@ const DateTimePicker = ({
     return '';
   };
 
-  const renderCalendarGrid = () => {
-    const startOfMonth = displayDate.clone().startOf('month');
-    const endOfMonth = displayDate.clone().endOf('month');
-    const startOfWeek = startOfMonth.clone().startOf('week');
-    const endOfWeek = endOfMonth.clone().endOf('week');
-
-    const days = [];
-    const current = startOfWeek.clone();
-
-    while (current.isSameOrBefore(endOfWeek)) {
-      days.push(current.clone());
-      current.add(1, 'day');
-    }
-
-    const weeks = [];
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push(days.slice(i, i + 7));
-    }
-
-    // Detect if we're on mobile by checking viewport width
-    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
-    const effectiveIsMobile = isMobile || isSmallScreen;
-
-    return (
-      <div className={`
-        bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
-        ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[320px]'}
-      `}>
-        {/* Calendar header */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            type="button"
-            onClick={() => setDisplayDate(prev => prev.clone().subtract(1, 'month'))}
-            className={`
-              ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
-              rounded-lg hover:bg-slate-100 transition-colors duration-200 
-              focus:outline-none focus:ring-2 focus:ring-blue-300
-              flex items-center justify-center
-            `}
-            aria-label="Previous month"
-          >
-            ←
-          </button>
-          
-          <div className={`font-semibold text-slate-800 ${effectiveIsMobile ? 'text-base' : 'text-lg'}`}>
-            {displayDate.format(effectiveIsMobile ? 'MMM YYYY' : 'MMMM YYYY')}
-          </div>
-          
-          <button
-            type="button"
-            onClick={() => setDisplayDate(prev => prev.clone().add(1, 'month'))}
-            className={`
-              ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
-              rounded-lg hover:bg-slate-100 transition-colors duration-200 
-              focus:outline-none focus:ring-2 focus:ring-blue-300
-              flex items-center justify-center
-            `}
-            aria-label="Next month"
-          >
-            →
-          </button>
-        </div>
-
-        {/* Calendar grid */}
-        <div className={`space-y-1 ${effectiveIsMobile ? 'mb-3' : 'mb-4'}`}>
-          {/* Week header */}
-          <div className={`grid grid-cols-7 gap-1 mb-2 ${effectiveIsMobile ? 'min-w-0' : ''}`}>
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-              <div key={day} className={`
-                text-xs font-medium text-slate-500 text-center 
-                ${effectiveIsMobile ? 'p-1.5 min-w-[32px] w-[32px]' : 'p-2'}
-                flex items-center justify-center
-              `}>
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar days */}
-          {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className={`grid grid-cols-7 gap-1 ${effectiveIsMobile ? 'min-w-0' : ''}`}>
-              {week.map((day) => {
-                const isCurrentMonth = day.month() === displayDate.month();
-                const isToday = day.isSame(moment(), 'day');
-                const isSelected = selectedDate && day.isSame(moment(selectedDate), 'day');
-                const isDisabled = minDate && day.isBefore(moment(minDate), 'day');
-                
-                return (
-                  <button
-                    key={day.format('YYYY-MM-DD')}
-                    type="button"
-                    disabled={isDisabled}
-                    onClick={() => !isDisabled && handleDateSelect(day.toDate())}
-                    className={`
-                      ${effectiveIsMobile ? 'p-2.5 min-h-[32px] min-w-[32px] w-[32px] h-[32px] text-sm' : 'p-2 text-sm'} 
-                      rounded-lg transition-all duration-200 hover:scale-105 
-                      focus:outline-none focus:ring-2 focus:ring-blue-300
-                      flex items-center justify-center
-                      ${isDisabled 
-                        ? 'text-slate-300 cursor-not-allowed'
-                        : isCurrentMonth 
-                          ? isSelected
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg'
-                            : isToday
-                              ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 font-semibold'
-                              : 'text-slate-700 hover:bg-slate-100 cursor-pointer'
-                          : 'text-slate-400 cursor-pointer hover:bg-slate-50'
-                      }
-                    `}
-                  >
-                    {day.format('D')}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Time selection */}
-        <div className="border-t border-slate-200 pt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ClockIcon className={`${effectiveIsMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-500`} />
-            <span className={`${effectiveIsMobile ? 'text-sm' : 'text-sm'} font-semibold text-slate-700`}>Select Time</span>
-          </div>
-          
-          <div className={`grid ${effectiveIsMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'} mb-3`}>
-            {['09:00', '12:00', '15:00', '18:00'].map(time => (
-              <button
-                key={time}
-                type="button"
-                onClick={() => handleQuickTimeSelect(time)}
-                className={`
-                  ${effectiveIsMobile ? 'px-3 py-2.5 min-h-[44px]' : 'px-3 py-2'} 
-                  text-sm rounded-lg transition-colors duration-200 
-                  focus:outline-none focus:ring-2 focus:ring-blue-300
-                  ${selectedTime === time 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }
-                `}
-              >
-                {time}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="time"
-              value={selectedTime}
-              onChange={(e) => handleTimeChange(e.target.value)}
-              className={`
-                flex-1 px-3 border border-slate-300 rounded-lg 
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm
-                ${effectiveIsMobile ? 'py-2.5 min-h-[44px]' : 'py-2'}
-              `}
-            />
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className={`flex gap-2 ${effectiveIsMobile ? 'mt-4' : 'mt-4'} pt-3 border-t border-slate-200`}>
-          <button
-            type="button"
-            onClick={() => {
-              const now = moment();
-              handleDateSelect(now.toDate());
-              handleTimeChange(now.format('HH:mm'));
-              setIsOpen(false);
-            }}
-            className={`
-              flex-1 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
-              font-medium shadow-lg hover:shadow-xl transition-all duration-300 
-              transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
-              ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-            `}
-          >
-            Now
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className={`
-              px-4 bg-slate-100 text-slate-700 rounded-lg font-medium 
-              hover:bg-slate-200 transition-colors duration-200 
-              focus:outline-none focus:ring-2 focus:ring-slate-300
-              ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-            `}
-          >
-            Done
-          </button>
-        </div>
+  // Custom input component for the DatePicker
+  const CustomInput = React.forwardRef(({ value, onClick, placeholder, isMobile: inputIsMobile, disabled }, ref) => (
+    <div className="relative">
+      <input
+        ref={ref}
+        id={id}
+        type="text"
+        value={value || ''}
+        placeholder={placeholder}
+        readOnly
+        required={required}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(true);
+            onClick && onClick();
+          }
+        }}
+        className={`
+          w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+          bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400 cursor-pointer
+          ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}
+        `}
+        aria-describedby={ariaDescribedBy}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+      />
+      
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <CalendarIcon className="w-5 h-5 text-gray-400" />
       </div>
-    );
-  };
+    </div>
+  ));
+
+  // Detect if we're on mobile by checking viewport width
+  const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+  const effectiveIsMobile = isMobile || isSmallScreen;
+
+  // Convert selected date to Date object for react-datepicker
+  const selectedDateObject = selectedDate ? moment(selectedDate).toDate() : null;
+  const minDateObject = minDate ? moment(minDate).toDate() : new Date();
+
+  const renderTimeSelector = () => (
+    <div className="border-t border-slate-200 pt-4 mt-4">
+      <div className="flex items-center gap-2 mb-3">
+        <ClockIcon className={`${effectiveIsMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-500`} />
+        <span className={`${effectiveIsMobile ? 'text-sm' : 'text-sm'} font-semibold text-slate-700`}>Select Time</span>
+      </div>
+      
+      <div className={`grid ${effectiveIsMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'} mb-3`}>
+        {['09:00', '12:00', '15:00', '18:00'].map(time => (
+          <button
+            key={time}
+            type="button"
+            onClick={() => handleQuickTimeSelect(time)}
+            className={`
+              ${effectiveIsMobile ? 'px-2 py-2.5 min-h-[44px] text-xs' : 'px-2 py-2 text-xs'} 
+              rounded-lg transition-colors duration-200 
+              focus:outline-none focus:ring-2 focus:ring-blue-300
+              flex items-center justify-center
+              ${selectedTime === time 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }
+            `}
+          >
+            {time}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="time"
+          value={selectedTime}
+          onChange={(e) => handleTimeChange(e.target.value)}
+          className={`
+            flex-1 px-3 border border-slate-300 rounded-lg 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm
+            ${effectiveIsMobile ? 'py-2.5 min-h-[44px]' : 'py-2'}
+          `}
+        />
+      </div>
+    </div>
+  );
+
+  const renderActionButtons = () => (
+    <div className={`flex gap-2 ${effectiveIsMobile ? 'mt-4' : 'mt-4'} pt-3 border-t border-slate-200`}>
+      <button
+        type="button"
+        onClick={() => {
+          const now = moment();
+          handleDateSelect(now.toDate());
+          handleTimeChange(now.format('HH:mm'));
+          setIsOpen(false);
+        }}
+        className={`
+          flex-1 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
+          font-medium shadow-lg hover:shadow-xl transition-all duration-300 
+          transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
+          ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
+        `}
+      >
+        Now
+      </button>
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        className={`
+          px-4 bg-slate-100 text-slate-700 rounded-lg font-medium 
+          hover:bg-slate-200 transition-colors duration-200 
+          focus:outline-none focus:ring-2 focus:ring-slate-300
+          ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
+        `}
+      >
+        Done
+      </button>
+    </div>
+  );
 
   const getDropdownPosition = () => {
     if (typeof window === 'undefined') return 'absolute top-full left-0 mt-2 z-50';
@@ -303,41 +229,107 @@ const DateTimePicker = ({
         </label>
       )}
       
-      <div className="relative">
-        <input
-          ref={inputRef}
-          id={id}
-          type="text"
-          value={formatDisplayValue()}
-          placeholder={placeholder}
-          readOnly
-          required={required}
-          disabled={disabled}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`
-            w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-            bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 hover:border-gray-400 cursor-pointer
-            ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}
-          `}
-          aria-describedby={ariaDescribedBy}
-          aria-expanded={isOpen}
-          aria-haspopup="dialog"
-        />
-        
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-          <CalendarIcon className="w-5 h-5 text-gray-400" />
-        </div>
-      </div>
+      <DatePicker
+        selected={selectedDateObject}
+        onChange={(date) => {
+          if (date) {
+            handleDateSelect(date);
+          }
+        }}
+        minDate={minDateObject}
+        customInput={
+          <CustomInput 
+            placeholder={placeholder} 
+            isMobile={effectiveIsMobile}
+            disabled={disabled}
+          />
+        }
+        open={isOpen}
+        onClickOutside={() => setIsOpen(false)}
+        onCalendarOpen={() => setIsOpen(true)}
+        onCalendarClose={() => setIsOpen(false)}
+        onSelect={() => {
+          // Don't close automatically - let user select time too
+        }}
+        shouldCloseOnSelect={false}
+        showPopperArrow={false}
+        popperClassName="react-datepicker-popper-custom"
+        popperPlacement={effectiveIsMobile ? "bottom" : "bottom-start"}
+        calendarClassName="react-datepicker-custom"
+        dayClassName={(date) => {
+          const today = new Date();
+          const isToday = date.toDateString() === today.toDateString();
+          const isSelected = selectedDateObject && date.toDateString() === selectedDateObject.toDateString();
+          
+          let className = "react-datepicker-day-custom";
+          
+          if (isSelected) {
+            className += " selected";
+          } else if (isToday) {
+            className += " today";
+          }
+          
+          return className;
+        }}
+        renderCustomHeader={({
+          date,
+          decreaseMonth,
+          increaseMonth,
+          prevMonthButtonDisabled,
+          nextMonthButtonDisabled,
+        }) => (
+          <div className="flex items-center justify-between mb-4 px-2">
+            <button
+              type="button"
+              onClick={decreaseMonth}
+              disabled={prevMonthButtonDisabled}
+              className={`
+                ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+                rounded-lg hover:bg-slate-100 transition-colors duration-200 
+                focus:outline-none focus:ring-2 focus:ring-blue-300
+                flex items-center justify-center
+                ${prevMonthButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              aria-label="Previous month"
+            >
+              ←
+            </button>
+            
+            <div className={`font-semibold text-slate-800 ${effectiveIsMobile ? 'text-base' : 'text-lg'}`}>
+              {moment(date).format(effectiveIsMobile ? 'MMM YYYY' : 'MMMM YYYY')}
+            </div>
+            
+            <button
+              type="button"
+              onClick={increaseMonth}
+              disabled={nextMonthButtonDisabled}
+              className={`
+                ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+                rounded-lg hover:bg-slate-100 transition-colors duration-200 
+                focus:outline-none focus:ring-2 focus:ring-blue-300
+                flex items-center justify-center
+                ${nextMonthButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              aria-label="Next month"
+            >
+              →
+            </button>
+          </div>
+        )}
+        calendarContainer={({ children }) => (
+          <div className={`
+            bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
+            ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[400px] max-w-[440px] w-[420px]'}
+          `}>
+            {children}
+            {renderTimeSelector()}
+            {renderActionButtons()}
+          </div>
+        )}
+      />
 
       {helpText && (
         <p id={`${id}-help`} className="mt-1 text-xs text-gray-600">{helpText}</p>
-      )}
-
-      {/* Dropdown calendar */}
-      {isOpen && (
-        <div className={getDropdownPosition()}>
-          {renderCalendarGrid()}
-        </div>
       )}
     </div>
   );
