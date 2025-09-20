@@ -111,14 +111,52 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     };
   }, [isMobile, sidebarOpen]);
   const getNavLinkClasses = (isActive) =>
-    `block px-4 py-3 rounded-xl transition-all duration-300 ease-in-out text-base font-medium outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
+    `block px-4 py-3 rounded-xl transition-all duration-300 ease-in-out font-medium outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
     ${
       isActive
-        ? "bg-sidebar-active text-white shadow-[0_0_16px_var(--tw-ring-color)] transform scale-105 border-l-4 border-accent ring-2 ring-accent ring-offset-2 ring-offset-slate-900"
+        ? `bg-sidebar-active text-white shadow-[0_0_16px_var(--tw-ring-color)] transform ${isMobile ? '' : 'scale-105'} border-l-4 border-accent ring-2 ring-accent ring-offset-2 ring-offset-slate-900`
         : "text-granite-200 hover:bg-sidebar-active-alt hover:text-white hover:shadow-[0_0_12px_var(--tw-ring-color)] hover:ring-2 hover:ring-accent hover:ring-offset-2 hover:ring-offset-slate-900"
     }
-    ${isMobile ? "min-h-[48px] flex items-center" : ""}
+    ${isMobile 
+      ? 'min-h-[52px] flex items-center text-base mx-2' 
+      : 'text-base'
+    }
     ${!sidebarOpen && !isMobile ? "justify-center p-3" : ""}`;
+
+  // Enhanced mobile navigation item rendering
+  const renderNavItem = (item) => {
+    if (!shouldShowNavItem(item)) return null;
+    const IconComponent = item.icon;
+    
+    return (
+      <li key={item.path} className={isMobile ? 'mb-1' : ''}>
+        <NavLink 
+          to={item.path}
+          className={({isActive}) => getNavLinkClasses(isActive)}
+          onClick={closeSidebarOnMobile}
+          tabIndex={0}
+          aria-label={item.label}
+          title={!sidebarOpen ? item.label : undefined}
+        >
+          <div className={`flex items-center ${!sidebarOpen && !isMobile ? 'justify-center' : 'justify-start'}`}>
+            <IconComponent 
+              className={`
+                ${isMobile ? 'w-6 h-6' : 'w-6 h-6'} 
+                flex-shrink-0 
+                ${!sidebarOpen && !isMobile ? '' : 'mr-3'}
+              `} 
+              aria-hidden="true" 
+            />
+            {sidebarOpen && (
+              <span className={`text-left ${isMobile ? 'font-medium' : ''}`}>
+                {item.label}
+              </span>
+            )}
+          </div>
+        </NavLink>
+      </li>
+    );
+  };
 
   return (
     <>
@@ -145,22 +183,43 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
-          {/* Header - add top padding on mobile when sidebar is open to avoid overlap with floating hamburger */}
-          <div className={`flex items-center justify-between p-4 border-b border-slate-600 ${isMobile && sidebarOpen ? 'pt-6' : ''}`}>
-            <div className="flex items-center gap-2">
-              <img src="./logo.svg" alt="logo" className="w-9 h-9 rounded shadow-sm border border-slate-200 bg-white" />
-              {sidebarOpen && <span className="font-bold text-xl text-white tracking-tight">Priority</span>}
+          {/* Header - Enhanced for mobile with better spacing and visual hierarchy */}
+          <div className={`
+            flex items-center justify-between border-b border-slate-600 
+            ${isMobile && sidebarOpen ? 'p-4 pt-6' : 'p-4'}
+            ${isMobile ? 'min-h-[72px]' : ''}
+          `}>
+            <div className="flex items-center gap-3">
+              <img 
+                src="./logo.svg" 
+                alt="logo" 
+                className={`
+                  rounded shadow-sm border border-slate-200 bg-white
+                  ${isMobile ? 'w-10 h-10' : 'w-9 h-9'}
+                `} 
+              />
+              {sidebarOpen && (
+                <span className={`
+                  font-bold text-white tracking-tight
+                  ${isMobile ? 'text-xl' : 'text-xl'}
+                `}>
+                  Priority
+                </span>
+              )}
             </div>
             <button 
               onClick={handleSidebarToggle} 
-              className={
-                `px-3 py-2 text-granite-300 hover:text-white transition-colors ` +
-                `rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ` +
-                `${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`
-              }
+              className={`
+                px-3 py-2 text-granite-300 hover:text-white transition-all duration-200
+                rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-sidebar-bg
+                ${isMobile 
+                  ? 'min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105' 
+                  : ''
+                }
+              `}
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              <HamburgerIcon className="w-5 h-5" />
+              <HamburgerIcon className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
             </button>
           </div>
           {/* Navigation with section headings */}
@@ -174,7 +233,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                       if (!shouldShowNavItem(item)) return null;
                       const IconComponent = item.icon;
                       return (
-                        <li key={item.path}>
+                        <li key={item.path} className={isMobile ? 'mb-1' : ''}>
                           <NavLink 
                             to={item.path}
                             className={({isActive}) => getNavLinkClasses(isActive)}
@@ -184,8 +243,19 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                             title={!sidebarOpen ? item.label : undefined}
                           >
                             <div className={`flex items-center ${!sidebarOpen && !isMobile ? 'justify-center' : 'justify-start'}`}>
-                              <IconComponent className={`w-6 h-6 flex-shrink-0 ${!sidebarOpen && !isMobile ? '' : 'mr-3'}`} aria-hidden="true" />
-                              {sidebarOpen && <span className="text-left">{item.label}</span>}
+                              <IconComponent 
+                                className={`
+                                  ${isMobile ? 'w-6 h-6' : 'w-6 h-6'} 
+                                  flex-shrink-0 
+                                  ${!sidebarOpen && !isMobile ? '' : 'mr-3'}
+                                `} 
+                                aria-hidden="true" 
+                              />
+                              {sidebarOpen && (
+                                <span className={`text-left ${isMobile ? 'font-medium' : ''}`}>
+                                  {item.label}
+                                </span>
+                              )}
                             </div>
                           </NavLink>
                         </li>
@@ -203,34 +273,52 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               />
             </ul>
           </nav>
-          {/* User info with avatar */}
+          {/* User info with avatar - Enhanced for mobile */}
           <div className={
             `p-4 border-t border-slate-600 ` +
             `${sidebarOpen ? '' : 'text-center'} ` +
-            `${isMobile ? 'min-h-[80px]' : ''}`
+            `${isMobile ? 'min-h-[100px] pb-6' : 'min-h-[80px]'}`
           } style={{ backgroundColor: 'var(--granite-800)' }}>
             {sidebarOpen ? (
               <>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-base border border-accent/30">
+                <div className={`flex items-center gap-3 ${isMobile ? 'mb-4' : 'mb-2'}`}>
+                  <div className={`
+                    ${isMobile ? 'w-10 h-10' : 'w-8 h-8'} 
+                    rounded-full bg-accent/20 flex items-center justify-center 
+                    text-accent font-bold border border-accent/30
+                    ${isMobile ? 'text-lg' : 'text-base'}
+                  `}>
                     {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
-                  <div>
-                    <div className="text-xs text-granite-300">
-                      Logged in as <span className="font-semibold text-white">{currentUser?.name}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-granite-300 ${isMobile ? 'text-sm' : 'text-xs'} leading-tight`}>
+                      Logged in as
                     </div>
-                    <div className="text-xs text-granite-400">({currentUser?.role})</div>
+                    <div className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-xs'} leading-tight truncate`}>
+                      {currentUser?.email || currentUser?.name}
+                    </div>
+                    <div className={`text-granite-400 ${isMobile ? 'text-sm' : 'text-xs'} leading-tight`}>
+                      ({currentUser?.role})
+                    </div>
                   </div>
                 </div>
                 <button 
                   onClick={logout} 
-                  className={
-                    `text-xs text-accent hover:text-white hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ` +
-                    `${isMobile ? 'min-h-[48px] w-full text-left flex items-center' : ''}`
-                  }
+                  className={`
+                    bg-accent/10 hover:bg-accent/20 text-accent hover:text-white 
+                    rounded-lg transition-all duration-200 
+                    focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-granite-800
+                    border border-accent/20 hover:border-accent/40
+                    flex items-center gap-2 font-medium
+                    ${isMobile 
+                      ? 'min-h-[48px] w-full px-4 py-3 text-sm justify-center' 
+                      : 'px-3 py-2 text-xs w-full justify-center'
+                    }
+                  `}
                   aria-label="Logout"
                 >
-                  Logout
+                  <LogoutIcon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
+                  <span>Logout</span>
                 </button>
               </>
             ) : (

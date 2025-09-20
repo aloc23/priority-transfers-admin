@@ -132,25 +132,29 @@ const DateTimePicker = ({
   const minDateObject = minDate ? moment(minDate).toDate() : new Date();
 
   const renderTimeSelector = () => (
-    <div className="border-t border-slate-200 pt-4 mt-4">
+    <div className={`w-full border-t border-slate-200 pt-4 mt-4 time-selector-section`}>
       <div className="flex items-center gap-2 mb-3">
         <ClockIcon className={`${effectiveIsMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-500`} />
         <span className={`${effectiveIsMobile ? 'text-sm' : 'text-sm'} font-semibold text-slate-700`}>Select Time</span>
       </div>
       
-      <div className={`grid ${effectiveIsMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'} mb-3`}>
+      {/* Quick Time Selection - Stacked for better mobile experience */}
+      <div className={`grid ${effectiveIsMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'} mb-4`}>
         {['09:00', '12:00', '15:00', '18:00'].map(time => (
           <button
             key={time}
             type="button"
             onClick={() => handleQuickTimeSelect(time)}
             className={`
-              ${effectiveIsMobile ? 'px-2 py-2.5 min-h-[44px] text-xs' : 'px-2 py-2 text-xs'} 
+              ${effectiveIsMobile 
+                ? 'px-3 py-3 min-h-[48px] text-sm time-quick-select-button' 
+                : 'px-2 py-2 text-xs'
+              } 
               rounded-lg transition-colors duration-200 
               focus:outline-none focus:ring-2 focus:ring-blue-300
-              flex items-center justify-center
+              flex items-center justify-center font-medium
               ${selectedTime === time 
-                ? 'bg-blue-600 text-white' 
+                ? 'bg-blue-600 text-white shadow-md' 
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }
             `}
@@ -160,52 +164,72 @@ const DateTimePicker = ({
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="time"
-          value={selectedTime}
-          onChange={(e) => handleTimeChange(e.target.value)}
-          className={`
-            flex-1 px-3 border border-slate-300 rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm
-            ${effectiveIsMobile ? 'py-2.5 min-h-[44px]' : 'py-2'}
-          `}
-        />
+      {/* Custom Time Input */}
+      <div className="w-full">
+        <div className="flex items-center gap-2">
+          <ClockIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
+          <input
+            type="time"
+            value={selectedTime}
+            onChange={(e) => handleTimeChange(e.target.value)}
+            placeholder="--:--"
+            className={`
+              flex-1 px-3 border border-slate-300 rounded-lg 
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm
+              bg-white transition-all duration-200
+              ${effectiveIsMobile 
+                ? 'py-3 min-h-[48px] time-input-mobile' 
+                : 'py-2'
+              }
+            `}
+          />
+        </div>
+        {effectiveIsMobile && (
+          <p className="text-xs text-slate-500 mt-1">Or use the time selector above for quick selection</p>
+        )}
       </div>
     </div>
   );
 
   const renderActionButtons = () => (
-    <div className={`flex gap-2 ${effectiveIsMobile ? 'mt-4' : 'mt-4'} pt-3 border-t border-slate-200`}>
-      <button
-        type="button"
-        onClick={() => {
-          const now = moment();
-          handleDateSelect(now.toDate());
-          handleTimeChange(now.format('HH:mm'));
-          setIsOpen(false);
-        }}
-        className={`
-          flex-1 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
-          font-medium shadow-lg hover:shadow-xl transition-all duration-300 
-          transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
-          ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-        `}
-      >
-        Now
-      </button>
-      <button
-        type="button"
-        onClick={() => setIsOpen(false)}
-        className={`
-          px-4 bg-slate-100 text-slate-700 rounded-lg font-medium 
-          hover:bg-slate-200 transition-colors duration-200 
-          focus:outline-none focus:ring-2 focus:ring-slate-300
-          ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-        `}
-      >
-        Done
-      </button>
+    <div className={`w-full ${effectiveIsMobile ? 'mt-4 action-buttons-mobile' : 'mt-4'} pt-3 border-t border-slate-200`}>
+      <div className={`flex gap-3 ${effectiveIsMobile ? 'flex-col sm:flex-row' : ''}`}>
+        <button
+          type="button"
+          onClick={() => {
+            const now = moment();
+            handleDateSelect(now.toDate());
+            handleTimeChange(now.format('HH:mm'));
+            setIsOpen(false);
+          }}
+          className={`
+            ${effectiveIsMobile 
+              ? 'flex-1 py-3 min-h-[48px] action-button-mobile' 
+              : 'flex-1 py-2'
+            }
+            px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
+            font-medium shadow-lg hover:shadow-xl transition-all duration-300 
+            transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
+          `}
+        >
+          Now
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          className={`
+            ${effectiveIsMobile 
+              ? 'py-3 min-h-[48px] px-6 action-button-mobile' 
+              : 'py-2 px-4'
+            }
+            bg-slate-100 text-slate-700 rounded-lg font-medium 
+            hover:bg-slate-200 transition-colors duration-200 
+            focus:outline-none focus:ring-2 focus:ring-slate-300
+          `}
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 
@@ -216,6 +240,7 @@ const DateTimePicker = ({
     const effectiveIsMobile = isMobile || isSmallScreen;
     
     if (effectiveIsMobile) {
+      // On mobile, center the dropdown and adjust positioning for better UX
       return 'absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50';
     }
     return 'absolute top-full left-0 mt-2 z-50';
@@ -319,11 +344,27 @@ const DateTimePicker = ({
         calendarContainer={({ children }) => (
           <div className={`
             bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
-            ${effectiveIsMobile ? 'p-3 min-w-[320px] max-w-[380px] w-[320px]' : 'p-4 min-w-[400px] max-w-[440px] w-[420px]'}
+            ${effectiveIsMobile 
+              ? 'p-3 w-full max-w-[360px] min-w-[320px]' 
+              : 'p-4 min-w-[400px] max-w-[440px] w-[420px]'
+            }
           `}>
-            {children}
-            {renderTimeSelector()}
-            {renderActionButtons()}
+            <div className="flex flex-col">
+              {/* Calendar Section */}
+              <div className="flex-shrink-0">
+                {children}
+              </div>
+              
+              {/* Time Selection Section - Always Below Calendar */}
+              <div className="flex-shrink-0">
+                {renderTimeSelector()}
+              </div>
+              
+              {/* Action Buttons Section */}
+              <div className="flex-shrink-0">
+                {renderActionButtons()}
+              </div>
+            </div>
           </div>
         )}
       />

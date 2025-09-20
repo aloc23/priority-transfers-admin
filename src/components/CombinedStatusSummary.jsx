@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../context/AppStore';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function CombinedStatusSummary({ compact = false }) {
   const { bookings, invoices } = useAppStore();
+  const { isMobile, isSmallMobile } = useResponsive();
 
   // Combined booking/invoice status logic (same as in BookingStatusBlock)
   const getCombinedStatus = (booking) => {
@@ -100,78 +102,173 @@ export default function CombinedStatusSummary({ compact = false }) {
         </div>
       </div>
 
-      {/* Status Summary Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Status Summary Grid - Improved mobile layout */}
+      <div className={`grid gap-3 ${
+        isMobile 
+          ? 'grid-cols-2 sm:grid-cols-3' 
+          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
+      }`}>
         {statusConfig.map((status) => (
           <div 
             key={status.id} 
-            className={`px-4 py-3 rounded-lg border-2 border-transparent ${status.color} hover:border-slate-300 transition-all duration-200`}
+            className={`
+              rounded-lg border-2 border-transparent ${status.color} 
+              hover:border-slate-300 transition-all duration-200
+              ${isMobile 
+                ? 'px-3 py-3 min-h-[72px]' 
+                : 'px-4 py-3'
+              }
+            `}
             title={status.description}
           >
-            <div className="text-center">
-              <div className="font-bold text-xl mb-1">{status.count}</div>
-              <div className="text-sm font-medium">{status.label}</div>
+            <div className="text-center flex flex-col justify-center h-full">
+              <div className={`font-bold mb-1 ${
+                isMobile 
+                  ? 'text-lg leading-tight' 
+                  : 'text-xl'
+              }`}>
+                {status.count}
+              </div>
+              <div className={`font-medium leading-tight ${
+                isMobile 
+                  ? 'text-xs' 
+                  : 'text-sm'
+              }`}>
+                {status.label}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Progress Flow Indicator */}
+      {/* Progress Flow Indicator - Mobile optimized */}
       <div className="mt-6 bg-slate-50 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-slate-700 mb-3">Booking Progress Flow</h4>
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-            <span>Pending</span>
+        <h4 className={`font-semibold text-slate-700 mb-3 ${
+          isMobile ? 'text-xs text-center' : 'text-sm'
+        }`}>
+          Booking Progress Flow
+        </h4>
+        <div className={`flex items-center justify-between ${
+          isMobile 
+            ? 'text-xs text-slate-500 px-1' 
+            : 'text-xs text-slate-500'
+        }`}>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className={`bg-amber-400 rounded-full ${
+              isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
+            }`}></div>
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? 'Pending' : 'Pending'}
+            </span>
           </div>
-          <div className="flex-1 h-px bg-slate-300 mx-2"></div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span>Confirmed</span>
+          <div className={`h-px bg-slate-300 ${
+            isMobile ? 'flex-1 mx-1' : 'flex-1 mx-2'
+          }`}></div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className={`bg-green-400 rounded-full ${
+              isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
+            }`}></div>
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? 'Confirmed' : 'Confirmed'}
+            </span>
           </div>
-          <div className="flex-1 h-px bg-slate-300 mx-2"></div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <span>Completed</span>
+          <div className={`h-px bg-slate-300 ${
+            isMobile ? 'flex-1 mx-1' : 'flex-1 mx-2'
+          }`}></div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className={`bg-blue-400 rounded-full ${
+              isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
+            }`}></div>
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? 'Done' : 'Completed'}
+            </span>
           </div>
-          <div className="flex-1 h-px bg-slate-300 mx-2"></div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-            <span>Invoiced</span>
+          <div className={`h-px bg-slate-300 ${
+            isMobile ? 'flex-1 mx-1' : 'flex-1 mx-2'
+          }`}></div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className={`bg-orange-400 rounded-full ${
+              isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
+            }`}></div>
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? 'Invoiced' : 'Invoiced'}
+            </span>
           </div>
-          <div className="flex-1 h-px bg-slate-300 mx-2"></div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-            <span>Paid</span>
+          <div className={`h-px bg-slate-300 ${
+            isMobile ? 'flex-1 mx-1' : 'flex-1 mx-2'
+          }`}></div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className={`bg-emerald-400 rounded-full ${
+              isMobile ? 'w-1.5 h-1.5' : 'w-2 h-2'
+            }`}></div>
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? 'Paid' : 'Paid'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <div className="bg-slate-50 rounded-lg p-3">
-          <div className="text-lg font-bold text-slate-700">
+      {/* Summary Stats - Mobile optimized */}
+      <div className={`mt-4 grid gap-4 text-center ${
+        isMobile 
+          ? 'grid-cols-2' 
+          : 'grid-cols-2 md:grid-cols-4'
+      }`}>
+        <div className={`bg-slate-50 rounded-lg ${
+          isMobile ? 'p-2' : 'p-3'
+        }`}>
+          <div className={`font-bold text-slate-700 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             {combinedStatusCounts.Pending + combinedStatusCounts.Confirmed}
           </div>
-          <div className="text-xs text-slate-500">Active Bookings</div>
+          <div className={`text-slate-500 ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
+            Active Bookings
+          </div>
         </div>
-        <div className="bg-slate-50 rounded-lg p-3">
-          <div className="text-lg font-bold text-slate-700">
+        <div className={`bg-slate-50 rounded-lg ${
+          isMobile ? 'p-2' : 'p-3'
+        }`}>
+          <div className={`font-bold text-slate-700 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             {combinedStatusCounts.Completed + combinedStatusCounts.Invoiced}
           </div>
-          <div className="text-xs text-slate-500">Awaiting Payment</div>
+          <div className={`text-slate-500 ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
+            Awaiting Payment
+          </div>
         </div>
-        <div className="bg-slate-50 rounded-lg p-3">
-          <div className="text-lg font-bold text-slate-700">
+        <div className={`bg-slate-50 rounded-lg ${
+          isMobile ? 'p-2' : 'p-3'
+        }`}>
+          <div className={`font-bold text-slate-700 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             {combinedStatusCounts.Paid}
           </div>
-          <div className="text-xs text-slate-500">Fully Completed</div>
+          <div className={`text-slate-500 ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
+            Fully Completed
+          </div>
         </div>
-        <div className="bg-slate-50 rounded-lg p-3">
-          <div className="text-lg font-bold text-red-600">
+        <div className={`bg-slate-50 rounded-lg ${
+          isMobile ? 'p-2' : 'p-3'
+        }`}>
+          <div className={`font-bold text-red-600 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             {combinedStatusCounts.Overdue}
           </div>
-          <div className="text-xs text-slate-500">Require Attention</div>
+          <div className={`text-slate-500 ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
+            Require Attention
+          </div>
         </div>
       </div>
     </div>
