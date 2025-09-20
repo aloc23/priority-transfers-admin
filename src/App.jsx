@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Bookings"; // make sure this exists
+import Bookings from "./pages/Bookings";
 import Schedule from "./pages/Schedule";
 import Drivers from "./pages/Drivers";
 import Vehicles from "./pages/Vehicles";
