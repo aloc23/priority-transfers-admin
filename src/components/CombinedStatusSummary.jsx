@@ -116,7 +116,7 @@ export default function CombinedStatusSummary({ compact = false }) {
               hover:border-slate-300 transition-all duration-200
               ${isMobile 
                 ? 'px-3 py-3 min-h-[72px]' 
-                : 'px-4 py-3'
+                : 'px-2 py-3 min-h-[80px] lg:min-w-[90px]'
               }
             `}
             title={status.description}
@@ -125,14 +125,14 @@ export default function CombinedStatusSummary({ compact = false }) {
               <div className={`font-bold mb-1 ${
                 isMobile 
                   ? 'text-lg leading-tight' 
-                  : 'text-xl'
+                  : 'text-xl leading-tight'
               }`}>
                 {status.count}
               </div>
               <div className={`font-medium leading-tight ${
                 isMobile 
                   ? 'text-xs' 
-                  : 'text-sm'
+                  : 'text-xs lg:text-sm'
               }`}>
                 {status.label}
               </div>
