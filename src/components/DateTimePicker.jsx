@@ -106,44 +106,42 @@ const DateTimePicker = ({
       weeks.push(days.slice(i, i + 7));
     }
 
-    // Detect if we're on mobile by checking viewport width
-    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 640;
-    const effectiveIsMobile = isMobile || isSmallScreen;
-
+    // Use consistent desktop layout across all screen sizes
+    // Keep touch-friendly button sizes for mobile usability
     return (
-      <div className={`
+      <div className="
         bg-white rounded-xl shadow-2xl border border-slate-200/60 backdrop-blur-lg z-50
-        ${effectiveIsMobile ? 'p-3 min-w-[300px] max-w-[350px]' : 'p-4 min-w-[320px]'}
-      `}>
+        p-3 min-w-[320px] max-w-[400px] sm:p-4 sm:max-w-none
+      ">
         {/* Calendar header */}
         <div className="flex items-center justify-between mb-4">
           <button
             type="button"
             onClick={() => setDisplayDate(prev => prev.clone().subtract(1, 'month'))}
-            className={`
-              ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+            className="
+              p-2.5 min-h-[44px] min-w-[44px] sm:p-2 sm:min-h-auto sm:min-w-auto
               rounded-lg hover:bg-slate-100 transition-colors duration-200 
               focus:outline-none focus:ring-2 focus:ring-blue-300
               flex items-center justify-center
-            `}
+            "
             aria-label="Previous month"
           >
             ←
           </button>
           
-          <div className={`font-semibold text-slate-800 ${effectiveIsMobile ? 'text-base' : 'text-lg'}`}>
-            {displayDate.format(effectiveIsMobile ? 'MMM YYYY' : 'MMMM YYYY')}
+          <div className="font-semibold text-slate-800 text-base sm:text-lg">
+            {displayDate.format('MMMM YYYY')}
           </div>
           
           <button
             type="button"
             onClick={() => setDisplayDate(prev => prev.clone().add(1, 'month'))}
-            className={`
-              ${effectiveIsMobile ? 'p-3 min-h-[44px] min-w-[44px]' : 'p-2'} 
+            className="
+              p-2.5 min-h-[44px] min-w-[44px] sm:p-2 sm:min-h-auto sm:min-w-auto
               rounded-lg hover:bg-slate-100 transition-colors duration-200 
               focus:outline-none focus:ring-2 focus:ring-blue-300
               flex items-center justify-center
-            `}
+            "
             aria-label="Next month"
           >
             →
@@ -151,14 +149,13 @@ const DateTimePicker = ({
         </div>
 
         {/* Calendar grid */}
-        <div className={`space-y-1 ${effectiveIsMobile ? 'mb-3' : 'mb-4'}`}>
+        <div className="space-y-1 mb-4">
           {/* Week header */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-              <div key={day} className={`
-                text-xs font-medium text-slate-500 text-center 
-                ${effectiveIsMobile ? 'p-1.5' : 'p-2'}
-              `}>
+              <div key={day} className="
+                text-xs font-medium text-slate-500 text-center p-1.5 sm:p-2
+              ">
                 {day}
               </div>
             ))}
@@ -180,7 +177,7 @@ const DateTimePicker = ({
                     disabled={isDisabled}
                     onClick={() => !isDisabled && handleDateSelect(day.toDate())}
                     className={`
-                      ${effectiveIsMobile ? 'p-2.5 min-h-[44px] min-w-[44px] text-sm' : 'p-2 text-sm'} 
+                      p-2.5 min-h-[44px] min-w-[44px] text-sm sm:p-2 sm:min-h-auto sm:min-w-auto
                       rounded-lg transition-all duration-200 hover:scale-105 
                       focus:outline-none focus:ring-2 focus:ring-blue-300
                       flex items-center justify-center
@@ -207,18 +204,18 @@ const DateTimePicker = ({
         {/* Time selection */}
         <div className="border-t border-slate-200 pt-4">
           <div className="flex items-center gap-2 mb-3">
-            <ClockIcon className={`${effectiveIsMobile ? 'w-5 h-5' : 'w-4 h-4'} text-slate-500`} />
-            <span className={`${effectiveIsMobile ? 'text-sm' : 'text-sm'} font-semibold text-slate-700`}>Select Time</span>
+            <ClockIcon className="w-4 h-4 text-slate-500" />
+            <span className="text-sm font-semibold text-slate-700">Select Time</span>
           </div>
           
-          <div className={`grid ${effectiveIsMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'} mb-3`}>
+          <div className="grid grid-cols-2 gap-2 mb-3 sm:grid-cols-4">
             {['09:00', '12:00', '15:00', '18:00'].map(time => (
               <button
                 key={time}
                 type="button"
                 onClick={() => handleQuickTimeSelect(time)}
                 className={`
-                  ${effectiveIsMobile ? 'px-3 py-2.5 min-h-[44px]' : 'px-3 py-2'} 
+                  px-3 py-2.5 min-h-[44px] sm:py-2 sm:min-h-auto
                   text-sm rounded-lg transition-colors duration-200 
                   focus:outline-none focus:ring-2 focus:ring-blue-300
                   ${selectedTime === time 
@@ -237,17 +234,17 @@ const DateTimePicker = ({
               type="time"
               value={selectedTime}
               onChange={(e) => handleTimeChange(e.target.value)}
-              className={`
-                flex-1 px-3 border border-slate-300 rounded-lg 
+              className="
+                flex-1 px-3 py-2.5 min-h-[44px] border border-slate-300 rounded-lg 
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm
-                ${effectiveIsMobile ? 'py-2.5 min-h-[44px]' : 'py-2'}
-              `}
+                sm:py-2 sm:min-h-auto
+              "
             />
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className={`flex gap-2 ${effectiveIsMobile ? 'mt-4' : 'mt-4'} pt-3 border-t border-slate-200`}>
+        <div className="flex gap-2 mt-4 pt-3 border-t border-slate-200">
           <button
             type="button"
             onClick={() => {
@@ -256,24 +253,24 @@ const DateTimePicker = ({
               handleTimeChange(now.format('HH:mm'));
               setIsOpen(false);
             }}
-            className={`
-              flex-1 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
+            className="
+              flex-1 px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg 
               font-medium shadow-lg hover:shadow-xl transition-all duration-300 
               transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50
-              ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-            `}
+              sm:py-2 sm:min-h-auto
+            "
           >
             Now
           </button>
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className={`
-              px-4 bg-slate-100 text-slate-700 rounded-lg font-medium 
+            className="
+              px-4 py-2.5 min-h-[44px] bg-slate-100 text-slate-700 rounded-lg font-medium 
               hover:bg-slate-200 transition-colors duration-200 
               focus:outline-none focus:ring-2 focus:ring-slate-300
-              ${effectiveIsMobile ? 'py-3 min-h-[44px]' : 'py-2'}
-            `}
+              sm:py-2 sm:min-h-auto
+            "
           >
             Done
           </button>
@@ -285,11 +282,11 @@ const DateTimePicker = ({
   const getDropdownPosition = () => {
     if (typeof window === 'undefined') return 'absolute top-full left-0 mt-2 z-50';
     
-    const isSmallScreen = window.innerWidth < 640;
-    const effectiveIsMobile = isMobile || isSmallScreen;
+    const isSmallScreen = window.innerWidth < 768;
     
-    if (effectiveIsMobile) {
-      return 'absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50';
+    if (isSmallScreen) {
+      // On mobile, use a modal-like overlay that doesn't interfere with the form
+      return 'fixed inset-0 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm z-50';
     }
     return 'absolute top-full left-0 mt-2 z-50';
   };
