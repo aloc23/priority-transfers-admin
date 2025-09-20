@@ -5,14 +5,14 @@ import Login from "./pages/Login";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Bookings";   // corrected
+import Bookings from "./pages/Bookings"; // make sure this exists
 import Schedule from "./pages/Schedule";
 import Drivers from "./pages/Drivers";
-import Vehicles from "./pages/Vehicles";   // corrected
+import Vehicles from "./pages/Vehicles";
 import Customers from "./pages/Customers";
-import Invoices from "./pages/Invoices";   // corrected
-import Expenses from "./pages/Expenses";   // corrected
-import Income from "./pages/Income";       // corrected
+import Invoices from "./pages/Billing";
+import Expenses from "./pages/FinanceTracker";
+import Income from "./pages/FinanceTracker";
 import Estimations from "./pages/Estimations";
 import Partners from "./pages/Partners";
 import Reports from "./pages/Reports";
@@ -32,19 +32,19 @@ export default function App() {
   useEffect(() => {
     let mounted = true;
 
-    // Initial session
+    // Initial session load
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) setSession(session);
     });
 
-    // Session listener
+    // Keep session in sync
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setSession(session);
     });
 
     return () => {
       mounted = false;
-      sub?.subscription?.unsubscribe();
+      sub.subscription.unsubscribe();
     };
   }, []);
 
@@ -56,7 +56,7 @@ export default function App() {
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main content */}
+      {/* Main content area */}
       <div className="flex flex-col flex-1">
         <MobileTopbar />
         <main className="flex-1 overflow-y-auto p-4">
