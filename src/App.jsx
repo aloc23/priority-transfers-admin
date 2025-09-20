@@ -1,86 +1,135 @@
-import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
-import supabase from "./utils/supabaseClient";
-import Login from "./pages/Login";
-
-// Pages
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Bookings";
 import Schedule from "./pages/Schedule";
-import Drivers from "./pages/Drivers";
-import Vehicles from "./pages/Vehicles";
 import Customers from "./pages/Customers";
-import Invoices from "./pages/Billing";
-import Expenses from "./pages/FinanceTracker";
-import Income from "./pages/FinanceTracker";
-import Estimations from "./pages/Estimations";
+import Drivers from "./pages/Drivers";
+import Fleet from "./pages/Fleet";
 import Partners from "./pages/Partners";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
-import Outsource from "./pages/Outsource";
-import History from "./pages/History";
+import Settings from "./pages/Settings";
+import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-
-// Layout
+import FinanceTracker from "./pages/FinanceTracker";
+import Estimations from "./pages/Estimations";
+import Billing from "./pages/Billing";
+import Reports from "./pages/Reports";
+import { AppStoreProvider, useAppStore } from "./context/AppStore";
+import { FleetProvider } from "./context/FleetContext";
 import Sidebar from "./components/Sidebar";
+import MobileFAB from "./components/MobileFAB";
 import MobileTopbar from "./components/MobileTopbar";
+import FloatingHamburger from "./components/FloatingHamburger";
+import AuthErrorModal from "./components/AuthErrorModal";
+import { useResponsive } from "./hooks/useResponsive";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-export default function App() {
-  const [session, setSession] = useState(undefined);
-
+function AuthenticatedShell() {
+  const { currentUser, authErrorModal, hideAuthErrorModal, handleReLogin } = useAppStore();
+  const { isMobile, isDesktop } = useResponsive();
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
+  
+  // Handle responsive behavior for sidebar
   useEffect(() => {
-    let mounted = true;
-
-    // Initial session load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) setSession(session);
-    });
-
-    // Keep session in sync
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setSession(session);
-    });
-
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  if (session === undefined) return <div className="p-6">Loading…</div>;
-  if (!session) return <Login />;
-
+    if (isDesktop) {
+      // On desktop, check if user manually collapsed it before
+      const hasManuallyCollapsed = localStorage.getItem('sidebarManuallyCollapsed') === 'true';
+      if (!hasManuallyCollapsed) {
+        setSidebarOpen(true); // Auto-open on desktop unless manually collapsed
+      }
+    } else if (isMobile) {
+      // On mobile, always start closed and clear any manual collapse flags
+      setSidebarOpen(false);
+      localStorage.removeItem('sidebarManuallyCollapsed');
+    }
+  }, [isDesktop, isMobile]);
+  
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main content area */}
-      <div className="flex flex-col flex-1">
-        <MobileTopbar />
-        <main className="flex-1 overflow-y-auto p-4">
+    <div className="flex h-screen bg-slate-50">
+      {/* Floating Hamburger - only visible on mobile when sidebar is closed */}
+      {isMobile && !sidebarOpen && (
+        <FloatingHamburger onClick={() => setSidebarOpen(true)} />
+      )}
+      
+      {/* Mobile Topbar - only shows when sidebar is open */}
+      <MobileTopbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
+        <div className={`${isMobile ? 'p-2 pt-14' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/vehicles" element={<Vehicles />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/income" element={<Income />} />
-            <Route path="/estimations" element={<Estimations />} />
-            <Route path="/partners" element={<Partners />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/outsource" element={<Outsource />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/schedule" element={<RequireAuth><Schedule /></RequireAuth>} />
+            <Route path="/invoices" element={<RequireRole roles={["Admin","Dispatcher"]}><Billing /></RequireRole>} />
+            <Route path="/customers" element={<RequireRole roles={["Admin","Dispatcher"]}><Customers /></RequireRole>} />
+            <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
+            <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
+            <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
+            <Route path="/finance" element={<RequireRole roles={["Admin"]}><Estimations /></RequireRole>} />
+            <Route path="/reports" element={<RequireRole roles={["Admin","Dispatcher"]}><Reports /></RequireRole>} />
+            <Route path="/history" element={<Navigate to="/reports" replace />} />
+            <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
+            <Route path="/settings" element={<RequireRole roles={["Admin"]}><Settings /></RequireRole>} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </main>
-      </div>
+        </div>
+      </main>
+      
+      {/* Mobile FAB for quick actions */}
+      <MobileFAB />
+      
+      {/* Global Authentication Error Modal */}
+      <AuthErrorModal 
+        isOpen={authErrorModal.isOpen}
+        onClose={hideAuthErrorModal}
+        onReLogin={handleReLogin}
+        error={authErrorModal.error}
+      />
     </div>
+  );
+}
+
+function AppShell() {
+  const { currentUser } = useAppStore();
+  
+  // If not authenticated, show only login and signup pages
+  if (!currentUser) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+  
+  // If authenticated, show the full admin interface
+  return <AuthenticatedShell />;
+}
+
+function RequireAuth({children}){
+  const { currentUser } = useAppStore();
+  if(!currentUser) return <Navigate to="/login" replace />;
+  return children;
+}
+function RequireRole({children, roles}){
+  const { currentUser } = useAppStore();
+  if(!currentUser) return <Navigate to="/login" replace />;
+  if(!roles.includes(currentUser.role)) return <Navigate to="/" replace />;
+  return children;
+}
+
+export default function App(){
+  return (
+    <ErrorBoundary>
+      <FleetProvider>
+        <AppStoreProvider>
+          <Router>
+            <AppShell />
+          </Router>
+        </AppStoreProvider>
+      </FleetProvider>
+    </ErrorBoundary>
   );
 }

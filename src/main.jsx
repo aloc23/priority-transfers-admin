@@ -1,14 +1,13 @@
-import { createRoot } from "react-dom/client";
-import { HashRouter } from "react-router-dom";
+import React from "react";
+import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AppStoreProvider } from "./context/AppStore";
+import "./index.css";
 
-// Entry point – wrap everything in store + router
-const root = document.getElementById("root");
-createRoot(root).render(
-  <HashRouter>
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
     <AppStoreProvider>
       <App />
     </AppStoreProvider>
-  </HashRouter>
+  </React.StrictMode>
 );
