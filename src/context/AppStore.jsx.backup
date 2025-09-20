@@ -1,5 +1,22 @@
+import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
+import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
+import { getSupabaseJWT } from "../utils/auth";
+import { isDemoModeEnabled, demoStorage } from "../utils/demoMode";
+
+// Import all API functions
+import { fetchBookings, createBooking, updateBooking, deleteBooking } from "../api/bookings";
+import { fetchCustomers, createCustomer, updateCustomer, deleteCustomer } from "../api/customers";
+import { fetchDrivers, createDriver, updateDriver, deleteDriver } from "../api/drivers";
+import { fetchVehicles } from "../api/vehicles.supabase";
+import { fetchInvoices, createInvoice, updateInvoice, deleteInvoice } from "../api/invoices";
+import { fetchPartners, createPartner, updatePartner, deletePartner } from "../api/partners";
+import { fetchExpenses, createExpense, updateExpense, deleteExpense } from "../api/expenses";
+import { fetchIncome, createIncome, updateIncome, deleteIncome } from "../api/income";
+import { fetchEstimations, createEstimation, updateEstimation, deleteEstimation } from "../api/estimations";
+import { fetchNotifications, createNotification, markNotificationAsRead, deleteNotification } from "../api/notifications";
+import { fetchActivityHistory, addActivityLog, clearActivityHistory } from "../api/activityHistory";
 
 const AppStoreContext = createContext();
 
@@ -37,49 +54,84 @@ export function AppStoreProvider({ children }) {
     currentView: 'month'
   });
 
-  // Safe localStorage utility functions
-  const safeLocalStorage = {
-    getItem: (key) => {
-      try {
-        return localStorage.getItem(key);
-      } catch (error) {
-        console.warn('localStorage access failed, using sessionStorage fallback:', error);
-        try {
-          return sessionStorage.getItem(key);
-        } catch (sessionError) {
-          console.warn('sessionStorage access also failed:', sessionError);
-          return null;
-        }
+  // Authentication error modal state
+  const [authErrorModal, setAuthErrorModal] = useState({
+    isOpen: false,
+    error: null
+  });
+
+  // Safe localStorage utility functions - now using demoStorage for explicit demo mode
+  const safeLocalStorage = demoStorage;
+
+  // Data loading function from Supabase APIs
+  const loadDataFromSupabase = async () => {
+    try {
+      console.log('Loading data from Supabase APIs...');
+      
+      // Load all data entities in parallel
+      const [
+        bookingsData,
+        customersData,
+        driversData,
+        vehiclesData,
+        invoicesData,
+        partnersData,
+        expensesData,
+        incomeData,
+        estimationsData,
+        notificationsData,
+        activityData
+      ] = await Promise.all([
+        fetchBookings(),
+        fetchCustomers(),
+        fetchDrivers(),
+        fetchVehicles(),
+        fetchInvoices(),
+        fetchPartners(),
+        fetchExpenses(),
+        fetchIncome(),
+        fetchEstimations(),
+        fetchNotifications(),
+        fetchActivityHistory()
+      ]);
+
+      // Update state with loaded data
+      setBookings(bookingsData || []);
+      setCustomers(customersData || []);
+      setDrivers(driversData || []);
+      setVehicles(vehiclesData || []);
+      setInvoices(invoicesData || []);
+      setPartners(partnersData || []);
+      setExpenses(expensesData || []);
+      setIncome(incomeData || []);
+      setEstimations(estimationsData || []);
+      setNotifications(notificationsData || []);
+      setActivityHistory(activityData || []);
+
+      console.log('Data loaded from Supabase successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to load data from Supabase:', error);
+      
+      // In demo mode, fall back to localStorage/demo data
+      if (isDemoModeEnabled()) {
+        console.log('Demo mode: Falling back to localStorage data');
+        loadDataFromLocalStorage();
       }
-    },
-    setItem: (key, value) => {
-      try {
-        localStorage.setItem(key, value);
-      } catch (error) {
-        console.warn('localStorage write failed, using sessionStorage fallback:', error);
-        try {
-          sessionStorage.setItem(key, value);
-        } catch (sessionError) {
-          console.warn('sessionStorage write also failed:', sessionError);
-        }
-      }
-    },
-    removeItem: (key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn('localStorage remove failed, using sessionStorage fallback:', error);
-        try {
-          sessionStorage.removeItem(key);
-        } catch (sessionError) {
-          console.warn('sessionStorage remove also failed:', sessionError);
-        }
-      }
+      return false;
     }
   };
 
-  // Load data from localStorage on mount
-  useEffect(() => {
+  // Legacy data loading from localStorage (for demo mode only)
+  const loadDataFromLocalStorage = () => {
+    if (!isDemoModeEnabled()) {
+      console.warn('Attempted to load from localStorage in production mode');
+      return;
+    }
+
+    console.log('Loading data from localStorage (demo mode)');
+    
+    // Load user data
     const storedUser = safeLocalStorage.getItem("currentUser");
     if (storedUser) {
       try {
@@ -90,31 +142,57 @@ export function AppStoreProvider({ children }) {
       }
     }
 
-    const storedBookings = safeLocalStorage.getItem("bookings");
-    if (storedBookings) {
-      try {
-        setBookings(JSON.parse(storedBookings));
-      } catch (error) {
-        console.warn('Failed to parse stored bookings data:', error);
-        initializeBookings();
-      }
-    } else {
-      initializeBookings();
-    }
+    // Load all other data from localStorage or initialize with demo data
+    const dataKeys = [
+      { key: "bookings", setter: setBookings, initializer: initializeBookings },
+      { key: "customers", setter: setCustomers, initializer: initializeCustomers },
+      { key: "drivers", setter: setDrivers, initializer: initializeDrivers },
+      { key: "vehicles", setter: setVehicles, initializer: initializeVehicles },
+      { key: "invoices", setter: setInvoices, initializer: initializeInvoices },
+      { key: "notifications", setter: setNotifications, initializer: initializeNotifications },
+      { key: "partners", setter: setPartners, initializer: initializePartners },
+      { key: "expenses", setter: setExpenses, initializer: initializeExpenses },
+      { key: "income", setter: setIncome, initializer: initializeIncome },
+      { key: "estimations", setter: setEstimations, initializer: initializeEstimations },
+      { key: "activityHistory", setter: setActivityHistory, initializer: () => setActivityHistory([]) }
+    ];
 
-    const storedCustomers = safeLocalStorage.getItem("customers");
-    if (storedCustomers) {
-      try {
-        setCustomers(JSON.parse(storedCustomers));
-      } catch (error) {
-        console.warn('Failed to parse stored customers data:', error);
-        initializeCustomers();
+    dataKeys.forEach(({ key, setter, initializer }) => {
+      const storedData = safeLocalStorage.getItem(key);
+      if (storedData) {
+        try {
+          setter(JSON.parse(storedData));
+        } catch (error) {
+          console.warn(`Failed to parse stored ${key} data:`, error);
+          initializer();
+        }
+      } else {
+        initializer();
       }
-    } else {
-      initializeCustomers();
-    }
+    });
+  };
 
-    const storedDrivers = safeLocalStorage.getItem("drivers");
+  // Load data on mount - prioritize Supabase, fallback to localStorage only in demo mode
+  useEffect(() => {
+    async function loadInitialData() {
+      // Check if we're authenticated and should load from Supabase
+      if (!isDemoModeEnabled()) {
+        // Production mode: load from Supabase
+        const loaded = await loadDataFromSupabase();
+        if (!loaded) {
+          console.error('Failed to load data from Supabase in production mode');
+        }
+      } else {
+        // Demo mode: load from localStorage or create demo data
+        loadDataFromLocalStorage();
+      }
+    }
+    
+    loadInitialData();
+
+  }, []);
+
+  const initializeBookings = () => {
     if (storedDrivers) {
       try {
         setDrivers(JSON.parse(storedDrivers));
@@ -287,41 +365,13 @@ export function AppStoreProvider({ children }) {
   };
 
   const initializeDrivers = () => {
-    const driverColors = [
-      '#3b82f6', // blue
-      '#10b981', // emerald
-      '#f59e42', // orange
-      '#6366f1', // indigo
-      '#ef4444', // red
-      '#f43f5e', // pink
-      '#22d3ee', // cyan
-      '#a3e635', // lime
-      '#eab308', // yellow
-      '#8b5cf6'  // violet
-    ];
     const sampleDrivers = [
-      { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8, color: driverColors[0] },
-      { id: 2, name: "Sarah Wilson", email: "sarah@example.com", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9, color: driverColors[1] },
-      { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7, color: driverColors[2] }
+      { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
+      { id: 2, name: "Sarah Wilson", email: "sarah@example.com", license: "D789012", phone: "555-0202", status: "busy", rating: 4.9 },
+      { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
     ];
     setDrivers(sampleDrivers);
     safeLocalStorage.setItem("drivers", JSON.stringify(sampleDrivers));
-  };
-
-  // Assign a color to a new driver automatically
-  const addDriver = (newDriver) => {
-    const driverColors = [
-      '#3b82f6', '#10b981', '#f59e42', '#6366f1', '#ef4444', '#f43f5e', '#22d3ee', '#a3e635', '#eab308', '#8b5cf6'
-    ];
-    // Find used colors
-    const usedColors = drivers.map(d => d.color);
-    // Pick next available color
-    const availableColor = driverColors.find(c => !usedColors.includes(c)) || driverColors[0];
-    const driverWithColor = { ...newDriver, color: availableColor };
-    const updatedDrivers = [...drivers, driverWithColor];
-    setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
-  };
   };
 
   const initializeVehicles = () => {
@@ -819,7 +869,7 @@ export function AppStoreProvider({ children }) {
   };
 
   // New workflow-specific functions
-  const confirmBooking = (bookingId) => {
+  const confirmBooking = async (bookingId) => {
     try {
       const booking = bookings.find(b => b.id === bookingId);
       if (!booking) return { success: false, error: 'Booking not found' };
@@ -837,13 +887,81 @@ export function AppStoreProvider({ children }) {
         generateInvoiceFromBooking(updatedBooking);
       }
       
+      // Send confirmation email to driver if driver is assigned
+      let emailResult = null;
+      if (updatedBooking.driver) {
+        const driver = drivers.find(d => d.name === updatedBooking.driver);
+        if (driver && driver.email) {
+          // Get JWT from Supabase session using the new auth utility
+          const authResult = await getSupabaseJWT();
+          
+          if (!authResult.success) {
+            // Show authentication error modal
+            setAuthErrorModal({
+              isOpen: true,
+              error: authResult.error
+            });
+            
+            // Still log the booking confirmation but mark email as failed
+            addActivityLog({
+              type: 'email_failed',
+              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${authResult.error}`,
+              relatedId: bookingId
+            });
+            
+            emailResult = { success: false, error: authResult.error, isAuthError: true };
+          } else {
+            const subject = 'Booking Confirmation - Priority Transfers';
+            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
+            emailResult = await sendDriverConfirmationEmail({
+              to: driver.email,
+              subject,
+              html,
+              supabaseJwt: authResult.jwt
+            });
+            
+            if (emailResult.success) {
+              console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
+              
+              addActivityLog({
+                type: 'email_sent',
+                description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
+                relatedId: bookingId
+              });
+            } else {
+              console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
+              
+              // Handle authentication errors
+              if (emailResult.isAuthError) {
+                setAuthErrorModal({
+                  isOpen: true,
+                  error: emailResult.error
+                });
+              }
+              
+              addActivityLog({
+                type: 'email_failed',
+                description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
+                relatedId: bookingId
+              });
+            }
+          }
+        } else {
+          console.warn(`⚠️  Driver ${updatedBooking.driver} not found or has no email address`);
+        }
+      }
+      
       addActivityLog({
         type: 'booking_confirmed',
-        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created`,
+        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : ''}`,
         relatedId: bookingId
       });
       
-      return { success: true };
+      return { 
+        success: true, 
+        emailSent: emailResult?.success || false,
+        emailError: emailResult?.success ? null : emailResult?.error
+      };
     } catch (error) {
       console.error('Failed to confirm booking:', error);
       return { success: false, error: 'Failed to confirm booking' };
@@ -1777,6 +1895,29 @@ export function AppStoreProvider({ children }) {
     }
   };
 
+  // Authentication error modal functions
+  const showAuthErrorModal = (error = null) => {
+    setAuthErrorModal({
+      isOpen: true,
+      error
+    });
+  };
+
+  const hideAuthErrorModal = () => {
+    setAuthErrorModal({
+      isOpen: false,
+      error: null
+    });
+  };
+
+  const handleReLogin = () => {
+    // Clear current user and redirect to login
+    logout();
+    hideAuthErrorModal();
+    // In a real app, this would navigate to login page
+    window.location.href = '/login';
+  };
+
   const value = {
     currentUser,
     bookings,
@@ -1791,6 +1932,7 @@ export function AppStoreProvider({ children }) {
     income,
     estimations,
     globalCalendarState,
+    authErrorModal,
     login,
     logout,
     addBooking,
@@ -1839,7 +1981,11 @@ export function AppStoreProvider({ children }) {
     deleteEstimation,
     convertEstimationToBooking,
     updateGlobalCalendarState,
-    resetGlobalCalendarFilters
+    resetGlobalCalendarFilters,
+    // Authentication modal functions
+    showAuthErrorModal,
+    hideAuthErrorModal,
+    handleReLogin
   };
 
   return (
