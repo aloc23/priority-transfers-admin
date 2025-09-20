@@ -1,9 +1,8 @@
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import App from "./App";
-import { AppStoreProvider } from "./context/AppStore";
+import { AppStoreProvider } from "./context/AppStore"; // make sure this is the correct file
 
-// Mount the app with AppStoreProvider and Router
 createRoot(document.getElementById("root")).render(
   <HashRouter>
     <AppStoreProvider>
