@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import supabase from "./utils/supabaseClient";
 import Login from "./pages/Login";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Fleet"; 
+import Bookings from "./pages/Bookings";   // corrected
 import Schedule from "./pages/Schedule";
 import Drivers from "./pages/Drivers";
-import Vehicles from "./pages/Fleet"; 
+import Vehicles from "./pages/Vehicles";   // corrected
 import Customers from "./pages/Customers";
-import Invoices from "./pages/Billing";
-import Expenses from "./pages/FinanceTracker"; 
-import Income from "./pages/FinanceTracker"; 
+import Invoices from "./pages/Invoices";   // corrected
+import Expenses from "./pages/Expenses";   // corrected
+import Income from "./pages/Income";       // corrected
 import Estimations from "./pages/Estimations";
 import Partners from "./pages/Partners";
 import Reports from "./pages/Reports";
@@ -22,7 +22,7 @@ import Outsource from "./pages/Outsource";
 import History from "./pages/History";
 import Signup from "./pages/Signup";
 
-// Components
+// Layout
 import Sidebar from "./components/Sidebar";
 import MobileTopbar from "./components/MobileTopbar";
 
@@ -32,17 +32,19 @@ export default function App() {
   useEffect(() => {
     let mounted = true;
 
+    // Initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) setSession(session);
     });
 
+    // Session listener
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setSession(session);
     });
 
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      sub?.subscription?.unsubscribe();
     };
   }, []);
 
@@ -54,14 +56,12 @@ export default function App() {
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main content area */}
+      {/* Main content */}
       <div className="flex flex-col flex-1">
         <MobileTopbar />
         <main className="flex-1 overflow-y-auto p-4">
           <Routes>
-            {/* ✅ Redirect root → dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/drivers" element={<Drivers />} />
