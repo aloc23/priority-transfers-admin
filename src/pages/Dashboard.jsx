@@ -151,10 +151,13 @@ export default function Dashboard() {
     deleteExpense(item.id);
   }
 
-  // File upload handler for expenses - Enhanced version
+  // Enhanced file upload handler for expenses using document processor
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    // Import document processor dynamically
+    const { documentProcessor } = await import('../utils/documentProcessor');
 
     // Show loading state
     const loadingToast = document.createElement('div');
@@ -166,7 +169,28 @@ export default function Dashboard() {
       let expensesToAdd = [];
       const fileName = file.name.toLowerCase();
 
-      if (fileName.endsWith('.csv')) {
+      // Use document processor for supported file types
+      if (fileName.endsWith('.pdf') || fileName.match(/\.(jpg|jpeg|png|webp)$/)) {
+        try {
+          expensesToAdd = await documentProcessor.processDocument(file);
+        } catch (processorError) {
+          console.warn('Document processor failed, falling back to manual entry:', processorError);
+          
+          // Fallback to manual entry for PDFs and images
+          const description = prompt(`Could not automatically extract data from ${file.name}. Enter expense description:`, 
+            `Document: ${file.name}`) || `Document: ${file.name}`;
+          const amount = prompt('Enter expense amount (€):');
+          if (amount && !isNaN(amount)) {
+            expensesToAdd = [{
+              date: new Date().toISOString().split('T')[0],
+              description: description,
+              amount: parseFloat(amount),
+              category: 'general',
+              source: 'document_manual'
+            }];
+          }
+        }
+      } else if (fileName.endsWith('.csv')) {
         // Enhanced CSV parsing
         const text = await file.text();
         const lines = text.split('\n').slice(1); // Skip header
@@ -178,7 +202,7 @@ export default function Dashboard() {
               date: date || new Date().toISOString().split('T')[0],
               description: description || 'Uploaded expense',
               amount: parseFloat(amount) || 0,
-              category: category || 'General'
+              category: category || 'general'
             };
           })
           .filter(expense => expense.amount > 0);
@@ -209,7 +233,8 @@ export default function Dashboard() {
             expensesToAdd.push({
               date: parsedDate,
               description: description || 'Uploaded expense',
-              amount: parseFloat(amountMatch[0]) || 0
+              amount: parseFloat(amountMatch[0]) || 0,
+              category: 'general'
             });
           }
         }
@@ -221,11 +246,12 @@ export default function Dashboard() {
           expensesToAdd = data.map(item => ({
             date: item.date || new Date().toISOString().split('T')[0],
             description: item.description || item.memo || item.details || 'Uploaded expense',
-            amount: parseFloat(item.amount || item.cost || item.value) || 0
+            amount: parseFloat(item.amount || item.cost || item.value) || 0,
+            category: item.category || 'general'
           })).filter(expense => expense.amount > 0);
         }
       } else {
-        // For other file types (PDF, Excel), show an enhanced dialog
+        // For other file types, show enhanced dialog
         const description = prompt('Enter expense description:', `Document: ${file.name}`) || `Document: ${file.name}`;
         const amount = prompt('Enter expense amount (€):');
         if (amount && !isNaN(amount)) {
@@ -233,6 +259,7 @@ export default function Dashboard() {
             date: new Date().toISOString().split('T')[0],
             description: description,
             amount: parseFloat(amount),
+            category: 'general',
             source: 'document'
           }];
         }
@@ -240,20 +267,31 @@ export default function Dashboard() {
 
       // Add all parsed expenses
       for (const expense of expensesToAdd) {
-        addExpense(expense);
+        await addExpense(expense);
       }
 
       // Remove loading toast
-      document.body.removeChild(loadingToast);
+      if (document.body.contains(loadingToast)) {
+        document.body.removeChild(loadingToast);
+      }
 
       // Show success message
       const successToast = document.createElement('div');
       successToast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      successToast.textContent = expensesToAdd.length > 0 
-        ? `Successfully uploaded ${expensesToAdd.length} expense(s) from ${file.name}` 
-        : `No valid expense data found in ${file.name}`;
+      
+      if (expensesToAdd.length > 0) {
+        const totalAmount = expensesToAdd.reduce((sum, exp) => sum + exp.amount, 0);
+        successToast.textContent = `✓ Added ${expensesToAdd.length} expense(s) totaling €${totalAmount.toFixed(2)} from ${file.name}`;
+      } else {
+        successToast.textContent = `No valid expense data found in ${file.name}`;
+      }
+      
       document.body.appendChild(successToast);
-      setTimeout(() => document.body.removeChild(successToast), 5000);
+      setTimeout(() => {
+        if (document.body.contains(successToast)) {
+          document.body.removeChild(successToast);
+        }
+      }, 5000);
 
     } catch (error) {
       console.error('File upload error:', error);
@@ -268,7 +306,11 @@ export default function Dashboard() {
       errorToast.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
       errorToast.textContent = `Error processing ${file.name}: ${error.message}. Please check the format and try again.`;
       document.body.appendChild(errorToast);
-      setTimeout(() => document.body.removeChild(errorToast), 7000);
+      setTimeout(() => {
+        if (document.body.contains(errorToast)) {
+          document.body.removeChild(errorToast);
+        }
+      }, 7000);
     } finally {
       // Reset file input
       event.target.value = '';
@@ -524,17 +566,17 @@ export default function Dashboard() {
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileUpload}
-                      accept=".csv,.xlsx,.xls,.pdf,.txt,.json"
+                      accept=".csv,.xlsx,.xls,.pdf,.txt,.json,.jpg,.jpeg,.png,.webp"
                       style={{ display: 'none' }}
-                      aria-label="Upload expense document"
+                      aria-label="Upload expense document or receipt image"
                     />
                     <button 
-                      className="btn btn-outline flex items-center gap-2" 
+                      className="btn btn-outline flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300 transition-colors" 
                       onClick={() => fileInputRef.current?.click()}
-                      title="Upload expense documents (CSV, Excel, PDF, TXT, JSON)"
+                      title="Upload documents (PDF, images) or data files (CSV, Excel, TXT, JSON). Supports OCR for receipt scanning!"
                     >
                       <UploadIcon className="w-4 h-4" />
-                      Upload Document
+                      Smart Upload
                     </button>
                     <button className="btn btn-primary" onClick={() => setShowExpenseModal(true)}>Add Expense</button>
                   </div>
@@ -606,6 +648,23 @@ export default function Dashboard() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Smart Upload Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                    🤖 Smart Upload Capabilities
+                  </h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <div>• <strong>PDF Documents:</strong> Automatically extracts text and identifies expense amounts</div>
+                    <div>• <strong>Receipt Images:</strong> Uses OCR to scan JPG/PNG receipts and extract data</div>
+                    <div>• <strong>CSV/Excel Files:</strong> Imports structured expense data</div>
+                    <div>• <strong>Mobile Friendly:</strong> The expense modal supports camera receipt scanning on mobile devices</div>
+                  </div>
+                  <div className="text-xs text-blue-600 mt-2">
+                    Tip: All extracted data is automatically categorized and synchronized across the application!
+                  </div>
+                </div>
+
                 {/* Expense Modal */}
                 {showExpenseModal && (
                   <ExpenseModal

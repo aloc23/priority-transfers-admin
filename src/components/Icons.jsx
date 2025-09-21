@@ -32,7 +32,8 @@ import {
   PhoneIcon,
   StarIcon,
   ArrowRightOnRectangleIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  CameraIcon
 } from '@heroicons/react/24/outline';
 
 import {
@@ -208,6 +209,9 @@ export const ChevronRightIcon = ({ className = "w-4 h-4", ...props }) => (
     <polyline points="9,18 15,12 9,6"/>
   </svg>
 );
+
+// Camera icon for receipt scanning
+export { CameraIcon };
 
 // Logout/Sign out icon
 export const LogoutIcon = ArrowRightOnRectangleIcon;
