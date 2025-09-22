@@ -1,8 +1,21 @@
-import supabase from './supabaseClient';
+import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
 
 /**
  * Authentication utilities for managing Supabase JWT tokens
  */
+
+/**
+ * Get standardized headers for Supabase direct API calls (REST/functions)
+ * @param {string} accessToken - The user's JWT access token
+ * @returns {Object} - Headers object with both Authorization and apikey
+ */
+export function getSupabaseApiHeaders(accessToken) {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': SUPABASE_ANON_KEY,
+  };
+}
 
 /**
  * Get the current Supabase JWT token with validation

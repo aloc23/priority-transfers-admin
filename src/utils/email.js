@@ -1,4 +1,18 @@
 // Email notification utility using Supabase Edge Function
+import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
+
+/**
+ * Get standardized headers for Supabase API calls
+ * @param {string} accessToken - The user's JWT access token
+ * @returns {Object} - Headers object with both Authorization and apikey
+ */
+export function getSupabaseHeaders(accessToken) {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': SUPABASE_ANON_KEY,
+  };
+}
 
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
@@ -106,10 +120,7 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseJwt}`,
-      },
+      headers: getSupabaseHeaders(supabaseJwt),
       body: JSON.stringify({
         to,
         subject,

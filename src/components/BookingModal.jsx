@@ -1,4 +1,4 @@
-import { sendDriverEmailNotification } from '../utils/email';
+import { sendDriverEmailNotification, sendDriverConfirmationEmail, generateBookingConfirmationHTML } from '../utils/email';
 import { getSupabaseJWT } from '../utils/auth';
 import { useState, useEffect } from 'react';
 import { calculateTotalPrice } from '../utils/priceCalculator';
@@ -478,34 +478,25 @@ export default function BookingModal({
             return;
           }
 
-          fetch('https://hepfwlezvvfdbkoqujhh.supabase.co/functions/v1/sendDriverConfirmation-ts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authResult.jwt}`
-            },
-            body: JSON.stringify({ to: driverObj.email, subject, html })
-          })
-          .then(async res => {
-            if (res.status === 401) {
-              // Show authentication error modal instead of alert
-              showAuthErrorModal('Your login token is missing or invalid. Please log out and log in again with a Supabase account.');
-              console.error('401 Unauthorized: JWT missing or invalid.');
-              return;
-            }
-            const data = await res.json();
-            if (data.error) {
-              console.error('Error from Edge Function:', data.error);
-              alert('Error sending confirmation email: ' + data.error);
-            } else {
-              console.log('Driver confirmation email sent:', data);
-              alert('Driver confirmation email sent successfully!');
-            }
-          })
-          .catch(err => {
-            console.error('Fetch error:', err);
-            alert('Network error sending confirmation email: ' + err.message);
+          // Use the standardized email utility function
+          const emailResult = await sendDriverConfirmationEmail({
+            to: driverObj.email,
+            subject,
+            html,
+            supabaseJwt: authResult.jwt
           });
+
+          if (emailResult.success) {
+            console.log('Driver confirmation email sent:', emailResult.data);
+            alert('Driver confirmation email sent successfully!');
+          } else {
+            if (emailResult.isAuthError) {
+              showAuthErrorModal(emailResult.error);
+            } else {
+              console.error('Error sending confirmation email:', emailResult.error);
+              alert('Error sending confirmation email: ' + emailResult.error);
+            }
+          }
         })();
       }
     }
