@@ -2,9 +2,6 @@ import { useState } from "react";
 import supabase from '../utils/supabaseClient';
 import { Navigate } from "react-router-dom";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

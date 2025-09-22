@@ -4,9 +4,6 @@ import supabase from '../utils/supabaseClient';
 import { Navigate } from "react-router-dom";
 import { isAdmin } from "../utils/adminUtils";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
