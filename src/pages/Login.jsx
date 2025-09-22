@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
 import supabase from '../utils/supabaseClient';
 import { Navigate } from "react-router-dom";
+import { isAdmin } from "../utils/adminUtils";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -75,6 +76,11 @@ export default function Login() {
           userRole = profile.role || "User";
           userName = profile.full_name || data.user.email;
           console.log('Found existing profile with role:', userRole);
+          
+          // Verify admin role consistency
+          if (isAdmin({ role: userRole })) {
+            console.log('✓ Admin user detected from Supabase profile');
+          }
         } else {
           // No profile found, create one using metadata role or default
           const userMeta = data.user.user_metadata || {};

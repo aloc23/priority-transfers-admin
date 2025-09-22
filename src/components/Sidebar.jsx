@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { useResponsive } from "../hooks/useResponsive";
+import { isAdmin } from "../utils/adminUtils";
 import ManagementNav from "./ManagementNav";
 import {
   DashboardIcon,
@@ -81,7 +82,12 @@ const navSections = [
 export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const { currentUser, logout } = useAppStore();
   const { isMobile, isSmallMobile } = useResponsive();
-  const shouldShowNavItem = (item) => item.roles.includes(currentUser?.role);
+  
+  // Admin users can see all navigation items
+  const shouldShowNavItem = (item) => {
+    return isAdmin(currentUser) || item.roles.includes(currentUser?.role);
+  };
+  
   const closeSidebarOnMobile = () => { if (isMobile) setSidebarOpen(false); };
 
   // Handle sidebar toggle with localStorage for desktop
@@ -299,8 +305,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                     <div className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-xs'} leading-tight truncate`}>
                       {currentUser?.email || currentUser?.name}
                     </div>
-                    <div className={`text-granite-400 ${isMobile ? 'text-sm' : 'text-xs'} leading-tight`}>
-                      ({currentUser?.role})
+                    <div className={`text-granite-400 ${isMobile ? 'text-sm' : 'text-xs'} leading-tight flex items-center gap-2`}>
+                      <span>({currentUser?.role})</span>
+                      {isAdmin(currentUser) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Admin
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

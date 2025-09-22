@@ -23,6 +23,7 @@ import FloatingHamburger from "./components/FloatingHamburger";
 import AuthErrorModal from "./components/AuthErrorModal";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { isAdmin } from "./utils/adminUtils";
 
 function AuthenticatedShell() {
   const { currentUser, authErrorModal, hideAuthErrorModal, handleReLogin } = useAppStore();
@@ -113,9 +114,15 @@ function RequireAuth({children}){
   if(!currentUser) return <Navigate to="/login" replace />;
   return children;
 }
+
 function RequireRole({children, roles}){
   const { currentUser } = useAppStore();
   if(!currentUser) return <Navigate to="/login" replace />;
+  
+  // Admin users have access to everything
+  if(isAdmin(currentUser)) return children;
+  
+  // Non-admin users must have the required role
   if(!roles.includes(currentUser.role)) return <Navigate to="/" replace />;
   return children;
 }
