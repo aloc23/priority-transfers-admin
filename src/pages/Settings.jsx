@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { fetchSettings, saveSettings } from "../api/settings";
-import { getAllUserProfiles, updateUserRole } from "../api/adminSettings";
-import { isAdmin } from "../utils/adminUtils";
+import { getAllUserProfiles, updateUserRole, verifyAdminAccess } from "../api/adminSettings";
+import { isAdmin, validateAdminOperation } from "../utils/adminUtils";
 import { 
   CustomerIcon, 
   NotificationIcon, 
@@ -135,9 +135,22 @@ export default function Settings() {
     if (isAdmin(currentUser)) {
       async function loadUserProfiles() {
         try {
+          // Validate admin operation first
+          const validation = validateAdminOperation(currentUser, 'access_all_data');
+          if (!validation.allowed) {
+            console.warn('User management access denied:', validation.error);
+            return;
+          }
+
           const result = await getAllUserProfiles(currentUser);
           if (result.success) {
             setUserProfiles(result.profiles);
+            
+            // Also verify admin access status
+            const accessResult = await verifyAdminAccess(currentUser);
+            if (accessResult.success) {
+              console.log('✓ Admin access verified for Settings page');
+            }
           }
         } catch (error) {
           console.error('Error loading user profiles:', error);

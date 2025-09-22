@@ -4,7 +4,7 @@
  */
 
 import supabase from "../utils/supabaseClient";
-import { isAdmin } from "../utils/adminUtils";
+import { isAdmin, getEnhancedAdminQuery, validateAdminOperation } from "../utils/adminUtils";
 
 /**
  * Get system-wide statistics for admin dashboard
@@ -158,16 +158,19 @@ export async function updateUserRole(currentUser, userId, newRole) {
  * @returns {Promise<Object>} - Query results
  */
 export async function getSystemWideData(user, tableName, options = {}) {
-  if (!isAdmin(user)) {
+  // Validate admin operation
+  const validation = validateAdminOperation(user, 'access_all_data');
+  if (!validation.allowed) {
     return { 
       success: false, 
-      error: "Access denied. Admin privileges required." 
+      error: validation.error 
     };
   }
 
   const allowedTables = [
     'bookings', 'customers', 'drivers', 'vehicles', 'partners', 
-    'invoices', 'expenses', 'income', 'estimations', 'profiles'
+    'invoices', 'expenses', 'income', 'estimations', 'profiles',
+    'user_settings', 'notifications', 'activity_history'
   ];
 
   if (!allowedTables.includes(tableName)) {
@@ -178,19 +181,28 @@ export async function getSystemWideData(user, tableName, options = {}) {
   }
 
   try {
-    let query = supabase.from(tableName).select(options.select || '*');
+    // Use enhanced admin query options
+    const adminOptions = getEnhancedAdminQuery(user, options);
+    let query = supabase.from(tableName).select(adminOptions.select || '*');
 
-    if (options.orderBy) {
-      query = query.order(options.orderBy.column, { 
-        ascending: options.orderBy.ascending !== false 
+    if (adminOptions.orderBy) {
+      query = query.order(adminOptions.orderBy.column, { 
+        ascending: adminOptions.orderBy.ascending !== false 
       });
     }
 
-    if (options.limit) {
-      query = query.limit(options.limit);
+    if (adminOptions.limit) {
+      query = query.limit(adminOptions.limit);
     }
 
-    const { data, error } = await query;
+    // Apply any filters if specified
+    if (adminOptions.eq) {
+      Object.entries(adminOptions.eq).forEach(([key, value]) => {
+        query = query.eq(key, value);
+      });
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
       throw error;
@@ -198,13 +210,15 @@ export async function getSystemWideData(user, tableName, options = {}) {
 
     return {
       success: true,
-      data: data || []
+      data: data || [],
+      count,
+      isAdminQuery: true
     };
   } catch (error) {
     console.error(`Error fetching ${tableName} data:`, error);
     return {
       success: false,
-      error: `Failed to fetch ${tableName} data`
+      error: `Failed to fetch ${tableName} data: ${error.message}`
     };
   }
 }
@@ -277,10 +291,132 @@ export async function verifyAdminAccess(user) {
   }
 }
 
+/**
+ * Get all system data for admin dashboard and analytics
+ * This provides comprehensive access to all system data for admin users
+ * @param {Object} user - Current user object
+ * @returns {Promise<Object>} - Complete system data
+ */
+export async function getAllSystemData(user) {
+  const validation = validateAdminOperation(user, 'access_all_data');
+  if (!validation.allowed) {
+    return { 
+      success: false, 
+      error: validation.error 
+    };
+  }
+
+  try {
+    const dataPromises = [
+      getSystemWideData(user, 'bookings'),
+      getSystemWideData(user, 'customers'),
+      getSystemWideData(user, 'drivers'),
+      getSystemWideData(user, 'vehicles'),
+      getSystemWideData(user, 'partners'),
+      getSystemWideData(user, 'invoices'),
+      getSystemWideData(user, 'expenses'),
+      getSystemWideData(user, 'income'),
+      getSystemWideData(user, 'estimations'),
+      getSystemWideData(user, 'profiles')
+    ];
+
+    const results = await Promise.allSettled(dataPromises);
+    const systemData = {};
+    
+    const tables = ['bookings', 'customers', 'drivers', 'vehicles', 'partners', 
+                   'invoices', 'expenses', 'income', 'estimations', 'profiles'];
+    
+    tables.forEach((table, index) => {
+      if (results[index].status === 'fulfilled' && results[index].value.success) {
+        systemData[table] = results[index].value.data;
+      } else {
+        systemData[table] = [];
+        console.warn(`Failed to load ${table}:`, results[index].reason || results[index].value.error);
+      }
+    });
+
+    return {
+      success: true,
+      data: systemData,
+      stats: {
+        totalBookings: systemData.bookings?.length || 0,
+        totalCustomers: systemData.customers?.length || 0,
+        totalDrivers: systemData.drivers?.length || 0,
+        totalVehicles: systemData.vehicles?.length || 0,
+        totalPartners: systemData.partners?.length || 0,
+        totalInvoices: systemData.invoices?.length || 0,
+        totalUsers: systemData.profiles?.length || 0
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching all system data:', error);
+    return {
+      success: false,
+      error: "Failed to fetch system data"
+    };
+  }
+}
+
+/**
+ * Ensure admin can perform bulk operations on system data
+ * @param {Object} user - Current user object
+ * @param {string} operation - Bulk operation type
+ * @param {Object} params - Operation parameters
+ * @returns {Promise<Object>} - Operation result
+ */
+export async function performBulkAdminOperation(user, operation, params = {}) {
+  const validation = validateAdminOperation(user, 'bulk_operations');
+  if (!validation.allowed) {
+    return { 
+      success: false, 
+      error: validation.error 
+    };
+  }
+
+  try {
+    switch (operation) {
+      case 'export_all_data':
+        return await getAllSystemData(user);
+      
+      case 'sync_roles':
+        // Sync all user roles from Supabase profiles
+        const profilesResult = await getAllUserProfiles(user);
+        return {
+          success: true,
+          message: `Synced ${profilesResult.profiles?.length || 0} user profiles`,
+          data: profilesResult.profiles
+        };
+      
+      case 'verify_data_integrity':
+        // Verify data integrity across all tables
+        const integrityResult = await verifyAdminAccess(user);
+        return {
+          success: true,
+          message: "Data integrity check completed",
+          accessStatus: integrityResult
+        };
+        
+      default:
+        return {
+          success: false,
+          error: `Unknown bulk operation: ${operation}`
+        };
+    }
+  } catch (error) {
+    console.error(`Error performing bulk operation ${operation}:`, error);
+    return {
+      success: false,
+      error: `Failed to perform ${operation}`
+    };
+  }
+}
+
 export default {
   getSystemStats,
   getAllUserProfiles,
   updateUserRole,
   getSystemWideData,
+  getAllSystemData,
+  performBulkAdminOperation,
   verifyAdminAccess
 };

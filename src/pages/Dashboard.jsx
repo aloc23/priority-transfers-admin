@@ -22,6 +22,7 @@ import FleetDriverChecker from "../components/FleetDriverChecker";
 import AdminDashboard from "../components/AdminDashboard";
 import { calculateKPIs } from '../utils/kpi';
 import { isAdmin } from '../utils/adminUtils';
+import { logAdminStatus } from '../utils/adminAccessTest';
 
 export default function Dashboard() {
   const { currentUser, income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
@@ -340,6 +341,12 @@ export default function Dashboard() {
         subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         plain={true}
       />
+
+      {/* Log admin status for debugging */}
+      {(() => {
+        logAdminStatus(currentUser);
+        return null;
+      })()}
 
       {/* Admin Dashboard - Only visible to admin users */}
       {isAdmin(currentUser) && <AdminDashboard />}

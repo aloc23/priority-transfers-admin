@@ -10,7 +10,11 @@ import supabase from "./supabaseClient";
  * @returns {boolean} - True if user has admin role
  */
 export function isAdmin(user) {
-  return user?.role === 'Admin' || user?.role === 'admin';
+  if (!user || !user.role) return false;
+  
+  // Support multiple admin role formats for flexibility
+  const role = user.role.toLowerCase();
+  return role === 'admin' || role === 'administrator' || role === 'super_admin';
 }
 
 /**
@@ -61,7 +65,7 @@ export async function verifyAdminProfile(userId) {
       };
     }
     
-    const isAdminUser = profile.role === 'admin' || profile.role === 'Admin';
+    const isAdminUser = isAdmin({ role: profile.role });
     
     return {
       success: true,
@@ -90,16 +94,71 @@ export async function executeWithAdminOverride(user, standardQuery, adminQuery =
   if (isAdmin(user) && adminQuery) {
     // Execute admin-specific query if provided
     return await adminQuery();
+  } else if (isAdmin(user)) {
+    // For admin users, execute standard query without restrictions
+    return await standardQuery();
   } else {
-    // Execute standard query
+    // Execute standard query (may have user-specific filters)
     return await standardQuery();
   }
+}
+
+/**
+ * Get enhanced query options for admins that bypass normal restrictions
+ * @param {Object} user - Current user object
+ * @param {Object} baseOptions - Base query options
+ * @returns {Object} - Enhanced query options for admins
+ */
+export function getEnhancedAdminQuery(user, baseOptions = {}) {
+  if (isAdmin(user)) {
+    // For admin users, ensure no restrictive filters are applied
+    return {
+      ...baseOptions,
+      // Remove any user-specific filters that might restrict admin access
+      filters: {},
+      // Ensure admin sees all data
+      includeDeleted: true,
+      includeArchived: true,
+      bypassRLS: false, // RLS policies handle admin access in database
+    };
+  }
+  return baseOptions;
+}
+
+/**
+ * Validate admin permissions for sensitive operations
+ * @param {Object} user - Current user object
+ * @param {string} operation - Operation being performed
+ * @returns {Object} - Validation result
+ */
+export function validateAdminOperation(user, operation) {
+  const adminUser = isAdmin(user);
+  
+  const sensitiveOperations = [
+    'delete_user', 'modify_user_role', 'access_all_data',
+    'system_settings', 'bulk_operations', 'export_data'
+  ];
+  
+  if (sensitiveOperations.includes(operation) && !adminUser) {
+    return {
+      allowed: false,
+      error: `Operation '${operation}' requires admin privileges`
+    };
+  }
+  
+  return {
+    allowed: true,
+    isAdmin: adminUser,
+    userRole: user?.role
+  };
 }
 
 export default {
   isAdmin,
   hasFullDataAccess,
   getAdminQueryOptions,
+  getEnhancedAdminQuery,
   verifyAdminProfile,
-  executeWithAdminOverride
+  executeWithAdminOverride,
+  validateAdminOperation
 };
