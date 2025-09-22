@@ -488,13 +488,33 @@ export default function BookingModal({
 
           if (emailResult.success) {
             console.log('Driver confirmation email sent:', emailResult.data);
-            alert('Driver confirmation email sent successfully!');
+            // Show success notification instead of alert
+            const notificationMessage = `Driver confirmation email sent successfully to ${driverObj.email}!`;
+            console.info(notificationMessage);
+            
+            // You can replace this with a toast notification if available
+            alert(notificationMessage);
           } else {
             if (emailResult.isAuthError) {
               showAuthErrorModal(emailResult.error);
+            } else if (emailResult.isConfigError) {
+              console.error('Configuration error:', emailResult.error);
+              alert(`Configuration error: ${emailResult.error}\n\nPlease contact support to resolve this issue.`);
+            } else if (emailResult.isNetworkError) {
+              console.error('Network error sending confirmation email:', emailResult.error);
+              alert(`Network error: ${emailResult.error}\n\nPlease check your connection and try again.`);
             } else {
               console.error('Error sending confirmation email:', emailResult.error);
-              alert('Error sending confirmation email: ' + emailResult.error);
+              
+              // Provide more user-friendly error messages
+              let userMessage = emailResult.error;
+              if (emailResult.statusCode === 406) {
+                userMessage = 'Email service configuration issue. Please contact support.';
+              } else if (emailResult.statusCode >= 500) {
+                userMessage = 'Email service temporarily unavailable. The booking was saved but the notification email could not be sent.';
+              }
+              
+              alert(`Error sending confirmation email: ${userMessage}`);
             }
           }
         })();

@@ -1,18 +1,6 @@
 // Email notification utility using Supabase Edge Function
 import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
-
-/**
- * Get standardized headers for Supabase API calls
- * @param {string} accessToken - The user's JWT access token
- * @returns {Object} - Headers object with both Authorization and apikey
- */
-export function getSupabaseHeaders(accessToken) {
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'apikey': SUPABASE_ANON_KEY,
-  };
-}
+import { getSupabaseApiHeaders, validateSupabaseConfig } from './auth';
 
 export async function sendDriverEmailNotification({ driverEmail, subject, message }) {
   // Simulate sending email (replace with real API call)
@@ -118,9 +106,25 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
   try {
     console.log('Sending driver confirmation email...', { to, subject });
     
+    // Validate Supabase configuration before making the request
+    const configValidation = validateSupabaseConfig();
+    if (!configValidation.isValid) {
+      console.error('Supabase configuration invalid:', configValidation.issues);
+      return {
+        success: false,
+        error: `Configuration error: ${configValidation.issues.join(', ')}`,
+        isConfigError: true
+      };
+    }
+    
+    // Use the standardized header function from auth.js
+    const headers = getSupabaseApiHeaders(supabaseJwt);
+    
+    console.log('Request headers:', Object.keys(headers)); // Log header names for debugging
+    
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: getSupabaseHeaders(supabaseJwt),
+      headers: headers,
       body: JSON.stringify({
         to,
         subject,
@@ -128,12 +132,34 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       })
     });
 
-    const result = await response.json();
-    
+    // Check if response is ok first, then try to parse JSON
     if (response.ok) {
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.warn('Response was successful but not valid JSON:', jsonError);
+        result = { message: 'Email sent successfully' };
+      }
+      
       console.log('Driver confirmation email sent successfully:', result);
       return { success: true, data: result };
     } else {
+      // Try to get error details from response
+      let errorDetails;
+      try {
+        errorDetails = await response.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, use response text or status
+        try {
+          errorDetails = { error: await response.text() };
+        } catch (textError) {
+          errorDetails = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+      }
+      
+      console.error(`Failed to send driver confirmation email (${response.status}):`, errorDetails);
+      
       // Handle specific error cases
       if (response.status === 401) {
         console.error('401 Unauthorized: JWT missing or invalid');
@@ -142,20 +168,44 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
           error: 'Authentication failed. Please log in again.',
           isAuthError: true
         };
+      } else if (response.status === 406) {
+        console.error('406 Not Acceptable: API key or content type issue');
+        return {
+          success: false,
+          error: 'Request format not accepted by server. Please try again.',
+          statusCode: response.status
+        };
+      } else if (response.status >= 500) {
+        console.error('Server error:', response.status);
+        return {
+          success: false,
+          error: 'Server error occurred. Please try again later.',
+          statusCode: response.status
+        };
       }
       
-      console.error('Failed to send driver confirmation email:', result);
       return { 
         success: false, 
-        error: result.error || 'Failed to send email',
+        error: errorDetails.error || errorDetails.message || 'Failed to send email',
         statusCode: response.status
       };
     }
   } catch (error) {
     console.error('Error sending driver confirmation email:', error);
+    
+    // Provide specific error messages for different types of network errors
+    let errorMessage = 'Network error occurred';
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      errorMessage = 'Unable to connect to email service. Please check your internet connection.';
+    } else if (error.name === 'AbortError') {
+      errorMessage = 'Request timed out. Please try again.';
+    } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+      errorMessage = 'CORS error: Email service not properly configured.';
+    }
+    
     return { 
       success: false, 
-      error: error.message || 'Network error occurred',
+      error: error.message || errorMessage,
       isNetworkError: true
     };
   }
