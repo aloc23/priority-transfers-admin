@@ -43,8 +43,8 @@ export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick 
         {/* Main Management toggle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-100 text-left transition-all duration-200 text-sm font-medium ${
-            isManagementActive ? 'bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 shadow-sm' : 'text-white hover:text-slate-900'
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-sidebar-active-alt text-left transition-all duration-200 text-sm font-medium ${
+            isManagementActive ? 'bg-sidebar-active text-white shadow-sm' : 'text-granite-200 hover:text-white'
           } ${isMobile ? 'min-h-[44px]' : ''}`}
           aria-expanded={isExpanded}
           aria-label={sidebarOpen ? "Management menu" : "Management"}
@@ -76,14 +76,14 @@ export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick 
 
         {/* Sub-navigation */}
         {sidebarOpen && (isExpanded || isManagementActive) && (
-          <ul className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3">
+          <ul className="ml-4 mt-1 space-y-1 border-l border-slate-500 pl-3">
             {allowedRoutes.map(route => (
               <li key={route.path}>
                 <NavLink
                   to={route.path}
                   className={({ isActive }) =>
-                    `block px-3 py-2 text-sm rounded-lg hover:bg-slate-100 transition-all duration-200 ${
-                      isActive ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 font-medium' : 'text-white hover:text-slate-900'
+                    `block px-3 py-2 text-sm rounded-lg hover:bg-sidebar-active-alt transition-all duration-200 ${
+                      isActive ? 'bg-sidebar-active text-white font-medium' : 'text-granite-300 hover:text-white'
                     } ${isMobile ? 'min-h-[44px] flex items-center' : ''}`
                   }
                   onClick={handleLinkClick}
