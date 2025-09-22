@@ -27,21 +27,41 @@ export default function Signup() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    // Supabase Auth signup with role in user_metadata
-    const { error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { role }
+    
+    try {
+      // Supabase Auth signup with role in user_metadata
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { role }
+        }
+      });
+      
+      if (signupError) {
+        setError(signupError.message);
+        setIsLoading(false);
+        return;
       }
-    });
-    if (signupError) {
-      setError(signupError.message);
+      
+      // If signup was successful and user is immediately available, create profile
+      if (data.user && !data.user.identities?.length) {
+        // User already exists
+        setError("User already exists. Please log in instead.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // For new users, the profile will be created on first login
+      // This handles the email confirmation flow properly
+      setIsSignedUp(true);
       setIsLoading(false);
-      return;
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
     }
-    setIsSignedUp(true);
-    setIsLoading(false);
   };
 
   return (

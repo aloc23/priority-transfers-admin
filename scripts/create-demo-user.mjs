@@ -26,6 +26,23 @@ try {
   });
   if (error) throw error;
   console.log('Created user:', data.user.id, data.user.email);
+  
+  // Also create the profile record to ensure role is available
+  const { data: profile, error: profileError } = await admin
+    .from('profiles')
+    .insert([{
+      id: data.user.id,
+      full_name: 'Demo Admin User',
+      role: 'admin'
+    }])
+    .select()
+    .single();
+    
+  if (profileError) {
+    console.error('Profile creation error (user still created):', profileError.message);
+  } else {
+    console.log('Created profile:', profile.id, profile.role);
+  }
 } catch (e) {
   console.error('Failed to create user:', e.message);
   process.exit(1);

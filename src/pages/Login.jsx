@@ -49,17 +49,68 @@ export default function Login() {
         setIsLoading(false);
         return;
       }
-      // Use Supabase user data for app state, get role from user_metadata
-  // Debug log: Show Supabase session and access_token after login
-  const sessionResult = await supabase.auth.getSession();
-  console.log('Supabase session after login:', sessionResult);
-  console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
-      const userMeta = data.user.user_metadata || {};
+      // Use Supabase user data for app state, get role from profiles table (authoritative)
+      // Debug log: Show Supabase session and access_token after login
+      const sessionResult = await supabase.auth.getSession();
+      console.log('Supabase session after login:', sessionResult);
+      console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
+      
+      // First check if user has a profile, create if not exists
+      let userRole = "User"; // Default role
+      let userName = data.user.email;
+      
+      try {
+        // Check for existing profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+          // Error other than "not found"
+          console.error('Profile lookup error:', profileError);
+        } else if (profile) {
+          // Profile exists, use its role
+          userRole = profile.role || "User";
+          userName = profile.full_name || data.user.email;
+          console.log('Found existing profile with role:', userRole);
+        } else {
+          // No profile found, create one using metadata role or default
+          const userMeta = data.user.user_metadata || {};
+          const metadataRole = userMeta.role || "User";
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: data.user.id,
+              full_name: data.user.email,
+              role: metadataRole
+            }])
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error('Profile creation error:', createError);
+            // Use metadata role as fallback
+            userRole = metadataRole;
+          } else {
+            userRole = newProfile.role || "User";
+            console.log('Created new profile with role:', userRole);
+          }
+        }
+      } catch (error) {
+        console.error('Profile management error:', error);
+        // Fallback to user metadata
+        const userMeta = data.user.user_metadata || {};
+        userRole = userMeta.role || "User";
+      }
+      
       login({
         id: data.user.id,
-        name: data.user.email,
+        name: userName,
         email: data.user.email,
-        role: userMeta.role || "User"
+        role: userRole
       });
       setIsLoading(false);
     }

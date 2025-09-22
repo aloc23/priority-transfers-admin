@@ -19,7 +19,9 @@ import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
+import AdminDashboard from "../components/AdminDashboard";
 import { calculateKPIs } from '../utils/kpi';
+import { isAdmin } from '../utils/adminUtils';
 
 export default function Dashboard() {
   const { currentUser, income, expenses, invoices, bookings, customers, drivers, partners, estimations, activityHistory, refreshAllData, addIncome, addExpense, updateIncome, updateExpense, deleteIncome, deleteExpense, updateBooking, generateInvoiceFromBooking, markInvoiceAsPaid } = useAppStore();
@@ -338,6 +340,9 @@ export default function Dashboard() {
         subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         plain={true}
       />
+
+      {/* Admin Dashboard - Only visible to admin users */}
+      {isAdmin(currentUser) && <AdminDashboard />}
 
       {/* Dashboard Tabs - moved below header, KPI cards removed (now handled by SmartDashboardWidget) */}
       <div className="border-b border-slate-200">
