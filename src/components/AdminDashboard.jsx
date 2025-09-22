@@ -3,95 +3,15 @@
  * Only visible to users with admin role
  */
 
-import { useState, useEffect } from 'react';
 import { useAppStore } from '../context/AppStore';
 import { isAdmin } from '../utils/adminUtils';
-import { 
-  getSystemStats, 
-  getAllUserProfiles, 
-  updateUserRole, 
-  verifyAdminAccess 
-} from '../api/adminSettings';
 
 export default function AdminDashboard() {
   const { currentUser } = useAppStore();
-  const [systemStats, setSystemStats] = useState(null);
-  const [userProfiles, setUserProfiles] = useState([]);
-  const [accessStatus, setAccessStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Only render for admin users
   if (!isAdmin(currentUser)) {
     return null;
-  }
-
-  useEffect(() => {
-    loadAdminData();
-  }, []);
-
-  const loadAdminData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [statsResult, profilesResult, accessResult] = await Promise.all([
-        getSystemStats(currentUser),
-        getAllUserProfiles(currentUser),
-        verifyAdminAccess(currentUser)
-      ]);
-
-      if (statsResult.success) {
-        setSystemStats(statsResult.stats);
-      }
-
-      if (profilesResult.success) {
-        setUserProfiles(profilesResult.profiles);
-      }
-
-      if (accessResult.success) {
-        setAccessStatus(accessResult);
-      }
-
-      if (!statsResult.success || !profilesResult.success || !accessResult.success) {
-        setError('Some admin data could not be loaded');
-      }
-    } catch (err) {
-      console.error('Error loading admin data:', err);
-      setError('Failed to load admin dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      const result = await updateUserRole(currentUser, userId, newRole);
-      if (result.success) {
-        // Refresh user profiles
-        const profilesResult = await getAllUserProfiles(currentUser);
-        if (profilesResult.success) {
-          setUserProfiles(profilesResult.profiles);
-        }
-      } else {
-        alert('Failed to update user role: ' + result.error);
-      }
-    } catch (err) {
-      console.error('Error updating user role:', err);
-      alert('Failed to update user role');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Dashboard</h3>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <span className="ml-3 text-gray-600">Loading admin data...</span>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -110,173 +30,67 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* System Statistics */}
-      {systemStats && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">System Statistics</h3>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">{systemStats.totalUsers}</div>
-                <div className="text-sm text-gray-600">Total Users</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{systemStats.totalBookings}</div>
-                <div className="text-sm text-gray-600">Total Bookings</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{systemStats.totalCustomers}</div>
-                <div className="text-sm text-gray-600">Total Customers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{systemStats.totalDrivers}</div>
-                <div className="text-sm text-gray-600">Total Drivers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{systemStats.totalVehicles}</div>
-                <div className="text-sm text-gray-600">Total Vehicles</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{systemStats.totalInvoices}</div>
-                <div className="text-sm text-gray-600">Total Invoices</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Access Status */}
-      {accessStatus && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Admin Access Status</h3>
-          </div>
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className={`w-4 h-4 rounded-full mr-3 ${accessStatus.hasFullAccess ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
-              <span className={`font-medium ${accessStatus.hasFullAccess ? 'text-green-700' : 'text-yellow-700'}`}>
-                {accessStatus.message}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(accessStatus.accessChecks || {}).map(([key, hasAccess]) => (
-                <div key={key} className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${hasAccess ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                  <span className="text-sm text-gray-700">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* User Management */}
+      {/* Quick Admin Actions */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
         </div>
         <div className="p-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {userProfiles.map((profile) => (
-                  <tr key={profile.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {profile.full_name || 'Unnamed User'}
-                      </div>
-                      <div className="text-sm text-gray-500">{profile.id.substring(0, 8)}...</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={profile.role}
-                        onChange={(e) => handleRoleChange(profile.id, e.target.value)}
-                        className="text-sm border rounded px-2 py-1"
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="Admin">Admin (Legacy)</option>
-                        <option value="Dispatcher">Dispatcher</option>
-                        <option value="Driver">Driver</option>
-                        <option value="User">User</option>
-                        <option value="Viewer">Viewer</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(profile.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {profile.id === currentUser.id ? (
-                        <span className="text-green-600 font-medium">Current User</span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              onClick={() => window.location.hash = '#/user-management'}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md text-sm font-medium flex flex-col items-center space-y-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <span>User Management</span>
+            </button>
+            <button
+              onClick={() => window.location.hash = '#/settings'}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md text-sm font-medium flex flex-col items-center space-y-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>System Settings</span>
+            </button>
+            <button
+              onClick={() => window.location.hash = '#/reports'}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-md text-sm font-medium flex flex-col items-center space-y-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>View Reports</span>
+            </button>
+            <button
+              onClick={() => window.location.hash = '#/fleet'}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-md text-sm font-medium flex flex-col items-center space-y-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Fleet Management</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Admin Actions */}
+      {/* Admin Information */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Admin Actions</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Admin Information</h3>
         </div>
         <div className="p-6">
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={loadAdminData}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Refresh Data
-            </button>
-            <button
-              onClick={() => window.location.hash = '#/settings'}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              System Settings
-            </button>
-            <button
-              onClick={() => window.location.hash = '#/reports'}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              View Reports
-            </button>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 mb-2">
+              <strong>Welcome, {currentUser?.name || 'Admin User'}!</strong>
+            </p>
+            <p className="text-blue-700 text-sm">
+              You have full administrative access to all system features. Use the User Management section to view system statistics, manage user accounts, and monitor admin access status.
+            </p>
           </div>
         </div>
       </div>

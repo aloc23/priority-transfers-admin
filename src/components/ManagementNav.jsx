@@ -8,7 +8,8 @@ const managementRoutes = [
   { path: '/customers', label: 'Customers', roles: ['Admin', 'Dispatcher'] },
   { path: '/drivers', label: 'Drivers', roles: ['Admin', 'Dispatcher'] },
   { path: '/fleet', label: 'Fleet', roles: ['Admin'] },
-  { path: '/partners', label: 'Partners', roles: ['Admin'] }
+  { path: '/partners', label: 'Partners', roles: ['Admin'] },
+  { path: '/user-management', label: 'User Management', roles: ['Admin'] }
 ];
 
 export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick }) {

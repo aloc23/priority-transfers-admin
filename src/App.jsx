@@ -6,6 +6,7 @@ import Customers from "./pages/Customers";
 import Drivers from "./pages/Drivers";
 import Fleet from "./pages/Fleet";
 import Partners from "./pages/Partners";
+import UserManagement from "./pages/UserManagement";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
@@ -67,6 +68,7 @@ function AuthenticatedShell() {
             <Route path="/drivers" element={<RequireRole roles={["Admin","Dispatcher"]}><Drivers /></RequireRole>} />
             <Route path="/fleet" element={<RequireRole roles={["Admin"]}><Fleet /></RequireRole>} />
             <Route path="/partners" element={<RequireRole roles={["Admin"]}><Partners /></RequireRole>} />
+            <Route path="/user-management" element={<RequireRole roles={["Admin"]}><UserManagement /></RequireRole>} />
             <Route path="/finance" element={<RequireRole roles={["Admin"]}><Estimations /></RequireRole>} />
             <Route path="/reports" element={<RequireRole roles={["Admin","Dispatcher"]}><Reports /></RequireRole>} />
             <Route path="/history" element={<Navigate to="/reports" replace />} />
