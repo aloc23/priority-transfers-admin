@@ -189,46 +189,66 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
         aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
-          {/* Header - Enhanced for mobile with better spacing and visual hierarchy */}
+          {/* Header - Enhanced for mobile with better spacing and visual hierarchy 
+              - When collapsed on desktop: only show centered hamburger button
+              - When expanded: show logo, company name, and hamburger button */}
           <div className={`
-            flex items-center justify-between border-b border-slate-600 
+            flex items-center border-b border-slate-600 
             ${isMobile && sidebarOpen ? 'p-4 pt-6' : 'p-4'}
             ${isMobile ? 'min-h-[72px]' : ''}
+            ${sidebarOpen ? 'justify-between' : 'justify-center'}
           `}>
-            <div className="flex items-center gap-3">
-              <div className={`
-                relative overflow-hidden rounded-lg
-                ${isMobile ? 'w-12 h-12' : 'w-10 h-10'}
-              `}>
-                <img 
-                  src="./logo.svg" 
-                  alt="Priority Transfers Ireland Logo" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              {sidebarOpen && (
-                <span className={`
-                  brand-text text-white
-                  ${isMobile ? 'text-lg' : 'text-base'}
-                `}>
-                  Priority Transfers Ireland
-                </span>
-              )}
-            </div>
-            <button 
-              onClick={handleSidebarToggle} 
-              className={`
-                px-3 py-2 text-granite-300 hover:text-white transition-all duration-200
-                rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-sidebar-bg
-                ${isMobile 
-                  ? 'min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105' 
-                  : ''
-                }
-              `}
-              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              <HamburgerIcon className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
-            </button>
+            {sidebarOpen ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className={`
+                    relative overflow-hidden rounded-lg
+                    ${isMobile ? 'w-12 h-12' : 'w-10 h-10'}
+                  `}>
+                    <img 
+                      src="./logo.svg" 
+                      alt="Priority Transfers Ireland Logo" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className={`
+                    brand-text text-white
+                    ${isMobile ? 'text-lg' : 'text-base'}
+                  `}>
+                    Priority Transfers Ireland
+                  </span>
+                </div>
+                <button 
+                  onClick={handleSidebarToggle} 
+                  className={`
+                    px-3 py-2 text-granite-300 hover:text-white transition-all duration-200
+                    rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-sidebar-bg
+                    ${isMobile 
+                      ? 'min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105' 
+                      : ''
+                    }
+                  `}
+                  aria-label="Collapse sidebar"
+                >
+                  <HamburgerIcon className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+                </button>
+              </>
+            ) : (
+              /* Collapsed state - only show hamburger button centered */
+              <button 
+                onClick={handleSidebarToggle} 
+                className={`
+                  px-3 py-2 text-granite-300 hover:text-white transition-all duration-200
+                  rounded-lg hover:bg-sidebar-active focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-sidebar-bg
+                  min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105
+                  border border-transparent hover:border-sidebar-active
+                `}
+                aria-label="Expand sidebar"
+                title="Expand sidebar"
+              >
+                <HamburgerIcon className="w-5 h-5" />
+              </button>
+            )}
           </div>
           {/* Navigation with section headings */}
           <nav className="flex-1 p-4 overflow-y-auto" aria-label="Main navigation">
