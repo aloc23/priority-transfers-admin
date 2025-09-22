@@ -19,4 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Export the anon key for use in direct API calls that require both Authorization and apikey headers
+export const SUPABASE_ANON_KEY = supabaseAnonKey;
+
 export default supabase;
