@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "../context/AppStore";
 import { fetchSettings, saveSettings } from "../api/settings";
+import { getAllUserProfiles, updateUserRole } from "../api/adminSettings";
+import { isAdmin } from "../utils/adminUtils";
 import { 
   CustomerIcon, 
   NotificationIcon, 
@@ -15,6 +17,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [userProfiles, setUserProfiles] = useState([]);
   const [settings, setSettings] = useState({
     companyName: "Priority Transfers",
     email: currentUser?.email || "",
@@ -127,14 +130,55 @@ export default function Settings() {
     }
   };
 
-  const tabs = [
+  // Load user profiles for admin users
+  useEffect(() => {
+    if (isAdmin(currentUser)) {
+      async function loadUserProfiles() {
+        try {
+          const result = await getAllUserProfiles(currentUser);
+          if (result.success) {
+            setUserProfiles(result.profiles);
+          }
+        } catch (error) {
+          console.error('Error loading user profiles:', error);
+        }
+      }
+      loadUserProfiles();
+    }
+  }, [currentUser]);
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const result = await updateUserRole(currentUser, userId, newRole);
+      if (result.success) {
+        // Refresh user profiles
+        const profilesResult = await getAllUserProfiles(currentUser);
+        if (profilesResult.success) {
+          setUserProfiles(profilesResult.profiles);
+          setMessage("User role updated successfully!");
+        }
+      } else {
+        setMessage("Failed to update user role: " + result.error);
+      }
+    } catch (err) {
+      console.error('Error updating user role:', err);
+      setMessage("Failed to update user role");
+    }
+  };
+
+  const allTabs = [
     { id: "profile", label: "Profile & Notifications", icon: CustomerIcon },
     { id: "booking", label: "Booking Settings", icon: SettingsListIcon },
     { id: "billing", label: "Billing & Payment", icon: RevenueIcon },
-    { id: "users", label: "User Management", icon: BookingIcon },
+    { id: "users", label: "User Management", icon: BookingIcon, adminOnly: true },
     { id: "data", label: "Data Management", icon: SettingsIcon },
     { id: "integrations", label: "Integrations", icon: SettingsIcon }
   ];
+
+  // Filter tabs based on user role
+  const tabs = isAdmin(currentUser) 
+    ? allTabs 
+    : allTabs.filter(tab => !tab.adminOnly);
 
   return (
     <div className="space-y-6">
@@ -392,20 +436,107 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab === "users" && (
+          {activeTab === "users" && isAdmin(currentUser) && (
             <div className="card">
               <h2 className="text-xl font-semibold mb-4">User Management</h2>
-              <div className="space-y-4">
+              
+              {message && (
+                <div className={`mb-4 p-4 rounded-lg ${message.includes('success') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                  {message}
+                </div>
+              )}
+              
+              <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-medium text-blue-900 mb-2">Current User</h3>
+                  <h3 className="font-medium text-blue-900 mb-2">Current Admin User</h3>
                   <p className="text-blue-700">Name: {currentUser?.name}</p>
                   <p className="text-blue-700">Role: {currentUser?.role}</p>
                   <p className="text-blue-700">Email: {currentUser?.email}</p>
+                  <p className="text-blue-700">ID: {currentUser?.id}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button className="btn btn-primary">Add User</button>
-                  <button className="btn btn-outline">Manage Roles</button>
-                  <button className="btn btn-outline">View Audit Log</button>
+
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-4">All System Users</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            User
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Role
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Phone
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {userProfiles.map((profile) => (
+                          <tr key={profile.id} className={profile.id === currentUser.id ? 'bg-blue-50' : ''}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {profile.full_name || 'Unnamed User'}
+                                </div>
+                                <div className="text-sm text-gray-500">{profile.id.substring(0, 8)}...</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <select
+                                value={profile.role}
+                                onChange={(e) => handleRoleChange(profile.id, e.target.value)}
+                                className="text-sm border rounded px-2 py-1"
+                                disabled={profile.id === currentUser.id}
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="Admin">Admin (Legacy)</option>
+                                <option value="Dispatcher">Dispatcher</option>
+                                <option value="Driver">Driver</option>
+                                <option value="User">User</option>
+                                <option value="Viewer">Viewer</option>
+                              </select>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {profile.phone || '—'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(profile.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {profile.id === currentUser.id ? (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  Current User
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                  Active
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h3 className="font-medium text-amber-900 mb-2">Admin Notes</h3>
+                  <ul className="text-sm text-amber-700 space-y-1">
+                    <li>• Admin users have full access to all system features and data</li>
+                    <li>• Dispatchers can manage bookings, customers, and drivers</li>
+                    <li>• Drivers have limited access to their assigned bookings</li>
+                    <li>• Users and Viewers have read-only access to basic features</li>
+                    <li>• You cannot change your own role for security reasons</li>
+                  </ul>
                 </div>
               </div>
             </div>
