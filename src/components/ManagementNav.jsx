@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { CustomerIcon } from './Icons';
 import { useResponsive } from '../hooks/useResponsive';
+import { isAdmin } from '../utils/adminUtils';
 
 const managementRoutes = [
   { path: '/customers', label: 'Customers', roles: ['Admin', 'Dispatcher'] },
@@ -23,8 +24,9 @@ export default function ManagementNav({ currentUser, sidebarOpen, onMobileClick 
   );
 
   // Filter routes based on user permissions
+  // Admin users can see all management routes
   const allowedRoutes = managementRoutes.filter(route => 
-    route.roles.includes(currentUser?.role)
+    isAdmin(currentUser) || route.roles.includes(currentUser?.role)
   );
 
   if (allowedRoutes.length === 0) {
