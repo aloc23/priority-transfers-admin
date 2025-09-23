@@ -5,16 +5,62 @@ import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
  */
 
 /**
+ * Validate Supabase configuration
+ * @returns {Object} - Configuration validation result
+ */
+export function validateSupabaseConfig() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = SUPABASE_ANON_KEY;
+  
+  const issues = [];
+  
+  if (!supabaseUrl) {
+    issues.push('VITE_SUPABASE_URL is missing');
+  } else if (!supabaseUrl.startsWith('https://')) {
+    issues.push('VITE_SUPABASE_URL should start with https://');
+  }
+  
+  if (!supabaseKey) {
+    issues.push('VITE_SUPABASE_ANON_KEY is missing');
+  } else if (supabaseKey.length < 100) {
+    issues.push('VITE_SUPABASE_ANON_KEY appears to be invalid (too short)');
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    issues: issues,
+    config: {
+      url: supabaseUrl,
+      hasKey: !!supabaseKey
+    }
+  };
+}
+
+/**
  * Get standardized headers for Supabase direct API calls (REST/functions)
+ * Includes CORS-compatible headers for Edge Functions
  * @param {string} accessToken - The user's JWT access token
  * @returns {Object} - Headers object with both Authorization and apikey
  */
 export function getSupabaseApiHeaders(accessToken) {
-  return {
+  const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'apikey': SUPABASE_ANON_KEY,
   };
+  
+  // Add Authorization header if access token is provided
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  
+  // Always include the apikey for Supabase authentication
+  // This is required for both authenticated and unauthenticated requests
+  if (SUPABASE_ANON_KEY) {
+    headers['apikey'] = SUPABASE_ANON_KEY;
+  } else {
+    console.warn('SUPABASE_ANON_KEY is missing - requests may fail');
+  }
+  
+  return headers;
 }
 
 /**
