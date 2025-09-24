@@ -4,6 +4,7 @@ import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
 import { fetchBookings, createBooking, updateBooking as updateBookingAPI, deleteBooking as deleteBookingAPI } from "../api/bookings";
 import { fetchCustomers, createCustomer, updateCustomer as updateCustomerAPI, deleteCustomer as deleteCustomerAPI } from "../api/customers";
+import { isDemoModeEnabled } from "../utils/demoMode";
 
 const AppStoreContext = createContext();
 
@@ -56,6 +57,18 @@ export function AppStoreProvider({ children }) {
 
     async function initializeApp() {
       try {
+        // Check if demo mode is enabled
+        if (isDemoModeEnabled()) {
+          console.log('Demo mode enabled - skipping Supabase initialization');
+          if (mounted) {
+            // Initialize with demo data but no user (user must log in)
+            initializeDrivers();
+            initializeVehicles();
+            setLoading(false);
+          }
+          return;
+        }
+
         // Get initial Supabase session to check if user is already logged in
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
@@ -77,28 +90,35 @@ export function AppStoreProvider({ children }) {
     }
 
     // Listen for Supabase authentication state changes (login, logout, session refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      console.log('Auth state change:', event, session?.user?.email);
-      setSession(session);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        // User signed in - set up profile and load data
-        await setupUserProfile(session.user);
-        await loadInitialData();
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out - clear all data
-        setCurrentUser(null);
-        clearAllData();
-      }
-    });
+    // Skip this in demo mode
+    let subscription = null;
+    if (!isDemoModeEnabled()) {
+      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state change:', event, session?.user?.email);
+        setSession(session);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // User signed in - set up profile and load data
+          await setupUserProfile(session.user);
+          await loadInitialData();
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out - clear all data
+          setCurrentUser(null);
+          clearAllData();
+        }
+      });
+      subscription = sub;
+    }
 
     initializeApp();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -634,6 +654,40 @@ export function AppStoreProvider({ children }) {
   // Supabase authentication functions
   const login = async (credentials) => {
     try {
+      // Demo mode authentication - bypass Supabase
+      if (isDemoModeEnabled() || credentials.forceDemo) {
+        console.log('Demo mode login - creating demo user');
+        
+        // Simple demo authentication - accept any credentials
+        if (!credentials.email || !credentials.password) {
+          return { success: false, error: 'Email and password are required' };
+        }
+
+        // Create a demo user based on email
+        const demoUser = {
+          id: 'demo-user-' + Date.now(),
+          name: credentials.email.split('@')[0],
+          email: credentials.email,
+          role: credentials.email.includes('admin') ? 'Admin' : 'User'
+        };
+
+        setCurrentUser(demoUser);
+        
+        // Initialize demo data
+        initializeBookings();
+        initializeCustomers();
+        initializeDrivers();
+        initializeVehicles();
+        initializeInvoices();
+        initializePartners();
+        initializeExpenses();
+        initializeIncome();
+        initializeEstimations();
+        
+        return { success: true, user: demoUser };
+      }
+
+      // Production mode - try Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -641,6 +695,17 @@ export function AppStoreProvider({ children }) {
 
       if (error) {
         console.error('Login error:', error);
+        
+        // If it's a network error, offer demo mode fallback
+        if (error.message?.includes('Failed to fetch') || error.name === 'AuthRetryableFetchError') {
+          console.log('Network error detected - offering demo mode fallback');
+          return { 
+            success: false, 
+            error: 'Unable to connect to authentication service. Please check your internet connection or try demo mode.',
+            networkError: true
+          };
+        }
+        
         showAuthErrorModal(error);
         return { success: false, error: error.message };
       }
@@ -649,6 +714,17 @@ export function AppStoreProvider({ children }) {
       return { success: true, user: data.user };
     } catch (error) {
       console.error('Unexpected login error:', error);
+      
+      // If it's a network error, offer demo mode fallback
+      if (error.message?.includes('Failed to fetch') || error.name === 'AuthRetryableFetchError') {
+        console.log('Network error detected in catch - offering demo mode fallback');
+        return { 
+          success: false, 
+          error: 'Unable to connect to authentication service. Please check your internet connection or try demo mode.',
+          networkError: true
+        };
+      }
+      
       showAuthErrorModal(error);
       return { success: false, error: 'An unexpected error occurred during login' };
     }
