@@ -117,10 +117,21 @@ export async function sendDriverConfirmationEmail({ to, subject, html, supabaseJ
       };
     }
     
+    // Validate JWT is provided and looks valid
+    if (!supabaseJwt || typeof supabaseJwt !== 'string' || supabaseJwt.length < 20) {
+      console.error('Invalid JWT provided to sendDriverConfirmationEmail:', { jwtProvided: !!supabaseJwt, jwtLength: supabaseJwt?.length });
+      return {
+        success: false,
+        error: 'Invalid authentication token provided',
+        isAuthError: true
+      };
+    }
+    
     // Use the standardized header function from auth.js
     const headers = getSupabaseApiHeaders(supabaseJwt);
     
     console.log('Request headers:', Object.keys(headers)); // Log header names for debugging
+    console.log('JWT first 20 chars:', supabaseJwt.substring(0, 20) + '...');  // Debug JWT format
     
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',

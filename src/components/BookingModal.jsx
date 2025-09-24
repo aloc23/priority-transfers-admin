@@ -9,6 +9,7 @@ import { useFleet } from '../context/FleetContext';
 import { useResponsive } from '../hooks/useResponsive';
 import ModalPortal from './ModalPortal';
 import DateTimePicker from './DateTimePicker';
+import ErrorBoundary from './ErrorBoundary';
 import supabase from '../utils/supabaseClient';
 
 export default function BookingModal({ 
@@ -414,114 +415,133 @@ export default function BookingModal({
     // eslint-disable-next-line
   }, [formData.pickup, formData.destination, formData.hasReturn, formData.stops]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check for conflicts before submitting
-    const currentConflicts = checkForConflicts(formData);
-    const hasConflicts = currentConflicts.driver.length > 0 || currentConflicts.vehicle.length > 0;
-    
-    if (hasConflicts && !window.confirm('There are conflicting assignments. Do you want to proceed anyway?')) {
-      return;
-    }
-    
-    // Extract date/time from datetime fields for backwards compatibility
-    const submissionData = { ...formData };
-
-    // Always save journey distance and duration
-    if (journeyInfo.distance) {
-      submissionData.journeyDistance = journeyInfo.distance;
-    }
-    if (journeyInfo.duration) {
-      submissionData.journeyDuration = journeyInfo.duration;
-    }
-
-    // Handle pickup datetime
-    if (formData.pickupDateTime) {
-      const pickupMoment = moment(formData.pickupDateTime);
-      submissionData.date = pickupMoment.format('YYYY-MM-DD');
-      submissionData.time = pickupMoment.format('HH:mm');
-    }
-
-    // Handle return datetime
-    if (formData.returnDateTime) {
-      const returnMoment = moment(formData.returnDateTime);
-      submissionData.returnDate = returnMoment.format('YYYY-MM-DD');
-      submissionData.returnTime = returnMoment.format('HH:mm');
-    }
-
-    // For backwards compatibility, map to the old single type field
-    // Keep the new fields for future use
-    submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
-
-    // Save booking
-    if (editingBooking) {
-      updateBooking(editingBooking.id, submissionData);
-    } else {
-      addBooking(submissionData);
-    }
-
-    // After booking is confirmed, send driver notification with improved error handling
-    if (formData.source === 'internal' && formData.driver) {
-      const driverObj = drivers.find(d => d.name === formData.driver);
-      if (driverObj && driverObj.email) {
-        const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
-        const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
-        (async () => {
-          // Get JWT using the new authentication utility
-          const authResult = await getSupabaseJWT();
-          
-          if (!authResult.success) {
-            // Show authentication error modal instead of alert
-            showAuthErrorModal(authResult.error);
-            console.error('Authentication error:', authResult.error);
-            return;
-          }
-
-          // Use the standardized email utility function
-          const emailResult = await sendDriverConfirmationEmail({
-            to: driverObj.email,
-            subject,
-            html,
-            supabaseJwt: authResult.jwt
-          });
-
-          if (emailResult.success) {
-            console.log('Driver confirmation email sent:', emailResult.data);
-            // Show success notification instead of alert
-            const notificationMessage = `Driver confirmation email sent successfully to ${driverObj.email}!`;
-            console.info(notificationMessage);
-            
-            // You can replace this with a toast notification if available
-            alert(notificationMessage);
-          } else {
-            if (emailResult.isAuthError) {
-              showAuthErrorModal(emailResult.error);
-            } else if (emailResult.isConfigError) {
-              console.error('Configuration error:', emailResult.error);
-              alert(`Configuration error: ${emailResult.error}\n\nPlease contact support to resolve this issue.`);
-            } else if (emailResult.isNetworkError) {
-              console.error('Network error sending confirmation email:', emailResult.error);
-              alert(`Network error: ${emailResult.error}\n\nPlease check your connection and try again.`);
-            } else {
-              console.error('Error sending confirmation email:', emailResult.error);
-              
-              // Provide more user-friendly error messages
-              let userMessage = emailResult.error;
-              if (emailResult.statusCode === 406) {
-                userMessage = 'Email service configuration issue. Please contact support.';
-              } else if (emailResult.statusCode >= 500) {
-                userMessage = 'Email service temporarily unavailable. The booking was saved but the notification email could not be sent.';
-              }
-              
-              alert(`Error sending confirmation email: ${userMessage}`);
-            }
-          }
-        })();
+    try {
+      // Check for conflicts before submitting
+      const currentConflicts = checkForConflicts(formData);
+      const hasConflicts = currentConflicts.driver.length > 0 || currentConflicts.vehicle.length > 0;
+      
+      if (hasConflicts && !window.confirm('There are conflicting assignments. Do you want to proceed anyway?')) {
+        return;
       }
-    }
+      
+      // Extract date/time from datetime fields for backwards compatibility
+      const submissionData = { ...formData };
 
-    onClose();
+      // Always save journey distance and duration
+      if (journeyInfo.distance) {
+        submissionData.journeyDistance = journeyInfo.distance;
+      }
+      if (journeyInfo.duration) {
+        submissionData.journeyDuration = journeyInfo.duration;
+      }
+
+      // Handle pickup datetime
+      if (formData.pickupDateTime) {
+        const pickupMoment = moment(formData.pickupDateTime);
+        submissionData.date = pickupMoment.format('YYYY-MM-DD');
+        submissionData.time = pickupMoment.format('HH:mm');
+      }
+
+      // Handle return datetime
+      if (formData.returnDateTime) {
+        const returnMoment = moment(formData.returnDateTime);
+        submissionData.returnDate = returnMoment.format('YYYY-MM-DD');
+        submissionData.returnTime = returnMoment.format('HH:mm');
+      }
+
+      // For backwards compatibility, map to the old single type field
+      // Keep the new fields for future use
+      submissionData.type = formData.source === 'outsourced' ? 'outsourced' : formData.type;
+
+      // Save booking
+      let bookingResult;
+      if (editingBooking) {
+        bookingResult = await updateBooking(editingBooking.id, submissionData);
+      } else {
+        bookingResult = await addBooking(submissionData);
+      }
+
+      // Check if booking creation/update failed
+      if (!bookingResult.success) {
+        alert(`Failed to ${editingBooking ? 'update' : 'create'} booking: ${bookingResult.error}`);
+        return;
+      }
+
+      // After booking is confirmed, send driver notification with improved error handling
+      if (formData.source === 'internal' && formData.driver) {
+        const driverObj = drivers.find(d => d.name === formData.driver);
+        if (driverObj && driverObj.email) {
+          const subject = `Booking Reminder: ${formData.pickup} → ${formData.destination}`;
+          const html = `<p>Dear ${driverObj.name},<br>You have a new booking:<br>Pickup: ${formData.pickup}<br>Destination: ${formData.destination}<br>Date: ${formData.date} ${formData.time}<br><br>Please confirm availability.</p>`;
+          
+          // Send email in background - don't block the UI if it fails
+          (async () => {
+            try {
+              // Get JWT using the new authentication utility
+              const authResult = await getSupabaseJWT();
+              
+              if (!authResult.success) {
+                // Show authentication error modal instead of alert
+                showAuthErrorModal(authResult.error);
+                console.error('Authentication error:', authResult.error);
+                return;
+              }
+
+              // Use the standardized email utility function
+              const emailResult = await sendDriverConfirmationEmail({
+                to: driverObj.email,
+                subject,
+                html,
+                supabaseJwt: authResult.jwt
+              });
+
+              if (emailResult.success) {
+                console.log('Driver confirmation email sent:', emailResult.data);
+                // Show success notification instead of alert
+                const notificationMessage = `Driver confirmation email sent successfully to ${driverObj.email}!`;
+                console.info(notificationMessage);
+                
+                // You can replace this with a toast notification if available
+                alert(notificationMessage);
+              } else {
+                if (emailResult.isAuthError) {
+                  showAuthErrorModal(emailResult.error);
+                } else if (emailResult.isConfigError) {
+                  console.error('Configuration error:', emailResult.error);
+                  alert(`Configuration error: ${emailResult.error}\n\nPlease contact support to resolve this issue.`);
+                } else if (emailResult.isNetworkError) {
+                  console.error('Network error sending confirmation email:', emailResult.error);
+                  alert(`Network error: ${emailResult.error}\n\nPlease check your connection and try again.`);
+                } else {
+                  console.error('Error sending confirmation email:', emailResult.error);
+                  
+                  // Provide more user-friendly error messages
+                  let userMessage = emailResult.error;
+                  if (emailResult.statusCode === 406) {
+                    userMessage = 'Email service configuration issue. Please contact support.';
+                  } else if (emailResult.statusCode >= 500) {
+                    userMessage = 'Email service temporarily unavailable. The booking was saved but the notification email could not be sent.';
+                  }
+                  
+                  alert(`Error sending confirmation email: ${userMessage}`);
+                }
+              }
+            } catch (emailError) {
+              console.error('Unexpected error sending driver email:', emailError);
+              alert('The booking was saved but there was an issue sending the notification email. Please contact the driver manually.');
+            }
+          })();
+        }
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      alert(`Failed to ${editingBooking ? 'update' : 'create'} booking. Please try again.`);
+    }
   };
 
   const handleClose = () => {
@@ -595,7 +615,8 @@ export default function BookingModal({
   };
 
   return (
-    <ModalPortal isOpen={isOpen}>
+    <ErrorBoundary>
+      <ModalPortal isOpen={isOpen}>
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
         role="dialog"
@@ -1172,5 +1193,6 @@ export default function BookingModal({
         </div>
       </div>
     </ModalPortal>
+    </ErrorBoundary>
   );
 }
