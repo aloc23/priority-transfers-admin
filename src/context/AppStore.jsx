@@ -768,7 +768,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to create booking:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal  
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 
@@ -811,7 +813,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to update booking:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 
@@ -840,7 +844,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to delete booking:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 
@@ -920,7 +926,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to create customer:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 
@@ -947,7 +955,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to update customer:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 
@@ -976,7 +986,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to delete customer:', result.error);
-        showAuthErrorModal(new Error(result.error));
+        // Always ensure we pass an Error object to showAuthErrorModal
+        const error = result.error instanceof Error ? result.error : new Error(result.error);
+        showAuthErrorModal(error);
         return result;
       }
 

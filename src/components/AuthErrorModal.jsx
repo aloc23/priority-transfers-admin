@@ -7,7 +7,18 @@ import { CloseIcon } from './Icons';
  */
 export default function AuthErrorModal({ isOpen, onClose, onReLogin, error = null }) {
   const defaultError = "Your login session has expired or is invalid. Please log in again to continue.";
-  const displayError = error || defaultError;
+  
+  // Handle both Error objects and strings safely
+  let displayError = defaultError;
+  if (error) {
+    if (error instanceof Error) {
+      displayError = error.message;
+    } else if (typeof error === 'string') {
+      displayError = error;
+    } else {
+      displayError = String(error);
+    }
+  }
 
   const handleReLogin = () => {
     onClose();
