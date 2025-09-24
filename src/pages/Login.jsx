@@ -1,15 +1,12 @@
 import { useState } from "react";
 import { useAppStore } from "../context/AppStore";
-import supabase from '../utils/supabaseClient';
 import { Navigate } from "react-router-dom";
-import { isAdmin } from "../utils/adminUtils";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [useDemoLogin, setUseDemoLogin] = useState(true);
   const { currentUser, login } = useAppStore();
 
   if (currentUser) {
@@ -20,101 +17,19 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    if (useDemoLogin) {
-      // Demo login logic
-      const demoUsers = [
-        { id: 1, name: "Admin User", email: "admin@priority.com", role: "Admin" },
-        { id: 2, name: "Dispatcher", email: "dispatcher@priority.com", role: "Dispatcher" },
-        { id: 3, name: "Viewer", email: "viewer@priority.com", role: "Viewer" }
-      ];
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const user = demoUsers.find(u => u.email === email);
-      if (user && password === "demo123") {
-        login(user); // update global app state
-      } else {
-        setError("Invalid demo email or password. Please check your credentials and try again.");
+
+    try {
+      // Use Supabase authentication via AppStore
+      const result = await login({ email, password });
+
+      if (!result.success) {
+        setError(result.error || "Login failed. Please check your credentials.");
       }
-      setIsLoading(false);
-      return;
-    } else {
-      // Supabase Auth login logic
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      if (loginError) {
-        setError("Supabase login error: " + loginError.message);
-        setIsLoading(false);
-        return;
-      }
-      // Use Supabase user data for app state, get role from profiles table (authoritative)
-      // Debug log: Show Supabase session and access_token after login
-      const sessionResult = await supabase.auth.getSession();
-      console.log('Supabase session after login:', sessionResult);
-      console.log('Supabase access_token after login:', sessionResult?.data?.session?.access_token);
-      
-      // First check if user has a profile, create if not exists
-      let userRole = "User"; // Default role
-      let userName = data.user.email;
-      
-      try {
-        // Check for existing profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-          // Error other than "not found"
-          console.error('Profile lookup error:', profileError);
-        } else if (profile) {
-          // Profile exists, use its role
-          userRole = profile.role || "User";
-          userName = profile.full_name || data.user.email;
-          console.log('Found existing profile with role:', userRole);
-          
-          // Verify admin role consistency
-          if (isAdmin({ role: userRole })) {
-            console.log('✓ Admin user detected from Supabase profile');
-          }
-        } else {
-          // No profile found, create one using metadata role or default
-          const userMeta = data.user.user_metadata || {};
-          const metadataRole = userMeta.role || "User";
-          
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: data.user.id,
-              full_name: data.user.email,
-              role: metadataRole
-            }])
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error('Profile creation error:', createError);
-            // Use metadata role as fallback
-            userRole = metadataRole;
-          } else {
-            userRole = newProfile.role || "User";
-            console.log('Created new profile with role:', userRole);
-          }
-        }
-      } catch (error) {
-        console.error('Profile management error:', error);
-        // Fallback to user metadata
-        const userMeta = data.user.user_metadata || {};
-        userRole = userMeta.role || "User";
-      }
-      
-      login({
-        id: data.user.id,
-        name: userName,
-        email: data.user.email,
-        role: userRole
-      });
+      // If successful, the auth state change will handle navigation
+    } catch (error) {
+      console.error('Login error:', error);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -214,35 +129,6 @@ export default function Login() {
                 'Sign In'
               )}
             </button>
-
-            {/* Demo Account Toggle */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="demoLogin"
-                  checked={useDemoLogin}
-                  onChange={(e) => setUseDemoLogin(e.target.checked)}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label 
-                  htmlFor="demoLogin" 
-                  className="ml-2 block text-sm text-gray-900"
-                >
-                  Use Demo Login
-                </label>
-              </div>
-            </div>
-
-            {useDemoLogin && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
-                <strong>Demo Accounts:</strong><br />
-                Admin: admin@priority.com<br />
-                Dispatcher: dispatcher@priority.com<br />
-                Viewer: viewer@priority.com<br />
-                Password for all: demo123
-              </div>
-            )}
           </form>
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
             <span>Don't have an account? </span>

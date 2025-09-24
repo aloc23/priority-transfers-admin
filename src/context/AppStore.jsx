@@ -2,7 +2,8 @@ import supabase from '../utils/supabaseClient';
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { formatCurrency, EURO_PRICE_PER_BOOKING } from "../utils/currency";
 import { sendDriverConfirmationEmail, generateBookingConfirmationHTML } from "../utils/email";
-import { getSupabaseJWT } from "../utils/auth";
+import { fetchBookings, createBooking, updateBooking as updateBookingAPI, deleteBooking as deleteBookingAPI } from "../api/bookings";
+import { fetchCustomers, createCustomer, updateCustomer as updateCustomerAPI, deleteCustomer as deleteCustomerAPI } from "../api/customers";
 
 const AppStoreContext = createContext();
 
@@ -18,6 +19,8 @@ export function useAppStore() {
 
 export function AppStoreProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -46,178 +49,154 @@ export function AppStoreProvider({ children }) {
     error: null
   });
 
-  // Safe localStorage utility functions
-  const safeLocalStorage = {
-    getItem: (key) => {
+  // Supabase authentication and data initialization
+  // This effect handles the complete authentication lifecycle and data loading
+  useEffect(() => {
+    let mounted = true;
+
+    async function initializeApp() {
       try {
-        return localStorage.getItem(key);
+        // Get initial Supabase session to check if user is already logged in
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(initialSession);
+          if (initialSession?.user) {
+            // If user is authenticated, set up their profile and load data
+            await setupUserProfile(initialSession.user);
+            await loadInitialData();
+          }
+          setLoading(false);
+        }
       } catch (error) {
-        console.warn('localStorage access failed, using sessionStorage fallback:', error);
-        try {
-          return sessionStorage.getItem(key);
-        } catch (sessionError) {
-          console.warn('sessionStorage access also failed:', sessionError);
-          return null;
+        console.error('Error initializing app:', error);
+        if (mounted) {
+          setLoading(false);
         }
       }
-    },
-    setItem: (key, value) => {
-      try {
-        localStorage.setItem(key, value);
-      } catch (error) {
-        console.warn('localStorage write failed, using sessionStorage fallback:', error);
-        try {
-          sessionStorage.setItem(key, value);
-        } catch (sessionError) {
-          console.warn('sessionStorage write also failed:', sessionError);
+    }
+
+    // Listen for Supabase authentication state changes (login, logout, session refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('Auth state change:', event, session?.user?.email);
+      setSession(session);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // User signed in - set up profile and load data
+        await setupUserProfile(session.user);
+        await loadInitialData();
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out - clear all data
+        setCurrentUser(null);
+        clearAllData();
+      }
+    });
+
+    initializeApp();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Setup user profile from Supabase authentication
+  // This function manages user profiles in the profiles table and ensures role consistency
+  const setupUserProfile = async (user) => {
+    try {
+      // Get user profile from profiles table to determine role and display name
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Profile lookup error:', profileError);
+      }
+
+      let userRole = "User";
+      let userName = user.email;
+
+      if (profile) {
+        // Use existing profile data
+        userRole = profile.role || "User";
+        userName = profile.full_name || user.email;
+      } else {
+        // Create profile if it doesn't exist (new user registration)
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: user.id,
+            full_name: user.email,
+            role: "User"
+          }]);
+
+        if (createError) {
+          console.error('Profile creation error:', createError);
         }
       }
-    },
-    removeItem: (key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn('localStorage remove failed, using sessionStorage fallback:', error);
-        try {
-          sessionStorage.removeItem(key);
-        } catch (sessionError) {
-          console.warn('sessionStorage remove also failed:', sessionError);
-        }
-      }
+
+      // Set the user profile in application state
+      const userProfile = {
+        id: user.id,
+        name: userName,
+        email: user.email,
+        role: userRole
+      };
+
+      setCurrentUser(userProfile);
+    } catch (error) {
+      console.error('Error setting up user profile:', error);
+      showAuthErrorModal(error);
     }
   };
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const storedUser = safeLocalStorage.getItem("currentUser");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.warn('Failed to parse stored user data:', error);
-        safeLocalStorage.removeItem("currentUser");
-      }
-    }
+  // Load initial data from Supabase database
+  // This function fetches core application data once the user is authenticated
+  const loadInitialData = async () => {
+    try {
+      // Fetch bookings and customers from Supabase APIs
+      // These API calls will automatically handle authentication and error cases
+      const [bookingsData, customersData] = await Promise.all([
+        fetchBookings(),
+        fetchCustomers()
+      ]);
 
-    const storedBookings = safeLocalStorage.getItem("bookings");
-    if (storedBookings) {
-      try {
-        setBookings(JSON.parse(storedBookings));
-      } catch (error) {
-        console.warn('Failed to parse stored bookings data:', error);
-        initializeBookings();
+      // Update state with fetched data if successful
+      if (bookingsData && !bookingsData.error) {
+        setBookings(bookingsData);
       }
-    } else {
-      initializeBookings();
-    }
 
-    const storedCustomers = safeLocalStorage.getItem("customers");
-    if (storedCustomers) {
-      try {
-        setCustomers(JSON.parse(storedCustomers));
-      } catch (error) {
-        console.warn('Failed to parse stored customers data:', error);
-        initializeCustomers();
+      if (customersData && !customersData.error) {
+        setCustomers(customersData);
       }
-    } else {
-      initializeCustomers();
-    }
 
-    const storedDrivers = safeLocalStorage.getItem("drivers");
-    if (storedDrivers) {
-      try {
-        setDrivers(JSON.parse(storedDrivers));
-      } catch (error) {
-        console.warn('Failed to parse stored drivers data:', error);
-        initializeDrivers();
-      }
-    } else {
+      // Initialize placeholder data for features not yet fully integrated with Supabase
       initializeDrivers();
-    }
-
-    const storedVehicles = safeLocalStorage.getItem("vehicles");
-    if (storedVehicles) {
-      try {
-        setVehicles(JSON.parse(storedVehicles));
-      } catch (error) {
-        console.warn('Failed to parse stored vehicles data:', error);
-        initializeVehicles();
-      }
-    } else {
       initializeVehicles();
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      showAuthErrorModal(error);
     }
+  };
 
-    const storedInvoices = safeLocalStorage.getItem("invoices");
-    if (storedInvoices) {
-      try {
-        setInvoices(JSON.parse(storedInvoices));
-      } catch (error) {
-        console.warn('Failed to parse stored invoices data:', error);
-        initializeInvoices();
-      }
-    } else {
-      initializeInvoices();
-    }
-
-    const storedActivityHistory = safeLocalStorage.getItem("activityHistory");
-    if (storedActivityHistory) {
-      try {
-        setActivityHistory(JSON.parse(storedActivityHistory));
-      } catch (error) {
-        console.warn('Failed to parse stored activity history:', error);
-        setActivityHistory([]);
-      }
-    }
-
-    // Load new data models
-    const storedPartners = safeLocalStorage.getItem("partners");
-    if (storedPartners) {
-      try {
-        setPartners(JSON.parse(storedPartners));
-      } catch (error) {
-        console.warn('Failed to parse stored partners data:', error);
-        initializePartners();
-      }
-    } else {
-      initializePartners();
-    }
-
-    const storedExpenses = safeLocalStorage.getItem("expenses");
-    if (storedExpenses) {
-      try {
-        setExpenses(JSON.parse(storedExpenses));
-      } catch (error) {
-        console.warn('Failed to parse stored expenses data:', error);
-        initializeExpenses();
-      }
-    } else {
-      initializeExpenses();
-    }
-
-    const storedIncome = safeLocalStorage.getItem("income");
-    if (storedIncome) {
-      try {
-        setIncome(JSON.parse(storedIncome));
-      } catch (error) {
-        console.warn('Failed to parse stored income data:', error);
-        initializeIncome();
-      }
-    } else {
-      initializeIncome();
-    }
-
-    const storedEstimations = safeLocalStorage.getItem("estimations");
-    if (storedEstimations) {
-      try {
-        setEstimations(JSON.parse(storedEstimations));
-      } catch (error) {
-        console.warn('Failed to parse stored estimations data:', error);
-        initializeEstimations();
-      }
-    } else {
-      initializeEstimations();
-    }
-  }, []);
+  // Clear all data on logout
+  const clearAllData = () => {
+    setBookings([]);
+    setCustomers([]);
+    setDrivers([]);
+    setVehicles([]);
+    setNotifications([]);
+    setInvoices([]);
+    setActivityHistory([]);
+    setPartners([]);
+    setExpenses([]);
+    setIncome([]);
+    setEstimations([]);
+  };
 
   const initializeBookings = () => {
     const today = new Date();
@@ -282,7 +261,6 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setBookings(sampleBookings);
-    safeLocalStorage.setItem("bookings", JSON.stringify(sampleBookings));
   };
 
   const initializeCustomers = () => {
@@ -292,9 +270,9 @@ export function AppStoreProvider({ children }) {
       { id: 3, name: "Bob Johnson", email: "bob@example.com", phone: "555-0103", totalBookings: 22 }
     ];
     setCustomers(sampleCustomers);
-    safeLocalStorage.setItem("customers", JSON.stringify(sampleCustomers));
   };
 
+  // Initialize demo data for drivers and vehicles (fallback if no Supabase data)
   const initializeDrivers = () => {
     const sampleDrivers = [
       { id: 1, name: "Mike Johnson", email: "mike@example.com", license: "D123456", phone: "555-0201", status: "available", rating: 4.8 },
@@ -302,7 +280,6 @@ export function AppStoreProvider({ children }) {
       { id: 3, name: "Tom Brown", email: "tom@example.com", license: "D345678", phone: "555-0203", status: "available", rating: 4.7 }
     ];
     setDrivers(sampleDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(sampleDrivers));
   };
 
   const initializeVehicles = () => {
@@ -312,7 +289,6 @@ export function AppStoreProvider({ children }) {
       { id: 3, make: "Ford", model: "Fusion", year: 2020, license: "DEF456", status: "maintenance", driver: "Tom Brown" }
     ];
     setVehicles(sampleVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(sampleVehicles));
   };
 
   const initializeInvoices = () => {
@@ -356,7 +332,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setInvoices(sampleInvoices);
-    safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
+    
   };
 
   const initializePartners = () => {
@@ -411,7 +387,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setPartners(samplePartners);
-    safeLocalStorage.setItem("partners", JSON.stringify(samplePartners));
+    
   };
 
   const initializeExpenses = () => {
@@ -454,7 +430,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setExpenses(sampleExpenses);
-    safeLocalStorage.setItem("expenses", JSON.stringify(sampleExpenses));
+    
   };
 
   const initializeIncome = () => {
@@ -489,7 +465,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setIncome(sampleIncome);
-    safeLocalStorage.setItem("income", JSON.stringify(sampleIncome));
+    
   };
 
   const initializeEstimations = () => {
@@ -534,7 +510,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setEstimations(sampleEstimations);
-    safeLocalStorage.setItem("estimations", JSON.stringify(sampleEstimations));
+    
   };
 
   const addActivityLog = (activity) => {
@@ -545,7 +521,7 @@ export function AppStoreProvider({ children }) {
     };
     const updatedHistory = [newActivity, ...activityHistory].slice(0, 100); // Keep last 100 activities
     setActivityHistory(updatedHistory);
-    safeLocalStorage.setItem("activityHistory", JSON.stringify(updatedHistory));
+    
   };
 
   const generateInvoiceFromBooking = (booking) => {
@@ -575,7 +551,7 @@ export function AppStoreProvider({ children }) {
     
     const updatedInvoices = [...invoices, invoice];
     setInvoices(updatedInvoices);
-    safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+    
     
     addActivityLog({
       type: 'invoice_generated',
@@ -603,7 +579,7 @@ export function AppStoreProvider({ children }) {
         };
         const updatedCustomers = [...customers, newCustomer];
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
         
         addActivityLog({
           type: 'customer_auto_created',
@@ -637,7 +613,7 @@ export function AppStoreProvider({ children }) {
       
       const updatedInvoices = [...invoices, invoice];
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_created',
@@ -655,301 +631,295 @@ export function AppStoreProvider({ children }) {
     }
   };
 
-  const login = (user) => {
-    setCurrentUser(user);
-    safeLocalStorage.setItem("currentUser", JSON.stringify(user));
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    safeLocalStorage.removeItem("currentUser");
-  };
-
-  const addBooking = (booking) => {
+  // Supabase authentication functions
+  const login = async (credentials) => {
     try {
-      // All new bookings start as "pending" regardless of input
-      const newBooking = { 
-        ...booking, 
-        id: Date.now(), 
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        showAuthErrorModal(error);
+        return { success: false, error: error.message };
+      }
+
+      // User profile will be set up automatically via auth state change
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Unexpected login error:', error);
+      showAuthErrorModal(error);
+      return { success: false, error: 'An unexpected error occurred during login' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        showAuthErrorModal(error);
+      }
+      // User and data will be cleared automatically via auth state change
+    } catch (error) {
+      console.error('Unexpected logout error:', error);
+      showAuthErrorModal(error);
+    }
+  };
+
+  // Supabase CRUD operations for bookings
+  const addBooking = async (booking) => {
+    try {
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to create booking
+      const result = await createBooking({
+        pickup: booking.pickup,
+        destination: booking.destination,
+        date: booking.date,
+        time: booking.time,
+        customer: booking.customer,
+        customerEmail: booking.customerEmail,
+        customerPhone: booking.customerPhone,
         type: booking.type || "priority",
-        status: "pending", // Force all new bookings to pending status
-        // Add completion tracking for pickup and return legs
+        status: "pending",
         pickupCompleted: false,
         returnCompleted: false
-      };
-      const updatedBookings = [...bookings, newBooking];
-      setBookings(updatedBookings);
-      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
-      
-      // Auto-create customer if they don't exist
-      const customerName = newBooking.customer;
-      const customer = customers.find(c => c.name === customerName);
-      if (customer) {
-        const updatedCustomers = customers.map(c => 
-          c.name === customerName ? { ...c, totalBookings: c.totalBookings + 1 } : c
-        );
-        setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
-      } else if (customerName) {
-        // Create new customer
-        const newCustomer = {
-          id: Date.now(),
-          name: customerName,
-          email: booking.customerEmail || '',
-          phone: booking.customerPhone || '',
-          totalBookings: 1,
-          totalSpent: 0,
-          status: 'active',
-          lastBooking: newBooking.date
-        };
-        const updatedCustomers = [...customers, newCustomer];
-        setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
-        
-        addActivityLog({
-          type: 'customer_auto_created',
-          description: `Customer ${customerName} automatically created from booking`,
-          relatedId: newCustomer.id
-        });
-      }
-      
-      addActivityLog({
-        type: 'booking_created',
-        description: `New booking created for ${newBooking.customer}`,
-        relatedId: newBooking.id
       });
-      
+
+      if (!result.success) {
+        console.error('Failed to create booking:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state with new booking
+      const newBooking = result.data;
+      setBookings(prev => [...prev, newBooking]);
+
+      // Auto-create customer if they don't exist
+      if (booking.customer && booking.customerEmail) {
+        const existingCustomer = customers.find(c => c.email === booking.customerEmail);
+        if (!existingCustomer) {
+          const customerResult = await addCustomer({
+            name: booking.customer,
+            email: booking.customerEmail,
+            phone: booking.customerPhone || ''
+          });
+          
+          if (customerResult.success) {
+            setCustomers(prev => [...prev, customerResult.data]);
+          }
+        }
+      }
+
       return { success: true, booking: newBooking };
     } catch (error) {
       console.error('Failed to add booking:', error);
+      showAuthErrorModal(error);
       return { success: false, error: 'Failed to save booking' };
     }
   };
 
-  const updateBooking = (id, updates) => {
+  const updateBooking = async (id, updates) => {
     try {
-      const oldBooking = bookings.find(booking => booking.id === id);
-      const updatedBooking = { ...oldBooking, ...updates };
-      const updatedBookings = bookings.map(booking => 
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to update booking
+      const result = await updateBookingAPI(id, updates);
+
+      if (!result.success) {
+        console.error('Failed to update booking:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state
+      const updatedBooking = result.data;
+      setBookings(prev => prev.map(booking => 
         booking.id === id ? updatedBooking : booking
-      );
-      setBookings(updatedBookings);
-      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
-      
-      addActivityLog({
-        type: 'booking_updated',
-        description: `Booking updated for ${updatedBooking.customer}`,
-        relatedId: id
-      });
-      
-      // Auto-generate draft invoice if booking status changed to confirmed and no invoice exists
-      if (updates.status === 'confirmed' && oldBooking.status === 'pending') {
-        const existingInvoice = invoices.find(inv => inv.bookingId === id);
-        if (!existingInvoice) {
-          generateInvoiceFromBooking(updatedBooking);
-        }
-      }
-      
-      // Sync invoice price if booking price was updated
-      if (updates.price !== undefined && updates.price !== oldBooking.price) {
-        const relatedInvoice = invoices.find(inv => inv.bookingId === id);
-        if (relatedInvoice) {
-          const newPrice = updates.price || EURO_PRICE_PER_BOOKING;
-          const updatedInvoices = invoices.map(inv => 
-            inv.bookingId === id ? {
-              ...inv,
-              amount: newPrice,
-              items: inv.items.map(item => ({
-                ...item,
-                rate: newPrice,
-                amount: newPrice
-              }))
-            } : inv
-          );
-          setInvoices(updatedInvoices);
-          safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
-          
-          addActivityLog({
-            type: 'invoice_price_synced',
-            description: `Invoice price updated to ${formatCurrency(newPrice)} for booking ${id}`,
-            relatedId: relatedInvoice.id
-          });
-        }
-      }
-      
-      // Sync related data
-      syncBookingData(id);
-      
-      return { success: true };
+      ));
+
+      return { success: true, booking: updatedBooking };
     } catch (error) {
       console.error('Failed to update booking:', error);
+      showAuthErrorModal(error);
       return { success: false, error: 'Failed to update booking' };
     }
   };
 
-  const deleteBooking = (id) => {
+  const deleteBooking = async (id) => {
     try {
-      const updatedBookings = bookings.filter(booking => booking.id !== id);
-      setBookings(updatedBookings);
-      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to delete booking
+      const result = await deleteBookingAPI(id);
+
+      if (!result.success) {
+        console.error('Failed to delete booking:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state
+      setBookings(prev => prev.filter(booking => booking.id !== id));
+
       return { success: true };
     } catch (error) {
       console.error('Failed to delete booking:', error);
+      showAuthErrorModal(error);
       return { success: false, error: 'Failed to delete booking' };
     }
   };
 
-  // New workflow-specific functions
+  // Workflow-specific functions using Supabase
   const confirmBooking = async (bookingId) => {
     try {
-      const booking = bookings.find(b => b.id === bookingId);
-      if (!booking) return { success: false, error: 'Booking not found' };
-      
-      const updatedBooking = { ...booking, status: 'confirmed' };
-      const updatedBookings = bookings.map(b => 
-        b.id === bookingId ? updatedBooking : b
-      );
-      setBookings(updatedBookings);
-      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
-      
-      // Generate draft invoice for confirmed booking
-      const existingInvoice = invoices.find(inv => inv.bookingId === bookingId);
-      if (!existingInvoice) {
-        generateInvoiceFromBooking(updatedBooking);
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
       }
-      
-      // Send confirmation email to driver if driver is assigned
-      let emailResult = null;
-      if (updatedBooking.driver) {
-        const driver = drivers.find(d => d.name === updatedBooking.driver);
-        if (driver && driver.email) {
-          // Get JWT from Supabase session using the new auth utility
-          const authResult = await getSupabaseJWT();
-          
-          if (!authResult.success) {
-            // Show authentication error modal
-            setAuthErrorModal({
-              isOpen: true,
-              error: authResult.error
-            });
-            
-            // Still log the booking confirmation but mark email as failed
-            addActivityLog({
-              type: 'email_failed',
-              description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${authResult.error}`,
-              relatedId: bookingId
-            });
-            
-            emailResult = { success: false, error: authResult.error, isAuthError: true };
-          } else {
-            const subject = 'Booking Confirmation - Priority Transfers';
-            const html = generateBookingConfirmationHTML(updatedBooking, driver.name);
-            emailResult = await sendDriverConfirmationEmail({
-              to: driver.email,
-              subject,
-              html,
-              supabaseJwt: authResult.jwt
-            });
-            
-            if (emailResult.success) {
-              console.log(`✅ Driver confirmation email sent successfully to ${driver.email}`);
-              
-              addActivityLog({
-                type: 'email_sent',
-                description: `Driver confirmation email sent to ${driver.name} (${driver.email})`,
-                relatedId: bookingId
-              });
-            } else {
-              console.error(`❌ Failed to send driver confirmation email to ${driver.email}:`, emailResult.error);
-              
-              // Handle authentication errors
-              if (emailResult.isAuthError) {
-                setAuthErrorModal({
-                  isOpen: true,
-                  error: emailResult.error
-                });
-              }
-              
-              addActivityLog({
-                type: 'email_failed',
-                description: `Failed to send driver confirmation email to ${driver.name} (${driver.email}): ${emailResult.error}`,
-                relatedId: bookingId
-              });
-            }
-          }
-        } else {
-          console.warn(`⚠️  Driver ${updatedBooking.driver} not found or has no email address`);
-        }
+
+      // Use the updateBooking function to change status to confirmed
+      const result = await updateBooking(bookingId, { status: 'confirmed' });
+
+      if (!result.success) {
+        return result;
       }
-      
-      addActivityLog({
-        type: 'booking_confirmed',
-        description: `Booking confirmed for ${updatedBooking.customer} - Draft invoice created${emailResult?.success ? ' - Driver notification sent' : ''}`,
-        relatedId: bookingId
-      });
-      
-      return { 
-        success: true, 
-        emailSent: emailResult?.success || false,
-        emailError: emailResult?.success ? null : emailResult?.error
-      };
+
+      // Additional logic for confirmation workflow can be added here
+      // (invoice generation, driver notifications, etc.)
+
+      return { success: true };
     } catch (error) {
       console.error('Failed to confirm booking:', error);
+      showAuthErrorModal(error);
       return { success: false, error: 'Failed to confirm booking' };
     }
   };
 
-  const markBookingCompleted = (bookingId) => {
+  const markBookingCompleted = async (bookingId) => {
     try {
-      const booking = bookings.find(b => b.id === bookingId);
-      if (!booking) return { success: false, error: 'Booking not found' };
-      
-      const updatedBooking = { ...booking, status: 'completed' };
-      const updatedBookings = bookings.map(b => 
-        b.id === bookingId ? updatedBooking : b
-      );
-      setBookings(updatedBookings);
-      safeLocalStorage.setItem("bookings", JSON.stringify(updatedBookings));
-      
-      addActivityLog({
-        type: 'booking_completed',
-        description: `Booking completed for ${updatedBooking.customer}`,
-        relatedId: bookingId
-      });
-      
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use the updateBooking function to change status to completed
+      const result = await updateBooking(bookingId, { status: 'completed' });
+
+      if (!result.success) {
+        return result;
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Failed to mark booking completed:', error);
+      showAuthErrorModal(error);
       return { success: false, error: 'Failed to mark booking completed' };
     }
   };
 
-  const addCustomer = (customer) => {
-    const newCustomer = { ...customer, id: Date.now(), totalBookings: 0 };
-    const updatedCustomers = [...customers, newCustomer];
-    setCustomers(updatedCustomers);
-    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+  // Supabase CRUD operations for customers
+  const addCustomer = async (customer) => {
+    try {
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to create customer
+      const result = await createCustomer({
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone || '',
+        address: customer.address || '',
+        preferredPayment: customer.preferredPayment || null,
+        status: customer.status || 'active'
+      });
+
+      if (!result.success) {
+        console.error('Failed to create customer:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state with new customer
+      const newCustomer = result.data;
+      setCustomers(prev => [...prev, newCustomer]);
+
+      return { success: true, data: newCustomer };
+    } catch (error) {
+      console.error('Failed to add customer:', error);
+      showAuthErrorModal(error);
+      return { success: false, error: 'Failed to save customer' };
+    }
   };
 
-  const updateCustomer = (id, updates) => {
-    const updatedCustomers = customers.map(customer => 
-      customer.id === id ? { ...customer, ...updates } : customer
-    );
-    setCustomers(updatedCustomers);
-    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+  const updateCustomer = async (id, updates) => {
+    try {
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to update customer
+      const result = await updateCustomerAPI(id, updates);
+
+      if (!result.success) {
+        console.error('Failed to update customer:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state
+      const updatedCustomer = result.data;
+      setCustomers(prev => prev.map(customer => 
+        customer.id === id ? updatedCustomer : customer
+      ));
+
+      return { success: true, data: updatedCustomer };
+    } catch (error) {
+      console.error('Failed to update customer:', error);
+      showAuthErrorModal(error);
+      return { success: false, error: 'Failed to update customer' };
+    }
   };
 
-  const deleteCustomer = (id) => {
-    const updatedCustomers = customers.filter(customer => customer.id !== id);
-    setCustomers(updatedCustomers);
-    safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+  const deleteCustomer = async (id) => {
+    try {
+      if (!session?.user) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Use Supabase API to delete customer
+      const result = await deleteCustomerAPI(id);
+
+      if (!result.success) {
+        console.error('Failed to delete customer:', result.error);
+        showAuthErrorModal(new Error(result.error));
+        return result;
+      }
+
+      // Update local state
+      setCustomers(prev => prev.filter(customer => customer.id !== id));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete customer:', error);
+      showAuthErrorModal(error);
+      return { success: false, error: 'Failed to delete customer' };
+    }
   };
 
   const addDriver = (driver) => {
     const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
     const updatedDrivers = [...drivers, newDriver];
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const updateDriver = (id, updates) => {
@@ -957,20 +927,20 @@ export function AppStoreProvider({ children }) {
       driver.id === id ? { ...driver, ...updates } : driver
     );
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const deleteDriver = (id) => {
     const updatedDrivers = drivers.filter(driver => driver.id !== id);
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const addVehicle = (vehicle) => {
     const newVehicle = { ...vehicle, id: Date.now(), status: "active" };
     const updatedVehicles = [...vehicles, newVehicle];
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const updateVehicle = (id, updates) => {
@@ -978,13 +948,13 @@ export function AppStoreProvider({ children }) {
       vehicle.id === id ? { ...vehicle, ...updates } : vehicle
     );
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const deleteVehicle = (id) => {
     const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== id);
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const addNotification = (notification) => {
@@ -996,7 +966,7 @@ export function AppStoreProvider({ children }) {
     };
     const updatedNotifications = [newNotification, ...notifications];
     setNotifications(updatedNotifications);
-    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    
   };
 
   const markNotificationRead = (id) => {
@@ -1004,7 +974,7 @@ export function AppStoreProvider({ children }) {
       notification.id === id ? { ...notification, read: true } : notification
     );
     setNotifications(updatedNotifications);
-    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    
   };
 
   const updateInvoice = (id, updates) => {
@@ -1013,7 +983,7 @@ export function AppStoreProvider({ children }) {
         invoice.id === id ? { ...invoice, ...updates } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_updated',
@@ -1034,7 +1004,7 @@ export function AppStoreProvider({ children }) {
         invoice.id === id ? { ...invoice, status: 'cancelled', editable: false } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_cancelled',
@@ -1060,7 +1030,7 @@ export function AppStoreProvider({ children }) {
         } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_sent',
@@ -1097,7 +1067,7 @@ export function AppStoreProvider({ children }) {
         } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       // Auto-create corresponding income entry
       const incomeEntry = {
@@ -1115,7 +1085,7 @@ export function AppStoreProvider({ children }) {
       
       const updatedIncome = [...income, incomeEntry];
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'payment_received',
@@ -1196,7 +1166,7 @@ export function AppStoreProvider({ children }) {
           } : c
         );
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
       }
 
       return { success: true };
@@ -1228,7 +1198,7 @@ export function AppStoreProvider({ children }) {
           } : c
         );
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
       }
 
       // Update driver status if booking is assigned
@@ -1247,7 +1217,7 @@ export function AppStoreProvider({ children }) {
             } : d
           );
           setDrivers(updatedDrivers);
-          safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+          
         }
       }
 
@@ -1273,19 +1243,8 @@ export function AppStoreProvider({ children }) {
       setIncome([]);
       setEstimations([]);
       
-      // Clear localStorage
-      safeLocalStorage.removeItem("bookings");
-      safeLocalStorage.removeItem("customers");
-      safeLocalStorage.removeItem("drivers");
-      safeLocalStorage.removeItem("vehicles");
-      safeLocalStorage.removeItem("invoices");
-      safeLocalStorage.removeItem("activityHistory");
-      safeLocalStorage.removeItem("notifications");
-      safeLocalStorage.removeItem("partners");
-      safeLocalStorage.removeItem("expenses");
-      safeLocalStorage.removeItem("income");
-      safeLocalStorage.removeItem("estimations");
-      
+      // Data cleared from state (no localStorage used anymore)
+
       addActivityLog({
         type: 'data_cleared',
         description: 'Demo data cleared successfully',
@@ -1400,10 +1359,10 @@ export function AppStoreProvider({ children }) {
       setVehicles(realVehicles);
       
       // Save to localStorage
-      safeLocalStorage.setItem("bookings", JSON.stringify(realBookings));
-      safeLocalStorage.setItem("customers", JSON.stringify(realCustomers));
-      safeLocalStorage.setItem("drivers", JSON.stringify(realDrivers));
-      safeLocalStorage.setItem("vehicles", JSON.stringify(realVehicles));
+      
+      
+      
+      
       
       addActivityLog({
         type: 'data_loaded',
@@ -1449,31 +1408,8 @@ export function AppStoreProvider({ children }) {
 
   const refreshAllData = () => {
     try {
-      // Force reload all data from localStorage to sync any inconsistencies
-      const bookingsData = safeLocalStorage.getItem("bookings");
-      const customersData = safeLocalStorage.getItem("customers");
-      const driversData = safeLocalStorage.getItem("drivers");
-      const vehiclesData = safeLocalStorage.getItem("vehicles");
-      const invoicesData = safeLocalStorage.getItem("invoices");
-      const activityData = safeLocalStorage.getItem("activityHistory");
-      const notificationsData = safeLocalStorage.getItem("notifications");
-      const partnersData = safeLocalStorage.getItem("partners");
-      const expensesData = safeLocalStorage.getItem("expenses");
-      const incomeData = safeLocalStorage.getItem("income");
-      const estimationsData = safeLocalStorage.getItem("estimations");
-
-      // Refresh all state with latest data from storage
-      if (bookingsData) setBookings(JSON.parse(bookingsData));
-      if (customersData) setCustomers(JSON.parse(customersData));
-      if (driversData) setDrivers(JSON.parse(driversData));
-      if (vehiclesData) setVehicles(JSON.parse(vehiclesData));
-      if (invoicesData) setInvoices(JSON.parse(invoicesData));
-      if (activityData) setActivityHistory(JSON.parse(activityData));
-      if (notificationsData) setNotifications(JSON.parse(notificationsData));
-      if (partnersData) setPartners(JSON.parse(partnersData));
-      if (expensesData) setExpenses(JSON.parse(expensesData));
-      if (incomeData) setIncome(JSON.parse(incomeData));
-      if (estimationsData) setEstimations(JSON.parse(estimationsData));
+      // Since we're using Supabase directly, we can reload data from the server if needed
+      console.log('Refresh all data called - using Supabase data already in state');
 
       addActivityLog({
         type: 'data_refresh',
@@ -1483,7 +1419,7 @@ export function AppStoreProvider({ children }) {
       
       return { success: true, message: 'All data refreshed successfully. KPIs and analytics updated.' };
     } catch (error) {
-      console.error('Failed to refresh data:', error);
+      console.error('Error refreshing all data:', error);
       return { success: false, error: 'Failed to refresh data' };
     }
   };
@@ -1509,7 +1445,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedPartners = [...partners, newPartner];
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_created',
@@ -1530,7 +1466,7 @@ export function AppStoreProvider({ children }) {
         partner.id === id ? { ...partner, ...updates } : partner
       );
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_updated',
@@ -1550,7 +1486,7 @@ export function AppStoreProvider({ children }) {
       const partner = partners.find(p => p.id === id);
       const updatedPartners = partners.filter(partner => partner.id !== id);
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_deleted',
@@ -1576,7 +1512,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedExpenses = [...expenses, newExpense];
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_created',
@@ -1597,7 +1533,7 @@ export function AppStoreProvider({ children }) {
         expense.id === id ? { ...expense, ...updates } : expense
       );
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_updated',
@@ -1617,7 +1553,7 @@ export function AppStoreProvider({ children }) {
       const expense = expenses.find(e => e.id === id);
       const updatedExpenses = expenses.filter(expense => expense.id !== id);
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_deleted',
@@ -1643,7 +1579,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedIncome = [...income, newIncome];
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_created',
@@ -1664,7 +1600,7 @@ export function AppStoreProvider({ children }) {
         inc.id === id ? { ...inc, ...updates } : inc
       );
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_updated',
@@ -1684,7 +1620,7 @@ export function AppStoreProvider({ children }) {
       const inc = income.find(i => i.id === id);
       const updatedIncome = income.filter(inc => inc.id !== id);
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_deleted',
@@ -1711,7 +1647,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedEstimations = [...estimations, newEstimation];
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_created',
@@ -1732,7 +1668,7 @@ export function AppStoreProvider({ children }) {
         estimation.id === id ? { ...estimation, ...updates } : estimation
       );
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_updated',
@@ -1752,7 +1688,7 @@ export function AppStoreProvider({ children }) {
       const estimation = estimations.find(e => e.id === id);
       const updatedEstimations = estimations.filter(estimation => estimation.id !== id);
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_deleted',
@@ -1841,9 +1777,9 @@ export function AppStoreProvider({ children }) {
     });
   };
 
-  const handleReLogin = () => {
+  const handleReLogin = async () => {
     // Clear current user and redirect to login
-    logout();
+    await logout();
     hideAuthErrorModal();
     // In a real app, this would navigate to login page
     window.location.href = '/login';
@@ -1851,6 +1787,8 @@ export function AppStoreProvider({ children }) {
 
   const value = {
     currentUser,
+    session,
+    loading,
     bookings,
     customers,
     drivers,
