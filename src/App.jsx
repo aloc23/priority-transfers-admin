@@ -124,8 +124,13 @@ function AppShell() {
 }
 
 function RequireAuth({children}){
-  const { currentUser } = useAppStore();
-  if(!currentUser) return <Navigate to="/login" replace />;
+  const { currentUser, loading } = useAppStore(); // ✅ Added loading
+  
+  if (loading) { // ✅ Show spinner while loading
+    return <div>Checking authentication...</div>;
+  }
+  
+  if(!currentUser) return <Navigate to="/login" replace />; // ✅ Only redirect after loading
   return children;
 }
 
