@@ -22,12 +22,20 @@ import MobileFAB from "./components/MobileFAB";
 import MobileTopbar from "./components/MobileTopbar";
 import FloatingHamburger from "./components/FloatingHamburger";
 import AuthErrorModal from "./components/AuthErrorModal";
+import ErrorModal from "./components/ErrorModal";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { isAdmin } from "./utils/adminUtils";
 
 function AuthenticatedShell() {
-  const { currentUser, authErrorModal, hideAuthErrorModal, handleReLogin } = useAppStore();
+  const { 
+    currentUser, 
+    authErrorModal, 
+    errorModal,
+    hideAuthErrorModal, 
+    hideErrorModal,
+    handleReLogin 
+  } = useAppStore();
   const { isMobile, isDesktop } = useResponsive();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
   
@@ -88,6 +96,14 @@ function AuthenticatedShell() {
         onClose={hideAuthErrorModal}
         onReLogin={handleReLogin}
         error={authErrorModal.error}
+      />
+      
+      {/* Global General Error Modal */}
+      <ErrorModal 
+        isOpen={errorModal.isOpen}
+        onClose={hideErrorModal}
+        title={errorModal.title}
+        error={errorModal.error}
       />
     </div>
   );
