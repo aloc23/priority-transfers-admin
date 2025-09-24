@@ -50,6 +50,13 @@ export function AppStoreProvider({ children }) {
     error: null
   });
 
+  // General error modal state
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: 'Error',
+    error: null
+  });
+
   // Supabase authentication and data initialization
   // This effect handles the complete authentication lifecycle and data loading
   useEffect(() => {
@@ -768,9 +775,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to create booking:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal  
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Booking Creation Failed');
         return result;
       }
 
@@ -797,7 +804,7 @@ export function AppStoreProvider({ children }) {
       return { success: true, booking: newBooking };
     } catch (error) {
       console.error('Failed to add booking:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Booking Creation Failed');
       return { success: false, error: 'Failed to save booking' };
     }
   };
@@ -813,9 +820,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to update booking:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Booking Update Failed');
         return result;
       }
 
@@ -828,7 +835,7 @@ export function AppStoreProvider({ children }) {
       return { success: true, booking: updatedBooking };
     } catch (error) {
       console.error('Failed to update booking:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Booking Update Failed');
       return { success: false, error: 'Failed to update booking' };
     }
   };
@@ -844,9 +851,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to delete booking:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Booking Deletion Failed');
         return result;
       }
 
@@ -856,7 +863,7 @@ export function AppStoreProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Failed to delete booking:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Booking Deletion Failed');
       return { success: false, error: 'Failed to delete booking' };
     }
   };
@@ -902,7 +909,7 @@ export function AppStoreProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Failed to mark booking completed:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Booking Completion Failed');
       return { success: false, error: 'Failed to mark booking completed' };
     }
   };
@@ -926,9 +933,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to create customer:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Customer Creation Failed');
         return result;
       }
 
@@ -939,7 +946,7 @@ export function AppStoreProvider({ children }) {
       return { success: true, data: newCustomer };
     } catch (error) {
       console.error('Failed to add customer:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Customer Creation Failed');
       return { success: false, error: 'Failed to save customer' };
     }
   };
@@ -955,9 +962,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to update customer:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Customer Update Failed');
         return result;
       }
 
@@ -970,7 +977,7 @@ export function AppStoreProvider({ children }) {
       return { success: true, data: updatedCustomer };
     } catch (error) {
       console.error('Failed to update customer:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Customer Update Failed');
       return { success: false, error: 'Failed to update customer' };
     }
   };
@@ -986,9 +993,9 @@ export function AppStoreProvider({ children }) {
 
       if (!result.success) {
         console.error('Failed to delete customer:', result.error);
-        // Always ensure we pass an Error object to showAuthErrorModal
+        // Use smart error handler to determine appropriate modal
         const error = result.error instanceof Error ? result.error : new Error(result.error);
-        showAuthErrorModal(error);
+        handleError(error, result, 'Customer Deletion Failed');
         return result;
       }
 
@@ -998,7 +1005,7 @@ export function AppStoreProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Failed to delete customer:', error);
-      showAuthErrorModal(error);
+      handleError(error, null, 'Customer Deletion Failed');
       return { success: false, error: 'Failed to delete customer' };
     }
   };
@@ -1865,6 +1872,57 @@ export function AppStoreProvider({ children }) {
     });
   };
 
+  // General error modal functions
+  const showErrorModal = (error = null, title = 'Error') => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      error
+    });
+  };
+
+  const hideErrorModal = () => {
+    setErrorModal({
+      isOpen: false,
+      title: 'Error',
+      error: null
+    });
+  };
+
+  // Helper function to determine if an error is authentication-related
+  const isAuthError = (error, result = null) => {
+    // Check if it's explicitly marked as requiring authentication
+    if (result?.requiresAuth) return true;
+    
+    // Check error message for authentication keywords
+    const errorMessage = error?.message || error || '';
+    const authKeywords = [
+      'not authenticated',
+      'authentication required',
+      'user not authenticated',
+      'session error',
+      'authentication error',
+      'jwt',
+      'token',
+      'unauthorized',
+      'login',
+      'session expired'
+    ];
+    
+    return authKeywords.some(keyword => 
+      errorMessage.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
+
+  // Smart error handler that routes to appropriate modal
+  const handleError = (error, result = null, title = 'Error') => {
+    if (isAuthError(error, result)) {
+      showAuthErrorModal(error);
+    } else {
+      showErrorModal(error, title);
+    }
+  };
+
   const handleReLogin = async () => {
     // Clear current user and redirect to login
     await logout();
@@ -1889,7 +1947,6 @@ export function AppStoreProvider({ children }) {
     income,
     estimations,
     globalCalendarState,
-    authErrorModal,
     login,
     logout,
     addBooking,
@@ -1942,7 +1999,14 @@ export function AppStoreProvider({ children }) {
     // Authentication modal functions
     showAuthErrorModal,
     hideAuthErrorModal,
-    handleReLogin
+    handleReLogin,
+    // General error modal functions
+    showErrorModal,
+    hideErrorModal,
+    handleError,
+    // Modal state
+    authErrorModal,
+    errorModal
   };
 
   return (
