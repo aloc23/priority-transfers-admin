@@ -50,17 +50,19 @@ export function AppStoreProvider({ children }) {
   });
 
   // Supabase authentication and data initialization
+  // This effect handles the complete authentication lifecycle and data loading
   useEffect(() => {
     let mounted = true;
 
     async function initializeApp() {
       try {
-        // Get initial session
+        // Get initial Supabase session to check if user is already logged in
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
         if (mounted) {
           setSession(initialSession);
           if (initialSession?.user) {
+            // If user is authenticated, set up their profile and load data
             await setupUserProfile(initialSession.user);
             await loadInitialData();
           }
@@ -74,7 +76,7 @@ export function AppStoreProvider({ children }) {
       }
     }
 
-    // Listen for auth changes
+    // Listen for Supabase authentication state changes (login, logout, session refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
@@ -82,9 +84,11 @@ export function AppStoreProvider({ children }) {
       setSession(session);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        // User signed in - set up profile and load data
         await setupUserProfile(session.user);
         await loadInitialData();
       } else if (event === 'SIGNED_OUT') {
+        // User signed out - clear all data
         setCurrentUser(null);
         clearAllData();
       }
@@ -98,10 +102,11 @@ export function AppStoreProvider({ children }) {
     };
   }, []);
 
-  // Setup user profile from Supabase auth
+  // Setup user profile from Supabase authentication
+  // This function manages user profiles in the profiles table and ensures role consistency
   const setupUserProfile = async (user) => {
     try {
-      // Get user profile from profiles table
+      // Get user profile from profiles table to determine role and display name
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, full_name')
@@ -116,10 +121,11 @@ export function AppStoreProvider({ children }) {
       let userName = user.email;
 
       if (profile) {
+        // Use existing profile data
         userRole = profile.role || "User";
         userName = profile.full_name || user.email;
       } else {
-        // Create profile if it doesn't exist
+        // Create profile if it doesn't exist (new user registration)
         const { error: createError } = await supabase
           .from('profiles')
           .insert([{
@@ -133,6 +139,7 @@ export function AppStoreProvider({ children }) {
         }
       }
 
+      // Set the user profile in application state
       const userProfile = {
         id: user.id,
         name: userName,
@@ -147,15 +154,18 @@ export function AppStoreProvider({ children }) {
     }
   };
 
-  // Load initial data from Supabase
+  // Load initial data from Supabase database
+  // This function fetches core application data once the user is authenticated
   const loadInitialData = async () => {
     try {
-      // Load bookings and customers from Supabase
+      // Fetch bookings and customers from Supabase APIs
+      // These API calls will automatically handle authentication and error cases
       const [bookingsData, customersData] = await Promise.all([
         fetchBookings(),
         fetchCustomers()
       ]);
 
+      // Update state with fetched data if successful
       if (bookingsData && !bookingsData.error) {
         setBookings(bookingsData);
       }
@@ -164,7 +174,7 @@ export function AppStoreProvider({ children }) {
         setCustomers(customersData);
       }
 
-      // Initialize other data as needed
+      // Initialize placeholder data for features not yet fully integrated with Supabase
       initializeDrivers();
       initializeVehicles();
     } catch (error) {
