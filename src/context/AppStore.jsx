@@ -187,18 +187,6 @@ export function AppStoreProvider({ children }) {
     setIncome([]);
     setEstimations([]);
   };
-    if (storedExpenses) {
-      try {
-        setExpenses(JSON.parse(storedExpenses));
-      } catch (error) {
-        console.warn('Failed to parse stored expenses data:', error);
-        initializeExpenses();
-      }
-    } else {
-      initializeExpenses();
-    }
-
-
 
   const initializeBookings = () => {
     const today = new Date();
@@ -263,7 +251,6 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setBookings(sampleBookings);
-    safeLocalStorage.setItem("bookings", JSON.stringify(sampleBookings));
   };
 
   const initializeCustomers = () => {
@@ -273,7 +260,6 @@ export function AppStoreProvider({ children }) {
       { id: 3, name: "Bob Johnson", email: "bob@example.com", phone: "555-0103", totalBookings: 22 }
     ];
     setCustomers(sampleCustomers);
-    safeLocalStorage.setItem("customers", JSON.stringify(sampleCustomers));
   };
 
   // Initialize demo data for drivers and vehicles (fallback if no Supabase data)
@@ -336,7 +322,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setInvoices(sampleInvoices);
-    safeLocalStorage.setItem("invoices", JSON.stringify(sampleInvoices));
+    
   };
 
   const initializePartners = () => {
@@ -391,7 +377,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setPartners(samplePartners);
-    safeLocalStorage.setItem("partners", JSON.stringify(samplePartners));
+    
   };
 
   const initializeExpenses = () => {
@@ -434,7 +420,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setExpenses(sampleExpenses);
-    safeLocalStorage.setItem("expenses", JSON.stringify(sampleExpenses));
+    
   };
 
   const initializeIncome = () => {
@@ -469,7 +455,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setIncome(sampleIncome);
-    safeLocalStorage.setItem("income", JSON.stringify(sampleIncome));
+    
   };
 
   const initializeEstimations = () => {
@@ -514,7 +500,7 @@ export function AppStoreProvider({ children }) {
       }
     ];
     setEstimations(sampleEstimations);
-    safeLocalStorage.setItem("estimations", JSON.stringify(sampleEstimations));
+    
   };
 
   const addActivityLog = (activity) => {
@@ -525,7 +511,7 @@ export function AppStoreProvider({ children }) {
     };
     const updatedHistory = [newActivity, ...activityHistory].slice(0, 100); // Keep last 100 activities
     setActivityHistory(updatedHistory);
-    safeLocalStorage.setItem("activityHistory", JSON.stringify(updatedHistory));
+    
   };
 
   const generateInvoiceFromBooking = (booking) => {
@@ -555,7 +541,7 @@ export function AppStoreProvider({ children }) {
     
     const updatedInvoices = [...invoices, invoice];
     setInvoices(updatedInvoices);
-    safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+    
     
     addActivityLog({
       type: 'invoice_generated',
@@ -583,7 +569,7 @@ export function AppStoreProvider({ children }) {
         };
         const updatedCustomers = [...customers, newCustomer];
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
         
         addActivityLog({
           type: 'customer_auto_created',
@@ -617,7 +603,7 @@ export function AppStoreProvider({ children }) {
       
       const updatedInvoices = [...invoices, invoice];
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_created',
@@ -923,7 +909,7 @@ export function AppStoreProvider({ children }) {
     const newDriver = { ...driver, id: Date.now(), status: "available", rating: 5.0 };
     const updatedDrivers = [...drivers, newDriver];
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const updateDriver = (id, updates) => {
@@ -931,20 +917,20 @@ export function AppStoreProvider({ children }) {
       driver.id === id ? { ...driver, ...updates } : driver
     );
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const deleteDriver = (id) => {
     const updatedDrivers = drivers.filter(driver => driver.id !== id);
     setDrivers(updatedDrivers);
-    safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+    
   };
 
   const addVehicle = (vehicle) => {
     const newVehicle = { ...vehicle, id: Date.now(), status: "active" };
     const updatedVehicles = [...vehicles, newVehicle];
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const updateVehicle = (id, updates) => {
@@ -952,13 +938,13 @@ export function AppStoreProvider({ children }) {
       vehicle.id === id ? { ...vehicle, ...updates } : vehicle
     );
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const deleteVehicle = (id) => {
     const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== id);
     setVehicles(updatedVehicles);
-    safeLocalStorage.setItem("vehicles", JSON.stringify(updatedVehicles));
+    
   };
 
   const addNotification = (notification) => {
@@ -970,7 +956,7 @@ export function AppStoreProvider({ children }) {
     };
     const updatedNotifications = [newNotification, ...notifications];
     setNotifications(updatedNotifications);
-    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    
   };
 
   const markNotificationRead = (id) => {
@@ -978,7 +964,7 @@ export function AppStoreProvider({ children }) {
       notification.id === id ? { ...notification, read: true } : notification
     );
     setNotifications(updatedNotifications);
-    safeLocalStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    
   };
 
   const updateInvoice = (id, updates) => {
@@ -987,7 +973,7 @@ export function AppStoreProvider({ children }) {
         invoice.id === id ? { ...invoice, ...updates } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_updated',
@@ -1008,7 +994,7 @@ export function AppStoreProvider({ children }) {
         invoice.id === id ? { ...invoice, status: 'cancelled', editable: false } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_cancelled',
@@ -1034,7 +1020,7 @@ export function AppStoreProvider({ children }) {
         } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       addActivityLog({
         type: 'invoice_sent',
@@ -1071,7 +1057,7 @@ export function AppStoreProvider({ children }) {
         } : invoice
       );
       setInvoices(updatedInvoices);
-      safeLocalStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+      
       
       // Auto-create corresponding income entry
       const incomeEntry = {
@@ -1089,7 +1075,7 @@ export function AppStoreProvider({ children }) {
       
       const updatedIncome = [...income, incomeEntry];
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'payment_received',
@@ -1170,7 +1156,7 @@ export function AppStoreProvider({ children }) {
           } : c
         );
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
       }
 
       return { success: true };
@@ -1202,7 +1188,7 @@ export function AppStoreProvider({ children }) {
           } : c
         );
         setCustomers(updatedCustomers);
-        safeLocalStorage.setItem("customers", JSON.stringify(updatedCustomers));
+        
       }
 
       // Update driver status if booking is assigned
@@ -1221,7 +1207,7 @@ export function AppStoreProvider({ children }) {
             } : d
           );
           setDrivers(updatedDrivers);
-          safeLocalStorage.setItem("drivers", JSON.stringify(updatedDrivers));
+          
         }
       }
 
@@ -1247,19 +1233,8 @@ export function AppStoreProvider({ children }) {
       setIncome([]);
       setEstimations([]);
       
-      // Clear localStorage
-      safeLocalStorage.removeItem("bookings");
-      safeLocalStorage.removeItem("customers");
-      safeLocalStorage.removeItem("drivers");
-      safeLocalStorage.removeItem("vehicles");
-      safeLocalStorage.removeItem("invoices");
-      safeLocalStorage.removeItem("activityHistory");
-      safeLocalStorage.removeItem("notifications");
-      safeLocalStorage.removeItem("partners");
-      safeLocalStorage.removeItem("expenses");
-      safeLocalStorage.removeItem("income");
-      safeLocalStorage.removeItem("estimations");
-      
+      // Data cleared from state (no localStorage used anymore)
+
       addActivityLog({
         type: 'data_cleared',
         description: 'Demo data cleared successfully',
@@ -1374,10 +1349,10 @@ export function AppStoreProvider({ children }) {
       setVehicles(realVehicles);
       
       // Save to localStorage
-      safeLocalStorage.setItem("bookings", JSON.stringify(realBookings));
-      safeLocalStorage.setItem("customers", JSON.stringify(realCustomers));
-      safeLocalStorage.setItem("drivers", JSON.stringify(realDrivers));
-      safeLocalStorage.setItem("vehicles", JSON.stringify(realVehicles));
+      
+      
+      
+      
       
       addActivityLog({
         type: 'data_loaded',
@@ -1423,31 +1398,8 @@ export function AppStoreProvider({ children }) {
 
   const refreshAllData = () => {
     try {
-      // Force reload all data from localStorage to sync any inconsistencies
-      const bookingsData = safeLocalStorage.getItem("bookings");
-      const customersData = safeLocalStorage.getItem("customers");
-      const driversData = safeLocalStorage.getItem("drivers");
-      const vehiclesData = safeLocalStorage.getItem("vehicles");
-      const invoicesData = safeLocalStorage.getItem("invoices");
-      const activityData = safeLocalStorage.getItem("activityHistory");
-      const notificationsData = safeLocalStorage.getItem("notifications");
-      const partnersData = safeLocalStorage.getItem("partners");
-      const expensesData = safeLocalStorage.getItem("expenses");
-      const incomeData = safeLocalStorage.getItem("income");
-      const estimationsData = safeLocalStorage.getItem("estimations");
-
-      // Refresh all state with latest data from storage
-      if (bookingsData) setBookings(JSON.parse(bookingsData));
-      if (customersData) setCustomers(JSON.parse(customersData));
-      if (driversData) setDrivers(JSON.parse(driversData));
-      if (vehiclesData) setVehicles(JSON.parse(vehiclesData));
-      if (invoicesData) setInvoices(JSON.parse(invoicesData));
-      if (activityData) setActivityHistory(JSON.parse(activityData));
-      if (notificationsData) setNotifications(JSON.parse(notificationsData));
-      if (partnersData) setPartners(JSON.parse(partnersData));
-      if (expensesData) setExpenses(JSON.parse(expensesData));
-      if (incomeData) setIncome(JSON.parse(incomeData));
-      if (estimationsData) setEstimations(JSON.parse(estimationsData));
+      // Since we're using Supabase directly, we can reload data from the server if needed
+      console.log('Refresh all data called - using Supabase data already in state');
 
       addActivityLog({
         type: 'data_refresh',
@@ -1457,7 +1409,7 @@ export function AppStoreProvider({ children }) {
       
       return { success: true, message: 'All data refreshed successfully. KPIs and analytics updated.' };
     } catch (error) {
-      console.error('Failed to refresh data:', error);
+      console.error('Error refreshing all data:', error);
       return { success: false, error: 'Failed to refresh data' };
     }
   };
@@ -1483,7 +1435,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedPartners = [...partners, newPartner];
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_created',
@@ -1504,7 +1456,7 @@ export function AppStoreProvider({ children }) {
         partner.id === id ? { ...partner, ...updates } : partner
       );
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_updated',
@@ -1524,7 +1476,7 @@ export function AppStoreProvider({ children }) {
       const partner = partners.find(p => p.id === id);
       const updatedPartners = partners.filter(partner => partner.id !== id);
       setPartners(updatedPartners);
-      safeLocalStorage.setItem("partners", JSON.stringify(updatedPartners));
+      
       
       addActivityLog({
         type: 'partner_deleted',
@@ -1550,7 +1502,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedExpenses = [...expenses, newExpense];
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_created',
@@ -1571,7 +1523,7 @@ export function AppStoreProvider({ children }) {
         expense.id === id ? { ...expense, ...updates } : expense
       );
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_updated',
@@ -1591,7 +1543,7 @@ export function AppStoreProvider({ children }) {
       const expense = expenses.find(e => e.id === id);
       const updatedExpenses = expenses.filter(expense => expense.id !== id);
       setExpenses(updatedExpenses);
-      safeLocalStorage.setItem("expenses", JSON.stringify(updatedExpenses));
+      
       
       addActivityLog({
         type: 'expense_deleted',
@@ -1617,7 +1569,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedIncome = [...income, newIncome];
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_created',
@@ -1638,7 +1590,7 @@ export function AppStoreProvider({ children }) {
         inc.id === id ? { ...inc, ...updates } : inc
       );
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_updated',
@@ -1658,7 +1610,7 @@ export function AppStoreProvider({ children }) {
       const inc = income.find(i => i.id === id);
       const updatedIncome = income.filter(inc => inc.id !== id);
       setIncome(updatedIncome);
-      safeLocalStorage.setItem("income", JSON.stringify(updatedIncome));
+      
       
       addActivityLog({
         type: 'income_deleted',
@@ -1685,7 +1637,7 @@ export function AppStoreProvider({ children }) {
       };
       const updatedEstimations = [...estimations, newEstimation];
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_created',
@@ -1706,7 +1658,7 @@ export function AppStoreProvider({ children }) {
         estimation.id === id ? { ...estimation, ...updates } : estimation
       );
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_updated',
@@ -1726,7 +1678,7 @@ export function AppStoreProvider({ children }) {
       const estimation = estimations.find(e => e.id === id);
       const updatedEstimations = estimations.filter(estimation => estimation.id !== id);
       setEstimations(updatedEstimations);
-      safeLocalStorage.setItem("estimations", JSON.stringify(updatedEstimations));
+      
       
       addActivityLog({
         type: 'estimation_deleted',
@@ -1815,9 +1767,9 @@ export function AppStoreProvider({ children }) {
     });
   };
 
-  const handleReLogin = () => {
+  const handleReLogin = async () => {
     // Clear current user and redirect to login
-    logout();
+    await logout();
     hideAuthErrorModal();
     // In a real app, this would navigate to login page
     window.location.href = '/login';

@@ -94,7 +94,19 @@ function AuthenticatedShell() {
 }
 
 function AppShell() {
-  const { currentUser } = useAppStore();
+  const { currentUser, loading } = useAppStore();
+  
+  // Show loading screen while initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Priority Transfers...</p>
+        </div>
+      </div>
+    );
+  }
   
   // If not authenticated, show only login and signup pages
   if (!currentUser) {
