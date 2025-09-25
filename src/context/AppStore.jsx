@@ -77,17 +77,24 @@ export function AppStoreProvider({ children }) {
         }
 
         // Get initial Supabase session to check if user is already logged in
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
-        if (mounted) {
-          setSession(initialSession);
-          if (initialSession?.user) {
-            // If user is authenticated, set up their profile and load data
-            await setupUserProfile(initialSession.user);
-            await loadInitialData();
-          }
-          setLoading(false);
-        }
+const { data, error } = await supabase.auth.getSession();
+
+if (mounted) {
+  if (error) {
+    console.error('getSession error:', error);
+    setCurrentUser(null);
+  }
+
+  setSession(data?.session || null);
+
+  if (data?.session?.user) {
+    await setupUserProfile(data.session.user);
+    await loadInitialData();
+  }
+
+  // 👇 always stop loading
+  setLoading(false);
+}
       } catch (error) {
         console.error('Error initializing app:', error);
         if (mounted) {
@@ -113,6 +120,7 @@ export function AppStoreProvider({ children }) {
         } else if (event === 'SIGNED_OUT') {
           // User signed out - clear all data
           setCurrentUser(null);
+           setLoading(false);
           clearAllData();
         }
       });
