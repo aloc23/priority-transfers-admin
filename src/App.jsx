@@ -40,43 +40,33 @@ function AuthenticatedShell() {
     handleReLogin 
   } = useAppStore();
   const { isMobile, isDesktop } = useResponsive();
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed by default
-  
-  // Handle responsive behavior for sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Debug log
+  console.log("AuthenticatedShell currentUser:", currentUser);
+
   useEffect(() => {
     if (isDesktop) {
-      // On desktop, check if user manually collapsed it before
-      const hasManuallyCollapsed = localStorage.getItem('sidebarManuallyCollapsed') === 'true';
-      if (!hasManuallyCollapsed) {
-        setSidebarOpen(true); // Auto-open on desktop unless manually collapsed
-      }
+      const hasManuallyCollapsed = localStorage.getItem("sidebarManuallyCollapsed") === "true";
+      if (!hasManuallyCollapsed) setSidebarOpen(true);
     } else if (isMobile) {
-      // On mobile, always start closed and clear any manual collapse flags
       setSidebarOpen(false);
-      localStorage.removeItem('sidebarManuallyCollapsed');
+      localStorage.removeItem("sidebarManuallyCollapsed");
     }
   }, [isDesktop, isMobile]);
-  
+
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Network Error Banner - shown at top when API fails */}
-      <NetworkErrorBanner 
-        show={networkError}
-        onRetry={refreshAllData}
-      />
-      
-      {/* Floating Hamburger - only visible on mobile when sidebar is closed */}
-      {isMobile && !sidebarOpen && (
-        <FloatingHamburger onClick={() => setSidebarOpen(true)} />
-      )}
-      
-      {/* Mobile Topbar - only shows when sidebar is open */}
+      <NetworkErrorBanner show={networkError} onRetry={refreshAllData} />
+
+      {isMobile && !sidebarOpen && <FloatingHamburger onClick={() => setSidebarOpen(true)} />}
+
       <MobileTopbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
+
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
-      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''} ${networkError ? 'pt-16' : ''}`}>
-        <div className={`${isMobile ? 'p-2 pt-14' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
+
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? "w-full" : ""} ${networkError ? "pt-16" : ""}`}>
+        <div className={`${isMobile ? "p-2 pt-14" : "p-4 md:p-6 lg:p-8"} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/schedule" element={<RequireAuth><Schedule /></RequireAuth>} />
@@ -95,19 +85,16 @@ function AuthenticatedShell() {
           </Routes>
         </div>
       </main>
-      
-      {/* Mobile FAB for quick actions */}
+
       <MobileFAB />
-      
-      {/* Global Authentication Error Modal */}
+
       <AuthErrorModal 
         isOpen={authErrorModal.isOpen}
         onClose={hideAuthErrorModal}
         onReLogin={handleReLogin}
         error={authErrorModal.error}
       />
-      
-      {/* Global General Error Modal */}
+
       <ErrorModal 
         isOpen={errorModal.isOpen}
         onClose={hideErrorModal}
@@ -120,8 +107,11 @@ function AuthenticatedShell() {
 
 function AppShell() {
   const { currentUser, loading } = useAppStore();
-  
-  // Show loading screen while initializing
+
+  // Debug logs for env values
+  console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+  console.log("Anon Key present:", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
@@ -132,8 +122,7 @@ function AppShell() {
       </div>
     );
   }
-  
-  // If not authenticated, show only login and signup pages
+
   if (!currentUser) {
     return (
       <Routes>
@@ -143,35 +132,26 @@ function AppShell() {
       </Routes>
     );
   }
-  
-  // If authenticated, show the full admin interface
+
   return <AuthenticatedShell />;
 }
 
-function RequireAuth({children}){
-  const { currentUser, loading } = useAppStore(); // ✅ Added loading
-  
-  if (loading) { // ✅ Show spinner while loading
-    return <div>Checking authentication...</div>;
-  }
-  
-  if(!currentUser) return <Navigate to="/login" replace />; // ✅ Only redirect after loading
+function RequireAuth({ children }) {
+  const { currentUser, loading } = useAppStore();
+  if (loading) return <div>Checking authentication...</div>;
+  if (!currentUser) return <Navigate to="/login" replace />;
   return children;
 }
 
-function RequireRole({children, roles}){
+function RequireRole({ children, roles }) {
   const { currentUser } = useAppStore();
-  if(!currentUser) return <Navigate to="/login" replace />;
-  
-  // Admin users have access to everything
-  if(isAdmin(currentUser)) return children;
-  
-  // Non-admin users must have the required role
-  if(!roles.includes(currentUser.role)) return <Navigate to="/" replace />;
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (isAdmin(currentUser)) return children;
+  if (!roles.includes(currentUser.role)) return <Navigate to="/" replace />;
   return children;
 }
 
-export default function App(){
+export default function App() {
   return (
     <ErrorBoundary>
       <FleetProvider>
