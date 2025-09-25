@@ -5,19 +5,30 @@
 /**
  * Wraps a promise with a timeout
  * @param {Promise} promise - The promise to wrap
- * @param {number} timeoutMs - Timeout in milliseconds
- * @param {string} operation - Operation name for error messages
+ * @param {number} ms - Timeout in milliseconds
+ * @param {string} label - Operation name for error messages
  * @returns {Promise} Promise that resolves/rejects with timeout
  */
-export function withTimeout(promise, timeoutMs, operation = 'operation') {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-    })
-  ]);
+export async function withTimeout(promise, ms, label = "operation") {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${label} timed out after ${ms}ms`)),
+      ms
+    );
+  });
+
+  try {
+    // ⚡ Return whichever finishes first
+    const result = await Promise.race([promise, timeout]);
+
+    // ✅ Supabase can return [] (empty array) → that's valid, not an error
+    return result;
+  } finally {
+    // ✅ Always clear timeout
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
