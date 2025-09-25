@@ -23,6 +23,7 @@ import MobileTopbar from "./components/MobileTopbar";
 import FloatingHamburger from "./components/FloatingHamburger";
 import AuthErrorModal from "./components/AuthErrorModal";
 import ErrorModal from "./components/ErrorModal";
+import NetworkErrorBanner from "./components/NetworkErrorBanner";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { isAdmin } from "./utils/adminUtils";
@@ -32,6 +33,8 @@ function AuthenticatedShell() {
     currentUser, 
     authErrorModal, 
     errorModal,
+    networkError,
+    refreshAllData,
     hideAuthErrorModal, 
     hideErrorModal,
     handleReLogin 
@@ -56,6 +59,12 @@ function AuthenticatedShell() {
   
   return (
     <div className="flex h-screen bg-slate-50">
+      {/* Network Error Banner - shown at top when API fails */}
+      <NetworkErrorBanner 
+        show={networkError}
+        onRetry={refreshAllData}
+      />
+      
       {/* Floating Hamburger - only visible on mobile when sidebar is closed */}
       {isMobile && !sidebarOpen && (
         <FloatingHamburger onClick={() => setSidebarOpen(true)} />
@@ -66,7 +75,7 @@ function AuthenticatedShell() {
       
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''}`}>
+      <main className={`flex-1 overflow-y-auto bg-slate-50 ${isMobile ? 'w-full' : ''} ${networkError ? 'pt-16' : ''}`}>
         <div className={`${isMobile ? 'p-2 pt-14' : 'p-4 md:p-6 lg:p-8'} max-w-full mx-auto`}>
           <Routes>
             <Route path="/" element={<Dashboard />} />

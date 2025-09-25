@@ -31,6 +31,14 @@ export function AppStoreProvider({ children }) {
   const [estimations, setEstimations] = useState([]);
   const [activityHistory, setActivityHistory] = useState([]);
 
+  // Global calendar and filter state for synchronization between dashboard and schedule
+  const [globalCalendarState, setGlobalCalendarState] = useState({
+    selectedDate: null,
+    selectedStatus: null,
+    selectedDriver: '',
+    currentView: 'month'
+  });
+
   // Auth error modal
   const [authErrorModal, setAuthErrorModal] = useState({ isOpen: false, error: null });
   
@@ -455,6 +463,8 @@ export function AppStoreProvider({ children }) {
       console.log('Refreshing demo data - no action needed');
       return;
     }
+    // Clear network error when retrying
+    setNetworkError(false);
     await loadAllData();
   };
 
@@ -499,6 +509,11 @@ export function AppStoreProvider({ children }) {
     setSession(null);
   };
 
+  // Global calendar state management
+  const updateGlobalCalendarState = (updates) => {
+    setGlobalCalendarState(prev => ({ ...prev, ...updates }));
+  };
+
   //
   // 🔹 Error modal
   //
@@ -520,6 +535,7 @@ export function AppStoreProvider({ children }) {
     currentUser, session, loading, networkError, isDemoMode,
     bookings, customers, drivers, vehicles,
     invoices, partners, expenses, income, estimations, activityHistory,
+    globalCalendarState, updateGlobalCalendarState,
     login, logout,
     enableDemoMode, disableDemoMode,
     refreshAllData, generateInvoiceFromBooking, markInvoiceAsPaid,
