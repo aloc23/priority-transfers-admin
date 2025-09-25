@@ -255,20 +255,25 @@ export function AppStoreProvider({ children }) {
         }
       }
 
-      let role = "User";
+      let role = "Admin";
       let name = user.email;
 
       if (profile) {
-        role = profile.role || "User";
+        role = profile.role || "Admin";
         name = profile.full_name || user.email;
       } else {
         // Try to create profile, but don't fail if it doesn't work
+        // Let database default to 'admin' role as defined in migration.sql
         try {
           await supabase.from("profiles").insert([
-            { id: user.id, full_name: user.email, role: "User" }
+            { id: user.id, full_name: user.email }
           ]);
+          // Use default admin role since database defaults to 'admin'
+          role = "Admin";
         } catch (insertErr) {
           console.error("Profile insert error (non-fatal):", insertErr);
+          // If profile creation fails, still give admin access by default
+          role = "Admin";
         }
       }
 
@@ -280,7 +285,7 @@ export function AppStoreProvider({ children }) {
         id: user.id, 
         email: user.email, 
         name: user.email, 
-        role: "User" 
+        role: "Admin" 
       });
     }
   };

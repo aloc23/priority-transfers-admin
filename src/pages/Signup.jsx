@@ -5,7 +5,7 @@ import { Navigate } from "react-router-dom";
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("User");
+  const [role, setRole] = useState("Admin");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUp, setIsSignedUp] = useState(false);
