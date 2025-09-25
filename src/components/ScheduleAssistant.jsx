@@ -12,8 +12,8 @@ export default function ScheduleAssistant({
   isMobile,
   className = ""
 }) {
-  const { bookings, drivers } = useAppStore();
-  const { openModalWithDate } = useContext(BookNowContext);
+  const { bookings = [], drivers = [] } = useAppStore() || {}; // Defensive defaults
+  const { openModalWithDate } = useContext(BookNowContext) || {}; // Defensive default
 
   // Generate time slots for the day (every 2 hours from 6 AM to 10 PM)
   const timeSlots = useMemo(() => {
@@ -30,32 +30,37 @@ export default function ScheduleAssistant({
 
   // Filter bookings for selected date and driver
   const filteredBookings = useMemo(() => {
-    if (!selectedDate) return [];
+    if (!selectedDate || !bookings) return [];
     
-    const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
-    let filtered = bookings.filter(booking => {
-      // Check if booking matches selected date
-      if (booking.type === 'tour') {
-        if (booking.tourStartDate && booking.tourEndDate) {
-          const startDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
-          const endDate = moment(booking.tourEndDate, 'YYYY-MM-DD');
-          const selectedMoment = moment(selectedDateStr, 'YYYY-MM-DD');
-          return selectedMoment.isBetween(startDate, endDate, 'day', '[]');
+    try {
+      const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
+      let filtered = bookings.filter(booking => {
+        // Check if booking matches selected date
+        if (booking.type === 'tour') {
+          if (booking.tourStartDate && booking.tourEndDate) {
+            const startDate = moment(booking.tourStartDate, 'YYYY-MM-DD');
+            const endDate = moment(booking.tourEndDate, 'YYYY-MM-DD');
+            const selectedMoment = moment(selectedDateStr, 'YYYY-MM-DD');
+            return selectedMoment.isBetween(startDate, endDate, 'day', '[]');
+          }
+          return false;
+        } else {
+          const matchesPickupDate = booking.date === selectedDateStr;
+          const matchesReturnDate = booking.hasReturn && booking.returnDate === selectedDateStr;
+          return matchesPickupDate || matchesReturnDate;
         }
-        return false;
-      } else {
-        const matchesPickupDate = booking.date === selectedDateStr;
-        const matchesReturnDate = booking.hasReturn && booking.returnDate === selectedDateStr;
-        return matchesPickupDate || matchesReturnDate;
+      });
+
+      // Filter by driver if selected
+      if (selectedDriver) {
+        filtered = filtered.filter(booking => booking.driver === selectedDriver);
       }
-    });
 
-    // Filter by driver if selected
-    if (selectedDriver) {
-      filtered = filtered.filter(booking => booking.driver === selectedDriver);
+      return filtered;
+    } catch (error) {
+      console.error('Error filtering bookings:', error);
+      return [];
     }
-
-    return filtered;
   }, [bookings, selectedDate, selectedDriver]);
 
   // Find bookings for each time slot
@@ -81,11 +86,17 @@ export default function ScheduleAssistant({
   const handleCreateBooking = (timeSlot) => {
     if (!selectedDate) return;
     
-    const bookingDateTime = moment(selectedDate)
-      .hour(timeSlot.hour)
-      .minute(0);
-    
-    openModalWithDate(bookingDateTime.toDate());
+    try {
+      const bookingDateTime = moment(selectedDate)
+        .hour(timeSlot.hour)
+        .minute(0);
+      
+      if (openModalWithDate) {
+        openModalWithDate(bookingDateTime.toDate());
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+    }
   };
 
   const handleBookingClick = (booking) => {
@@ -118,7 +129,7 @@ export default function ScheduleAssistant({
         {/* Selected date and driver filter */}
         <div className="space-y-2">
           <div className="text-sm text-slate-600">
-            {moment(selectedDate).format('MMM D, YYYY')}
+            {selectedDate ? moment(selectedDate).format('MMM D, YYYY') : 'No date selected'}
           </div>
           
           <div className="flex items-center gap-2">

@@ -68,8 +68,8 @@ export default function BookingsCalendarWidget(props) {
   // State for calendar event popup
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState(null);
   
-  // Use global state instead of local state
-  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
+  // Use global state instead of local state with defensive defaults
+  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState || {};
 
   // Modal management functions
   const openBookingModal = () => {

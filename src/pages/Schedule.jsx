@@ -64,8 +64,8 @@ export default function Schedule() {
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar', 'table', 'resources'
   const [highlightedBooking, setHighlightedBooking] = useState(null);
 
-  // Use global calendar state instead of local state  
-  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState;
+  // Use global calendar state instead of local state with defensive defaults
+  const { selectedDate, selectedStatus, selectedDriver, currentView } = globalCalendarState || {};
   const filterStatus = selectedStatus === null ? 'all' : selectedStatus;
 
   // Booking status counts for tabs
