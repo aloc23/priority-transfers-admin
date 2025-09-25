@@ -4,7 +4,8 @@ import { testSupabaseConnection, getSupabaseConfig } from './supabaseClient';
  * Comprehensive connection health check
  */
 export async function performHealthCheck() {
-  console.log('🔍 Performing Supabase health check...');
+  console.log('🔍 Starting Supabase Connection Verification');
+  console.log('==========================================');
   
   const config = getSupabaseConfig();
   const results = {
@@ -22,13 +23,14 @@ export async function performHealthCheck() {
       'Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are properly set',
       'Check Supabase dashboard under Settings → API for correct values'
     );
-    console.error('❌ Configuration check failed:', config.issues);
+    console.error('❌ Configuration validation failed:', config.issues);
     return results;
   }
 
-  console.log('✅ Configuration check passed');
+  console.log('✅ Configuration validation passed');
 
   // Test connection
+  console.log('🔌 Testing Supabase connection...');
   try {
     const connectionResult = await testSupabaseConnection();
     results.connection = connectionResult;
@@ -41,10 +43,10 @@ export async function performHealthCheck() {
           'Run the migration.sql file in your Supabase SQL editor',
           'Check TROUBLESHOOTING.md for detailed migration instructions'
         );
-        console.warn('⚠️ Connection successful but schema setup needed');
+        console.warn('⚠️  Connection successful but database schema needs setup');
       } else {
         results.overall = 'success';
-        console.log('✅ Connection test passed');
+        console.log('✅ Connection test passed - Database ready');
       }
     } else {
       results.overall = 'failed';
@@ -73,7 +75,12 @@ export async function performHealthCheck() {
       'Check browser console for detailed error information',
       'Consider enabling demo mode temporarily'
     );
-    console.error('❌ Health check failed with error:', error);
+    console.error('❌ Connection verification failed with unexpected error:', error);
+  }
+
+  console.log(`🏁 Connection verification complete: ${results.overall.toUpperCase()}`);
+  if (results.overall !== 'success') {
+    console.log('📋 Falling back to demo mode for offline development');
   }
 
   return results;
