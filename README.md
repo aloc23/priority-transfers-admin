@@ -83,6 +83,42 @@ You can also deploy on [Vercel](https://vercel.com/) or [Netlify](https://netlif
 
 If you're experiencing persistent connection errors or other issues with Supabase, follow these troubleshooting steps:
 
+### Quick Start Checklist
+
+If the app fails to load or shows connection errors, check these items first:
+
+1. **✅ Check .env file exists and has correct format**
+   ```bash
+   cat .env
+   # Should show:
+   # VITE_SUPABASE_URL=https://your-project.supabase.co
+   # VITE_SUPABASE_ANON_KEY=your_anon_key
+   # VITE_DEMO_MODE=false
+   ```
+
+2. **✅ Verify Supabase project is active**
+   - Open your [Supabase Dashboard](https://supabase.com/dashboard)
+   - Ensure your project status is "Active" (not paused/inactive)
+
+3. **✅ Test basic connection**
+   - Open browser developer console
+   - Look for connection errors or configuration warnings
+   - The app will show specific error messages if configuration is invalid
+
+4. **✅ Try demo mode as fallback**
+   - Set `VITE_DEMO_MODE=true` in your .env file
+   - Restart the app to verify it works without Supabase
+
+### Connection Error Solutions
+
+| Error Type | Symptoms | Solution |
+|------------|----------|----------|
+| **Configuration Issues** | "Missing environment variables" in console | Update .env with correct Supabase URL and key |
+| **Network Timeout** | App hangs on loading screen | Check internet connection, try demo mode |
+| **Invalid Credentials** | "Invalid JWT" or auth errors | Verify anon key in Supabase dashboard Settings → API |
+| **Database Not Found** | "Table does not exist" errors | Run migration.sql in Supabase SQL editor |
+| **Permission Denied** | "RLS policy" or "permission denied" | Check RLS policies allow access for your user role |
+
 ### 1. Verify Database Schema
 
 **Check if all required tables exist in your Supabase dashboard:**
@@ -114,18 +150,43 @@ CREATE POLICY "Admin full access" ON bookings
 
 ### 3. Environment Configuration
 
-**Verify your environment variables:**
-```bash
-# Copy the template and fill in your values
-cp .env.template .env
-```
+**Step-by-step setup:**
 
-**Required variables:**
-- `VITE_SUPABASE_URL` - Your project URL (https://[project-ref].supabase.co)
-- `VITE_SUPABASE_ANON_KEY` - Your anon public key (safe to expose)
-- `VITE_DEMO_MODE` - Set to `false` for production
+1. **Create .env file** (if it doesn't exist):
+   ```bash
+   # Copy the template
+   cp .env.template .env
+   # OR create manually:
+   touch .env
+   ```
 
-**Get credentials:** Find these in your Supabase dashboard under Settings → API.
+2. **Add required variables** to your .env file:
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   VITE_DEMO_MODE=false
+   ```
+
+3. **Find your credentials**:
+   - Go to [Supabase Dashboard](https://supabase.com/dashboard)
+   - Select your project
+   - Navigate to Settings → API
+   - Copy "Project URL" for `VITE_SUPABASE_URL`
+   - Copy "Project API keys" → "anon public" for `VITE_SUPABASE_ANON_KEY`
+
+4. **Restart the development server**:
+   ```bash
+   npm run dev
+   ```
+
+**⚠️ Common mistakes:**
+- URL should end with `.supabase.co` (not include `/rest/v1/`)
+- Use the "anon" key, not the "service_role" key
+- Keys are case-sensitive - copy exactly from dashboard
+- No quotes around values in .env file
+
+**✅ Validation:**
+The app will automatically validate your configuration on startup and show detailed error messages if something is wrong.
 
 ### 4. Test Database Connection
 

@@ -24,6 +24,7 @@ import FloatingHamburger from "./components/FloatingHamburger";
 import AuthErrorModal from "./components/AuthErrorModal";
 import ErrorModal from "./components/ErrorModal";
 import NetworkErrorBanner from "./components/NetworkErrorBanner";
+import SupabaseErrorBoundary from "./components/SupabaseErrorBoundary";
 import { useResponsive } from "./hooks/useResponsive";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { isAdmin } from "./utils/adminUtils";
@@ -154,13 +155,15 @@ function RequireRole({ children, roles }) {
 export default function App() {
   return (
     <ErrorBoundary>
-      <FleetProvider>
-        <AppStoreProvider>
-          <Router>
-            <AppShell />
-          </Router>
-        </AppStoreProvider>
-      </FleetProvider>
+      <SupabaseErrorBoundary>
+        <FleetProvider>
+          <AppStoreProvider>
+            <Router>
+              <AppShell />
+            </Router>
+          </AppStoreProvider>
+        </FleetProvider>
+      </SupabaseErrorBoundary>
     </ErrorBoundary>
   );
 }

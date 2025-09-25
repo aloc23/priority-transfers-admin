@@ -19,6 +19,7 @@ import BookingInvoiceStatusTabs from "../components/BookingInvoiceStatusTabs";
 import CombinedStatusSummary from "../components/CombinedStatusSummary";
 import FinancialKPIBlock from "../components/FinancialKPIBlock";
 import FleetDriverChecker from "../components/FleetDriverChecker";
+import ConnectionHealthIndicator from "../components/ConnectionHealthIndicator";
 import { calculateKPIs } from '../utils/kpi';
 
 export default function Dashboard() {
@@ -338,6 +339,9 @@ export default function Dashboard() {
         subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         plain={true}
       />
+
+      {/* Connection Health Indicator */}
+      <ConnectionHealthIndicator />
 
       {/* Dashboard Tabs - moved below header, KPI cards removed (now handled by SmartDashboardWidget) */}
       <div className="border-b border-slate-200">

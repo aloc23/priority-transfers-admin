@@ -1,4 +1,4 @@
-import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
+import supabase, { SUPABASE_ANON_KEY, getSupabaseConfig } from './supabaseClient';
 
 /**
  * Authentication utilities for managing Supabase JWT tokens
@@ -9,31 +9,7 @@ import supabase, { SUPABASE_ANON_KEY } from './supabaseClient';
  * @returns {Object} - Configuration validation result
  */
 export function validateSupabaseConfig() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = SUPABASE_ANON_KEY;
-  
-  const issues = [];
-  
-  if (!supabaseUrl) {
-    issues.push('VITE_SUPABASE_URL is missing');
-  } else if (!supabaseUrl.startsWith('https://')) {
-    issues.push('VITE_SUPABASE_URL should start with https://');
-  }
-  
-  if (!supabaseKey) {
-    issues.push('VITE_SUPABASE_ANON_KEY is missing');
-  } else if (supabaseKey.length < 100) {
-    issues.push('VITE_SUPABASE_ANON_KEY appears to be invalid (too short)');
-  }
-  
-  return {
-    isValid: issues.length === 0,
-    issues: issues,
-    config: {
-      url: supabaseUrl,
-      hasKey: !!supabaseKey
-    }
-  };
+  return getSupabaseConfig();
 }
 
 /**
