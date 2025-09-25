@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import supabase from "../utils/supabaseClient";
 import { isDemoModeEnabled } from "../utils/demoMode";
 import { isNetworkError } from "../utils/timeout";
+import { performHealthCheck } from "../utils/connectionHealthCheck";
 
 const AppStoreContext = createContext();
 
@@ -34,6 +35,7 @@ export function AppStoreProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(isDemoModeEnabled());
+  const [connectionHealth, setConnectionHealth] = useState(null);
 
   // Entities
   const [bookings, setBookings] = useState([]);
@@ -70,7 +72,7 @@ export function AppStoreProvider({ children }) {
           setNetworkError(true);
           setIsDemoMode(true);
           setLoading(false);
-        }, 10000);
+        }, 15000); // Increased timeout for health check
 
         if (isDemoModeEnabled()) {
           clearTimeout(timeoutId);
@@ -79,6 +81,25 @@ export function AppStoreProvider({ children }) {
           clearAllData();
           setLoading(false);
           return;
+        }
+
+        // Perform comprehensive health check first
+        console.log('🔍 Performing Supabase health check...');
+        const healthCheck = await performHealthCheck();
+        setConnectionHealth(healthCheck);
+
+        if (healthCheck.overall === 'failed') {
+          clearTimeout(timeoutId);
+          console.error('❌ Health check failed, falling back to demo mode');
+          setNetworkError(true);
+          setIsDemoMode(true);
+          setLoading(false);
+          return;
+        }
+
+        if (healthCheck.overall === 'warning') {
+          console.warn('⚠️ Health check warning:', healthCheck.connection?.warning);
+          // Continue with initialization but user will see warnings
         }
 
         const sessionResult = await withTimeout(
@@ -248,20 +269,48 @@ export function AppStoreProvider({ children }) {
   // 🔹 Data helpers
   //
   const fetchTable = async (table, setter) => {
+    if (isDemoMode || isDemoModeEnabled()) {
+      // In demo mode, return empty arrays to prevent errors
+      setter([]);
+      return [];
+    }
+
     try {
       const { data, error } = await withTimeout(
         supabase.from(table).select("*"),
-        5000,
+        8000, // Increased timeout
         `Fetch ${table}`
       );
+      
       if (error) {
         console.error(`Fetch ${table} error:`, error);
+        
+        // Handle specific error types gracefully
+        if (error.code === 'PGRST116' || error.message?.includes('relation') && error.message?.includes('does not exist')) {
+          console.warn(`Table ${table} does not exist - database schema may need setup`);
+          setter([]);
+          return [];
+        }
+        
+        // For permission errors, still set empty array to prevent crashes
+        if (error.message?.includes('permission denied') || error.message?.includes('RLS')) {
+          console.warn(`Permission denied for table ${table} - check RLS policies`);
+          setter([]);
+          return [];
+        }
+        
+        setter([]);
         return [];
       }
-      setter(data || []);
-      return data;
+      
+      // Ensure data is an array to prevent destructuring errors
+      const safeData = Array.isArray(data) ? data : [];
+      setter(safeData);
+      return safeData;
     } catch (error) {
       console.error(`Fetch ${table} timeout/error:`, error);
+      // Always set empty array on error to prevent undefined crashes
+      setter([]);
       return [];
     }
   };
@@ -333,7 +382,7 @@ export function AppStoreProvider({ children }) {
   // 🔹 Store value
   //
   const value = {
-    currentUser, session, loading, networkError, isDemoMode,
+    currentUser, session, loading, networkError, isDemoMode, connectionHealth,
     bookings, customers, drivers, vehicles,
     invoices, partners, expenses, income, estimations, activityHistory,
     globalCalendarState, setGlobalCalendarState,
