@@ -22,11 +22,12 @@ npm install
 
 ### 2. Configure environment variables
 ```bash
-cp .env.local.example .env.local
+cp .env.template .env
 ```
-Edit `.env.local` with your Supabase credentials:
+Edit `.env` with your Supabase credentials:
 - `VITE_SUPABASE_URL`: Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key  
+- `VITE_DEMO_MODE`: Set to `false` for production
 
 Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api
 
@@ -77,6 +78,163 @@ This application is configured for GitHub Pages deployment using the `/docs` fol
 ### Other Platforms
 
 You can also deploy on [Vercel](https://vercel.com/) or [Netlify](https://netlify.com/) for enhanced routing support without hash symbols.
+
+## Supabase Troubleshooting & Best Practices
+
+If you're experiencing persistent connection errors or other issues with Supabase, follow these troubleshooting steps:
+
+### 1. Verify Database Schema
+
+**Check if all required tables exist in your Supabase dashboard:**
+- `customers` - Customer management
+- `drivers` - Driver information 
+- `vehicles` - Fleet management
+- `bookings` - Core business transactions
+- `invoices` - Billing and payments
+- `profiles` - User profiles and roles
+- `activity_history` - Audit trail
+- `partners` - Partner/vendor information
+
+**Run the migration:** Open your Supabase SQL editor and execute `supabase/migration.sql` to create all necessary tables and relationships.
+
+### 2. Configure Row Level Security (RLS) Policies
+
+**Critical:** Ensure RLS policies are properly configured for each table. The migration script includes basic policies, but you may need to customize them:
+
+```sql
+-- Example: Allow admin users full access to bookings
+CREATE POLICY "Admin full access" ON bookings
+    FOR ALL TO authenticated
+    USING (
+        (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
+    );
+```
+
+**Test policies directly in Supabase:** Before deploying, use the Supabase dashboard to test queries and ensure your RLS policies work as expected.
+
+### 3. Environment Configuration
+
+**Verify your environment variables:**
+```bash
+# Copy the template and fill in your values
+cp .env.template .env
+```
+
+**Required variables:**
+- `VITE_SUPABASE_URL` - Your project URL (https://[project-ref].supabase.co)
+- `VITE_SUPABASE_ANON_KEY` - Your anon public key (safe to expose)
+- `VITE_DEMO_MODE` - Set to `false` for production
+
+**Get credentials:** Find these in your Supabase dashboard under Settings → API.
+
+### 4. Test Database Connection
+
+**Quick connection test:**
+```bash
+# Create a demo user (requires service role key - keep secure!)
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/create-demo-user.mjs
+```
+
+**Manual testing in Supabase:**
+1. Go to your Supabase dashboard
+2. Use the SQL editor to run: `SELECT * FROM profiles LIMIT 5;`
+3. If this fails, check your RLS policies
+4. Verify user authentication in the Auth section
+
+### 5. Common Connection Issues & Solutions
+
+**Issue: "Permission denied" or RLS errors**
+- **Solution:** Check that your RLS policies allow access for your user role
+- **Test:** Verify user roles in the `profiles` table match your app expectations
+
+**Issue: "Network error" or timeouts**
+- **Solution:** Check your network connection and Supabase project status
+- **Test:** Try accessing your Supabase dashboard directly
+
+**Issue: "Invalid JWT" or authentication errors**  
+- **Solution:** Clear browser localStorage/sessionStorage and re-login
+- **Check:** Verify your anon key hasn't expired or changed
+
+**Issue: "Table does not exist" errors**
+- **Solution:** Run the migration script in your Supabase SQL editor
+- **Verify:** Check the Tables section in your Supabase dashboard
+
+### 6. Error Handling Best Practices
+
+**The app includes robust error handling, but consider these enhancements:**
+
+```javascript
+// Example: Enhanced error handling in API calls
+try {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*');
+    
+  if (error) {
+    console.error('Supabase Error:', error.message);
+    // Show user-friendly message
+    throw new Error(`Database error: ${error.message}`);
+  }
+  
+  return data;
+} catch (error) {
+  // Handle network errors, timeouts, etc.
+  console.error('Connection Error:', error);
+  throw error;
+}
+```
+
+### 7. Performance Optimization
+
+**Database queries:**
+- Use `select()` to limit returned columns
+- Add proper indexes for frequently queried fields
+- Use `limit()` for large datasets
+- Consider pagination for tables with many rows
+
+**Batch operations:**
+```javascript
+// Good: Batch insert
+const { data, error } = await supabase
+  .from('bookings')
+  .insert(multipleBookings);
+
+// Avoid: Multiple single inserts in a loop
+```
+
+### 8. Monitoring & Debugging
+
+**Enable logging in development:**
+```javascript
+// The app includes a logger utility at src/utils/logger.js
+import { logger } from '../utils/logger';
+
+logger.info('User action', { userId, action: 'create_booking' });
+logger.error('Database error', { error: error.message, table: 'bookings' });
+```
+
+**Monitor in production:**
+- Use Supabase's built-in monitoring dashboard
+- Set up alerts for high error rates or slow queries
+- Monitor API usage to avoid rate limits
+
+### 9. Security Checklist
+
+- [ ] All tables have appropriate RLS policies enabled
+- [ ] User roles are properly configured in the `profiles` table  
+- [ ] Service role keys are kept secure (not in client code)
+- [ ] Environment variables are not committed to the repository
+- [ ] API keys are rotated periodically
+- [ ] Database backups are configured in Supabase
+
+### 10. Getting Help
+
+If issues persist:
+1. Check the [Supabase Documentation](https://supabase.com/docs)
+2. Review error logs in your browser's developer console
+3. Test queries directly in the Supabase SQL editor
+4. Verify your project's API status in the Supabase dashboard
+5. Consider reaching out to [Supabase Support](https://supabase.com/support)
 
 ## License
 
