@@ -463,6 +463,8 @@ export function AppStoreProvider({ children }) {
       console.log('Refreshing demo data - no action needed');
       return;
     }
+    // Clear network error when retrying
+    setNetworkError(false);
     await loadAllData();
   };
 
