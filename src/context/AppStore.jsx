@@ -84,7 +84,6 @@ export function AppStoreProvider({ children }) {
         }
 
         // Perform comprehensive health check first
-        console.log('🔍 Performing Supabase health check...');
         const healthCheck = await performHealthCheck();
         setConnectionHealth(healthCheck);
 
