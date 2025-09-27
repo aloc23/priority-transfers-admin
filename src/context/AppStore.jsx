@@ -1,6 +1,8 @@
 // src/context/AppStore.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import supabase from "../utils/supabaseClient";
+import { auth, db } from "../firebase";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { isDemoModeEnabled } from "../utils/demoMode";
 import { isNetworkError } from "../utils/timeout";
 import { performHealthCheck } from "../utils/connectionHealthCheck";
@@ -102,9 +104,12 @@ export function AppStoreProvider({ children }) {
         }
 
         const sessionResult = await withTimeout(
-          supabase.auth.getSession(),
+          new Promise((resolve) => {
+            const currentUser = auth.currentUser;
+            resolve({ data: { session: currentUser ? { user: currentUser } : null }, error: null });
+          }),
           5000,
-          'Supabase session check'
+          'Firebase session check'
         );
 
         clearTimeout(timeoutId);
@@ -137,33 +142,31 @@ export function AppStoreProvider({ children }) {
       }
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        setSession(session);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!mounted) return;
+      setSession(user ? { user } : null);
 
-        try {
-          if (event === "SIGNED_IN" && session?.user) {
-            await setupUserProfile(session.user);
-            await loadAllData();
-          } else if (event === "SIGNED_OUT") {
-            clearAllData();
-            setCurrentUser(null);
-          }
-        } catch (error) {
-          console.error('Auth state change error:', error);
-          if (isNetworkError(error)) {
-            setNetworkError(true);
-          }
+      try {
+        if (user) {
+          await setupUserProfile(user);
+          await loadAllData();
+        } else {
+          clearAllData();
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        if (isNetworkError(error)) {
+          setNetworkError(true);
         }
       }
-    );
+    });
 
     init();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -180,19 +183,15 @@ export function AppStoreProvider({ children }) {
     }
 
     try {
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
+      const userCredential = await withTimeout(
+        signInWithEmailAndPassword(auth, email, password),
         8000,
-        'Supabase login'
+        'Firebase login'
       );
-      if (error) {
-        showAuthErrorModal(error);
-        return { success: false, error: error.message };
-      }
-      return { success: true, user: data.user };
+      return { success: true, user: userCredential.user };
     } catch (error) {
       console.error('Login error:', error);
-      showAuthErrorModal({ message: 'Login failed' });
+      showAuthErrorModal(error);
       return { success: false, error: error.message || 'Login failed' };
     }
   };
@@ -204,12 +203,11 @@ export function AppStoreProvider({ children }) {
       return;
     }
     try {
-      const { error } = await withTimeout(
-        supabase.auth.signOut(),
+      await withTimeout(
+        signOut(auth),
         5000,
-        'Supabase logout'
+        'Firebase logout'
       );
-      if (error) console.error('Logout error:', error);
     } catch (error) {
       console.error('Logout timeout/error:', error);
     }
@@ -225,42 +223,24 @@ export function AppStoreProvider({ children }) {
     }
 
     try {
-      const { data: profile, error } = await withTimeout(
-        supabase.from("profiles").select("id, full_name, role").eq("id", user.id).single(),
-        5000,
-        'Profile fetch'
-      );
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Profile fetch error:", error);
-      }
-
-      let finalProfile = profile;
-
-      if (!profile) {
-        const { data: inserted, error: insertError } = await supabase
-          .from("profiles")
-          .insert({ id: user.id, full_name: user.email, role: "admin" })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Profile insert failed, falling back:", insertError);
-          finalProfile = { id: user.id, full_name: user.email, role: "admin" };
-        } else {
-          finalProfile = inserted;
-        }
-      }
-
-      setCurrentUser({
-        id: user.id,
+      // Simplified profile setup for Firebase
+      const userProfile = {
+        id: user.uid,
         email: user.email,
-        name: finalProfile.full_name || user.email,
-        role: finalProfile.role || "admin"
-      });
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        role: 'Admin' // Default role for now
+      };
+      
+      setCurrentUser(userProfile);
     } catch (error) {
-      console.error("Setup user profile error:", error);
-      setCurrentUser({ id: user.id, email: user.email, name: user.email, role: "admin" });
+      console.error("Profile setup error:", error);
+      // Fallback profile
+      setCurrentUser({
+        id: user.uid,
+        email: user.email,
+        name: user.email?.split('@')[0] || 'User',
+        role: 'Admin'
+      });
     }
   };
 
@@ -275,32 +255,10 @@ export function AppStoreProvider({ children }) {
     }
 
     try {
-      const { data, error } = await withTimeout(
-        supabase.from(table).select("*"),
-        8000, // Increased timeout
-        `Fetch ${table}`
-      );
-      
-      if (error) {
-        console.error(`Fetch ${table} error:`, error);
-        
-        // Handle specific error types gracefully
-        if (error.code === 'PGRST116' || error.message?.includes('relation') && error.message?.includes('does not exist')) {
-          console.warn(`Table ${table} does not exist - database schema may need setup`);
-          setter([]);
-          return [];
-        }
-        
-        // For permission errors, still set empty array to prevent crashes
-        if (error.message?.includes('permission denied') || error.message?.includes('RLS')) {
-          console.warn(`Permission denied for table ${table} - check RLS policies`);
-          setter([]);
-          return [];
-        }
-        
-        setter([]);
-        return [];
-      }
+      // TODO: Implement Firebase data fetching for table: ${table}
+      // For now, return empty array to prevent crashes
+      console.log(`Fetching ${table} - using empty data for now`);
+      const data = [];
       
       // Ensure data is an array to prevent destructuring errors
       const safeData = Array.isArray(data) ? data : [];
@@ -315,24 +273,66 @@ export function AppStoreProvider({ children }) {
   };
 
   const insertRow = async (table, record, setter) => {
-    const { data, error } = await supabase.from(table).insert(record).select().single();
-    if (error) return { success: false, error };
-    setter((prev) => [...prev, data]);
-    return { success: true, data };
+    try {
+      // Add document to Firebase collection
+      const docRef = await addDoc(collection(db, table), record);
+      const newData = { ...record, id: docRef.id };
+      setter((prev) => [...prev, newData]);
+      return { success: true, data: newData };
+    } catch (error) {
+      console.error(`Insert to ${table} failed:`, error);
+      return { success: false, error: error.message };
+    }
   };
 
-  const updateRow = async (table, id, updates, setter) => {
-    const { data, error } = await supabase.from(table).update(updates).eq("id", id).select().single();
-    if (error) return { success: false, error };
-    setter((prev) => prev.map((item) => (item.id === id ? data : item)));
-    return { success: true, data };
+    const updateRow = async (table, id, updatedData, setter) => {
+    try {
+      // Update document in Firebase collection
+      const docRef = doc(db, table, id);
+      await updateDoc(docRef, updatedData);
+      setter((prev) => prev.map((item) => (item.id === id ? { ...item, ...updatedData } : item)));
+      
+      // Special handling for booking confirmation - auto-generate invoice
+      if (table === "bookings" && updatedData.status === 'confirmed') {
+        const currentBooking = bookings.find(b => b.id === id);
+        if (currentBooking && currentBooking.status === 'pending') {
+          // Check if invoice doesn't already exist
+          const existingInvoice = invoices.find(inv => inv.bookingId === id);
+          if (!existingInvoice) {
+            // Auto-generate invoice for newly confirmed booking
+            const invoice = {
+              bookingId: id,
+              customer: currentBooking.customer,
+              amount: currentBooking.price || 45,
+              status: 'pending',
+              date: new Date().toISOString().split('T')[0],
+              serviceDate: currentBooking.date,
+              pickup: currentBooking.pickup,
+              destination: currentBooking.destination
+            };
+            await insertRow("invoices", invoice, setInvoices);
+          }
+        }
+      }
+      
+      return { success: true, data: updatedData };
+    } catch (error) {
+      console.error(`Update in ${table} failed:`, error);
+      return { success: false, error: error.message };
+    }
   };
 
   const deleteRow = async (table, id, setter) => {
-    const { error } = await supabase.from(table).delete().eq("id", id);
-    if (error) return { success: false, error };
-    setter((prev) => prev.filter((item) => item.id !== id));
-    return { success: true };
+    try {
+      // Delete document from Firebase collection
+      const docRef = doc(db, table, id);
+      await deleteDoc(docRef);
+      setter((prev) => prev.filter((item) => item.id !== id));
+      return { success: true };
+    } catch (error) {
+      console.error(`Delete from ${table} failed:`, error);
+      return { success: false, error: error.message };
+    }
   };
 
   //
@@ -387,14 +387,45 @@ export function AppStoreProvider({ children }) {
     globalCalendarState, setGlobalCalendarState,
     login, logout, refreshAllData: loadAllData,
     addBooking: (b) => insertRow("bookings", b, setBookings),
+    updateBooking: (id, updates) => updateRow("bookings", id, updates, setBookings),
+    deleteBooking: (id) => deleteRow("bookings", id, setBookings),
     addCustomer: (c) => insertRow("customers", c, setCustomers),
+    updateCustomer: (id, updates) => updateRow("customers", id, updates, setCustomers),
+    deleteCustomer: (id) => deleteRow("customers", id, setCustomers),
     addDriver: (d) => insertRow("drivers", d, setDrivers),
+    updateDriver: (id, updates) => updateRow("drivers", id, updates, setDrivers),
+    deleteDriver: (id) => deleteRow("drivers", id, setDrivers),
     addVehicle: (v) => insertRow("vehicles", v, setVehicles),
+    updateVehicle: (id, updates) => updateRow("vehicles", id, updates, setVehicles),
+    deleteVehicle: (id) => deleteRow("vehicles", id, setVehicles),
     addInvoice: (i) => insertRow("invoices", i, setInvoices),
+    updateInvoice: (id, updates) => updateRow("invoices", id, updates, setInvoices),
+    deleteInvoice: (id) => deleteRow("invoices", id, setInvoices),
     addPartner: (p) => insertRow("partners", p, setPartners),
+    updatePartner: (id, updates) => updateRow("partners", id, updates, setPartners),
+    deletePartner: (id) => deleteRow("partners", id, setPartners),
     addExpense: (e) => insertRow("expenses", e, setExpenses),
+    updateExpense: (id, updates) => updateRow("expenses", id, updates, setExpenses),
+    deleteExpense: (id) => deleteRow("expenses", id, setExpenses),
     addIncome: (i) => insertRow("income", i, setIncome),
+    updateIncome: (id, updates) => updateRow("income", id, updates, setIncome),
+    deleteIncome: (id) => deleteRow("income", id, setIncome),
     addEstimation: (e) => insertRow("estimations", e, setEstimations),
+    updateEstimation: (id, updates) => updateRow("estimations", id, updates, setEstimations),
+    deleteEstimation: (id) => deleteRow("estimations", id, setEstimations),
+    // Invoice generation
+    generateInvoiceFromBooking: (booking) => {
+      const invoice = {
+        bookingId: booking.id,
+        customer: booking.customer,
+        amount: booking.price || 45,
+        status: 'pending',
+        date: new Date().toISOString().split('T')[0],
+        serviceDate: booking.date
+      };
+      return insertRow("invoices", invoice, setInvoices);
+    },
+    markInvoiceAsPaid: (id) => updateRow("invoices", id, { status: 'paid' }, setInvoices),
     authErrorModal, showAuthErrorModal, hideAuthErrorModal,
     errorModal, showErrorModal, hideErrorModal
   };
