@@ -421,10 +421,40 @@ export function AppStoreProvider({ children }) {
         amount: booking.price || 45,
         status: 'pending',
         date: new Date().toISOString().split('T')[0],
-        serviceDate: booking.date
+        serviceDate: booking.date,
+        pickup: booking.pickup,
+        destination: booking.destination
       };
       return insertRow("invoices", invoice, setInvoices);
     },
+    // Booking workflow functions
+    confirmBooking: async (bookingId) => {
+      const booking = bookings.find(b => b.id === bookingId);
+      if (!booking) return { success: false, error: 'Booking not found' };
+      
+      // Update booking status to confirmed
+      const result = await updateRow("bookings", bookingId, { status: 'confirmed' }, setBookings);
+      
+      if (result.success) {
+        // Auto-generate invoice if it doesn't exist
+        const existingInvoice = invoices.find(inv => inv.bookingId === bookingId);
+        if (!existingInvoice) {
+          await insertRow("invoices", {
+            bookingId: bookingId,
+            customer: booking.customer,
+            amount: booking.price || 45,
+            status: 'pending',
+            date: new Date().toISOString().split('T')[0],
+            serviceDate: booking.date,
+            pickup: booking.pickup,
+            destination: booking.destination
+          }, setInvoices);
+        }
+      }
+      
+      return result;
+    },
+    markBookingCompleted: (bookingId) => updateRow("bookings", bookingId, { status: 'completed' }, setBookings),
     markInvoiceAsPaid: (id) => updateRow("invoices", id, { status: 'paid' }, setInvoices),
     authErrorModal, showAuthErrorModal, hideAuthErrorModal,
     errorModal, showErrorModal, hideErrorModal
