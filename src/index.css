@@ -215,7 +215,6 @@ body { @apply bg-slate-50 text-slate-900; }
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
-}
 
 /* Floating Action Button Animations */
 .btn-floating {
