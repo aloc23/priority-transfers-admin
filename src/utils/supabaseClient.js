@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isDemoModeEnabled } from "./demoMode";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -34,50 +35,57 @@ function validateConfig(url, key) {
   };
 }
 
-// Validate configuration
-const config = validateConfig(supabaseUrl, supabaseAnonKey);
+// Check if demo mode is enabled
+const demoMode = isDemoModeEnabled();
 
-console.log("Supabase Configuration Check:");
-console.log(`URL: ${config.url || 'Missing'}`);
-console.log(`Key: ${config.hasKey ? '✓ Present' : '✗ Missing'}`);
+// Validate configuration only if not in demo mode
+const config = demoMode ? { isValid: true, issues: [], url: 'demo', hasKey: true } : validateConfig(supabaseUrl, supabaseAnonKey);
 
-if (!config.isValid) {
-  console.error('\n❌ Supabase Configuration Issues:');
-  config.issues.forEach(issue => console.error(`   • ${issue}`));
-  console.error('\nPlease check your .env file and ensure:');
-  console.error('   • VITE_SUPABASE_URL is set to your project URL');
-  console.error('   • VITE_SUPABASE_ANON_KEY is set to your anon key');
-  console.error('\nFind these values in your Supabase dashboard under Settings → API');
-  
-  // Still create client for graceful fallback, but with error tracking
-  window.__SUPABASE_CONFIG_ERROR__ = config.issues;
-} else {
-  console.log('✅ Supabase configuration appears valid');
+if (!demoMode) {
+  console.log("Supabase Configuration Check:");
+  console.log(`URL: ${config.url || 'Missing'}`);
+  console.log(`Key: ${config.hasKey ? '✓ Present' : '✗ Missing'}`);
+
+  if (!config.isValid) {
+    console.error('\n❌ Supabase Configuration Issues:');
+    config.issues.forEach(issue => console.error(`   • ${issue}`));
+    console.error('\nPlease check your .env file and ensure:');
+    console.error('   • VITE_SUPABASE_URL is set to your project URL');
+    console.error('   • VITE_SUPABASE_ANON_KEY is set to your anon key');
+    console.error('\nFind these values in your Supabase dashboard under Settings → API');
+    
+    // Still create client for graceful fallback, but with error tracking
+    window.__SUPABASE_CONFIG_ERROR__ = config.issues;
+  } else {
+    console.log('✅ Supabase configuration appears valid');
+  }
 }
 
-// Create client with enhanced error handling
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  },
-  // Add global error handling
-  global: {
-    fetch: (url, options = {}) => {
-      return fetch(url, {
-        ...options,
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000)
-      }).catch(error => {
-        console.error('Supabase request error:', error);
-        // Re-throw to let calling code handle
-        throw error;
-      });
-    }
-  }
-});
+// Create client with enhanced error handling or dummy client in demo mode
+export const supabase = demoMode 
+  ? null // Return null in demo mode, let AppStore handle demo data
+  : createClient(supabaseUrl || '', supabaseAnonKey || '', {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      // Add global error handling
+      global: {
+        fetch: (url, options = {}) => {
+          return fetch(url, {
+            ...options,
+            // Add timeout to prevent hanging
+            signal: AbortSignal.timeout(10000)
+          }).catch(error => {
+            console.error('Supabase request error:', error);
+            // Re-throw to let calling code handle
+            throw error;
+          });
+        }
+      }
+    });
 
 /**
  * Test Supabase connection

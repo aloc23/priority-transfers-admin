@@ -386,9 +386,77 @@ export function AppStoreProvider({ children }) {
     invoices, partners, expenses, income, estimations, activityHistory,
     globalCalendarState, setGlobalCalendarState,
     login, logout, refreshAllData: loadAllData,
-    addBooking: (b) => insertRow("bookings", b, setBookings),
-    updateBooking: (id, updates) => updateRow("bookings", id, updates, setBookings),
-    deleteBooking: (id) => deleteRow("bookings", id, setBookings),
+    // Booking workflow functions with driver status management
+    addBooking: async (bookingData) => {
+      const result = await insertRow("bookings", bookingData, setBookings);
+      
+      // If booking has a driver assigned, mark driver as busy
+      if (result.success && bookingData.driver) {
+        const driver = drivers.find(d => d.name === bookingData.driver);
+        if (driver && driver.status === 'available') {
+          await updateRow("drivers", driver.id, { status: 'busy' }, setDrivers);
+        }
+      }
+      
+      return result;
+    },
+    updateBooking: async (id, updates) => {
+      const result = await updateRow("bookings", id, updates, setBookings);
+      
+      // Handle driver status changes on booking updates
+      if (result.success) {
+        const booking = bookings.find(b => b.id === id);
+        
+        // If driver was changed, update both old and new driver status
+        if (updates.driver && booking && booking.driver !== updates.driver) {
+          // Revert old driver to available if they have no other active bookings
+          if (booking.driver) {
+            const oldDriver = drivers.find(d => d.name === booking.driver);
+            if (oldDriver) {
+              const hasOtherBookings = bookings.some(
+                b => b.id !== id && 
+                b.driver === booking.driver && 
+                b.status !== 'completed' && 
+                b.status !== 'cancelled'
+              );
+              if (!hasOtherBookings) {
+                await updateRow("drivers", oldDriver.id, { status: 'available' }, setDrivers);
+              }
+            }
+          }
+          
+          // Mark new driver as busy
+          const newDriver = drivers.find(d => d.name === updates.driver);
+          if (newDriver) {
+            await updateRow("drivers", newDriver.id, { status: 'busy' }, setDrivers);
+          }
+        }
+      }
+      
+      return result;
+    },
+    deleteBooking: async (id) => {
+      const booking = bookings.find(b => b.id === id);
+      const result = await deleteRow("bookings", id, setBookings);
+      
+      // If booking had a driver, check if driver should be set back to available
+      if (result.success && booking && booking.driver) {
+        const driver = drivers.find(d => d.name === booking.driver);
+        if (driver) {
+          const hasOtherBookings = bookings.some(
+            b => b.id !== id && 
+            b.driver === booking.driver && 
+            b.status !== 'completed' && 
+            b.status !== 'cancelled'
+          );
+          if (!hasOtherBookings) {
+            await updateRow("drivers", driver.id, { status: 'available' }, setDrivers);
+          }
+        }
+      }
+      
+      return result;
+    },
     addCustomer: (c) => insertRow("customers", c, setCustomers),
     updateCustomer: (id, updates) => updateRow("customers", id, updates, setCustomers),
     deleteCustomer: (id) => deleteRow("customers", id, setCustomers),
@@ -450,11 +518,43 @@ export function AppStoreProvider({ children }) {
             destination: booking.destination
           }, setInvoices);
         }
+        
+        // If booking has a driver, mark them as busy
+        if (booking.driver) {
+          const driver = drivers.find(d => d.name === booking.driver);
+          if (driver && driver.status === 'available') {
+            await updateRow("drivers", driver.id, { status: 'busy' }, setDrivers);
+          }
+        }
       }
       
       return result;
     },
-    markBookingCompleted: (bookingId) => updateRow("bookings", bookingId, { status: 'completed' }, setBookings),
+    markBookingCompleted: async (bookingId) => {
+      const booking = bookings.find(b => b.id === bookingId);
+      const result = await updateRow("bookings", bookingId, { status: 'completed' }, setBookings);
+      
+      // If booking had a driver, check if they should be set back to available
+      if (result.success && booking && booking.driver) {
+        const driver = drivers.find(d => d.name === booking.driver);
+        if (driver) {
+          // Check if driver has any other active bookings
+          const hasOtherBookings = bookings.some(
+            b => b.id !== bookingId && 
+            b.driver === booking.driver && 
+            b.status !== 'completed' && 
+            b.status !== 'cancelled'
+          );
+          
+          // Only set driver back to available if they have no other active bookings
+          if (!hasOtherBookings) {
+            await updateRow("drivers", driver.id, { status: 'available' }, setDrivers);
+          }
+        }
+      }
+      
+      return result;
+    },
     markInvoiceAsPaid: (id) => updateRow("invoices", id, { status: 'paid' }, setInvoices),
     authErrorModal, showAuthErrorModal, hideAuthErrorModal,
     errorModal, showErrorModal, hideErrorModal
