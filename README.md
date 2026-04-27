@@ -22,14 +22,21 @@ npm install
 
 ### 2. Configure environment variables
 ```bash
-cp .env.template .env
+cp .env.example .env
 ```
-Edit `.env` with your Supabase credentials:
-- `VITE_SUPABASE_URL`: Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key  
-- `VITE_DEMO_MODE`: Set to `false` for production
+Edit `.env` with your credentials. The minimum required variables are:
 
-Get these from: https://supabase.com/dashboard/project/[your-project]/settings/api
+| Variable | Description |
+|---|---|
+| `VITE_FIREBASE_API_KEY` | Firebase API key (Project Settings → General → Your apps) |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
+| `VITE_FIREBASE_APP_ID` | Firebase app ID |
+| `VITE_DEMO_MODE` | Set to `true` to run without a Firebase connection |
+
+> **Tip:** Set `VITE_DEMO_MODE=true` to start the app immediately without any backend credentials.
 
 ### 3. Run the app locally
 ```bash
@@ -37,7 +44,18 @@ npm run dev
 ```
 Then open [http://localhost:5173/priority-transfers-admin/](http://localhost:5173/priority-transfers-admin/) in your browser.
 
-### 4. Build for production
+### 4. Access from another device on the same network
+
+The dev server binds to `0.0.0.0` so any device on the same LAN can reach it.
+
+1. Find your machine's local IP address:
+   - **macOS / Linux:** `ip route get 1 | awk '{print $7}'` or `ifconfig | grep "inet "`
+   - **Windows:** `ipconfig` → look for "IPv4 Address"
+2. On the other device, open: `http://<your-lan-ip>:5173/priority-transfers-admin/`
+
+   Example: `http://192.168.1.42:5173/priority-transfers-admin/`
+
+### 5. Build for production
 ```bash
 npm run build
 ```
@@ -154,8 +172,8 @@ CREATE POLICY "Admin full access" ON bookings
 
 1. **Create .env file** (if it doesn't exist):
    ```bash
-   # Copy the template
-   cp .env.template .env
+   # Copy the example file
+   cp .env.example .env
    # OR create manually:
    touch .env
    ```
